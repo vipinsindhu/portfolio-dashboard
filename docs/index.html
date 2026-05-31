@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Monitor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0f12;--surface:#13161b;--surface2:#1a1e25;
+    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+    --text:#e8eaf0;--muted:#6b7280;--dim:#3a4050;
+    --green:#34d399;--green-dim:rgba(52,211,153,0.12);
+    --red:#f87171;--red-dim:rgba(248,113,113,0.12);
+    --amber:#fbbf24;--amber-dim:rgba(251,191,36,0.1);
+    --blue:#60a5fa;--blue-dim:rgba(96,165,250,0.1);
+    --purple:#a78bfa;--accent:#34d399;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;min-height:100vh;line-height:1.5;}
+  .header{padding:28px 32px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-end;}
+  .header-left h1{font-family:'Fraunces',serif;font-size:26px;font-weight:300;letter-spacing:-0.5px;}
+  .header-left p{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.05em;}
+  .header-right{text-align:right;font-size:11px;color:var(--muted);}
+  .header-right span{display:block;font-size:22px;font-family:'Fraunces',serif;font-weight:300;color:var(--green);margin-bottom:2px;}
+  .tabs{display:flex;padding:0 32px;border-bottom:1px solid var(--border);overflow-x:auto;}
+  .tab{padding:14px 20px;font-size:11px;letter-spacing:.08em;color:var(--muted);cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;text-transform:uppercase;transition:all .2s;white-space:nowrap;}
+  .tab:hover{color:var(--text);} .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .content{padding:24px 32px;} .panel{display:none;} .panel.active{display:block;}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .stat-label{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;}
+  .stat-value{font-size:22px;font-family:'Fraunces',serif;font-weight:300;}
+  .stat-sub{font-size:11px;margin-top:4px;}
+  .up{color:var(--green);} .down{color:var(--red);} .neutral{color:var(--muted);}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;}
+  .chart-card-title{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+  .chart-card-subtitle{font-size:12px;color:var(--text);margin-bottom:16px;font-family:'Fraunces',serif;font-weight:300;}
+  .chart-wrap{position:relative;}
+  table{width:100%;border-collapse:collapse;}
+  th{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);font-weight:400;}
+  th:not(:first-child){text-align:right;}
+  td{padding:11px 12px;border-bottom:1px solid var(--border);font-size:12px;}
+  td:not(:first-child){text-align:right;} tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,.02);}
+  .ticker{font-weight:500;} .name{font-size:11px;color:var(--muted);margin-top:1px;}
+  .indicator{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;}
+  .ind-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+  .ind-name{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .ind-value{font-size:24px;font-family:'Fraunces',serif;font-weight:300;}
+  .ind-desc{font-size:11px;color:var(--muted);line-height:1.5;margin-top:6px;}
+  .signal{font-size:10px;padding:3px 10px;border-radius:20px;letter-spacing:.06em;font-weight:500;}
+  .sig-green{background:var(--green-dim);color:var(--green);}
+  .sig-amber{background:var(--amber-dim);color:var(--amber);}
+  .sig-red{background:var(--red-dim);color:var(--red);}
+  .sig-blue{background:var(--blue-dim);color:var(--blue);}
+  .gauge-track{height:4px;background:var(--surface2);border-radius:2px;margin-top:12px;overflow:hidden;}
+  .gauge-fill{height:100%;border-radius:2px;}
+  .section-head{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+  .alloc-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .alloc-name{width:55px;font-size:11px;color:var(--muted);flex-shrink:0;}
+  .alloc-bar-bg{flex:1;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+  .alloc-bar-fill{height:100%;border-radius:3px;}
+  .alloc-pct{width:40px;text-align:right;font-size:12px;}
+  .note-box{background:var(--amber-dim);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:12px 16px;font-size:11px;color:var(--amber);line-height:1.6;margin-top:16px;}
+  .legend-row{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;}
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
+  .legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+  .refresh-badge{display:inline-block;font-size:10px;padding:3px 10px;border-radius:20px;background:var(--green-dim);color:var(--green);letter-spacing:.06em;margin-top:6px;}
+  @media(max-width:768px){
+    .grid-4{grid-template-columns:repeat(2,1fr);}
+    .grid-3{grid-template-columns:repeat(2,1fr);}
+    .grid-2,.grid-2-1{grid-template-columns:1fr;}
+    .content{padding:16px;} .tabs{padding:0 16px;}
+    .header{padding:20px 16px 16px;flex-direction:column;gap:12px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Portfolio Monitor</h1>
+    <p>Fidelity · X46796913 · Long-term moderate risk</p>
+    <span class="refresh-badge">Live prices · Updated May 31, 2026 06:05 UTC</span>
+  </div>
+  <div class="header-right">
+    <span>$439,969</span>
+    Total value &nbsp;·&nbsp; <span class="up" style="font-size:13px;font-family:'DM Mono',monospace;">+2.19% today</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('overview',this)">Overview</button>
+  <button class="tab" onclick="showTab('holdings',this)">Holdings</button>
+  <button class="tab" onclick="showTab('performance',this)">Performance</button>
+  <button class="tab" onclick="showTab('macro',this)">Macro indicators</button>
+  <button class="tab" onclick="showTab('health',this)">Portfolio health</button>
+</div>
+
+<!-- OVERVIEW -->
+<div class="content panel active" id="tab-overview">
+  <div class="grid-4">
+    <div class="stat">
+      <div class="stat-label">Total value</div>
+      <div class="stat-value">$439,969</div>
+      <div class="stat-sub up">$9,412.22 today (+2.19%)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Total gain</div>
+      <div class="stat-value up">$230,914.69</div>
+      <div class="stat-sub up">+110.46% all time</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Largest holding</div>
+      <div class="stat-value">MSFT</div>
+      <div class="stat-sub down">41.2% · $181,454.87</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Best performer</div>
+      <div class="stat-value">MSFT</div>
+      <div class="stat-sub up">+407.02% total</div>
+    </div>
+  </div>
+
+  <div class="grid-2-1">
+    <div class="chart-card">
+      <div class="chart-card-title">10-year growth projection</div>
+      <div class="chart-card-subtitle">From $439,969 at 5%, 7%, 10% CAGR</div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="growthChart"></canvas>
+      </div>
+      <div class="legend-row">
+        <span class="legend-item"><span class="legend-dot" style="background:#34d399;"></span>Moderate 7%</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#60a5fa;"></span>Conservative 5%</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#fbbf24;"></span>Optimistic 10%</span>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-title">Allocation</div>
+      <div class="chart-card-subtitle">By market value</div>
+      <div class="chart-wrap" style="height:160px;">
+        <canvas id="allocDonut"></canvas>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="alloc-row">
+          <span class="alloc-name">MSFT</span>
+          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:41.24%;background:#60a5fa;"></div></div>
+          <span class="alloc-pct">41.2%</span>
+        </div>
+        <div class="alloc-row">
+          <span class="alloc-name">FXAIX</span>
+          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:28.66%;background:#34d399;"></div></div>
+          <span class="alloc-pct">28.7%</span>
+        </div>
+        <div class="alloc-row">
+          <span class="alloc-name">VWO</span>
+          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:11.57%;background:#a78bfa;"></div></div>
+          <span class="alloc-pct">11.6%</span>
+        </div>
+        <div class="alloc-row">
+          <span class="alloc-name">TMUS</span>
+          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:5.63%;background:#fbbf24;"></div></div>
+          <span class="alloc-pct">5.6%</span>
+        </div>
+        <div class="alloc-row">
+          <span class="alloc-name">NVDA</span>
+          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:5.18%;background:#f472b6;"></div></div>
+          <span class="alloc-pct">5.2%</span>
+        </div>
+        <div class="alloc-row">
+          <span class="alloc-name">FBTC</span>
+          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:4.21%;background:#fb923c;"></div></div>
+          <span class="alloc-pct">4.2%</span>
+        </div>
+        <div class="alloc-row">
+          <span class="alloc-name">GLD</span>
+          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:3.51%;background:#9ca3af;"></div></div>
+          <span class="alloc-pct">3.5%</span>
+        </div></div>
+    </div>
+  </div>
+  <div class="note-box">⚠ Concentration alert: MSFT represents 41.24% of this portfolio. For moderate risk, target below 25%.</div>
+</div>
+
+<!-- HOLDINGS -->
+<div class="content panel" id="tab-holdings">
+  <div class="section-head">Current positions · May 31, 2026 06:05 UTC</div>
+  <div class="chart-card">
+    <table>
+      <thead><tr>
+        <th>Symbol / name</th><th>Shares</th><th>Price</th>
+        <th>Value</th><th>Weight</th><th>Gain $</th><th>Gain %</th><th>Today</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><div class="ticker">MSFT</div><div class="name">Microsoft Corp</div></td>
+          <td>403.0181</td>
+          <td>$450.24</td>
+          <td>$181,454.87</td>
+          <td><span style="color:var(--amber);">41.2%</span></td>
+          <td class="up">$145,666.36</td>
+          <td class="up">+407.02%</td>
+          <td class="up">+5.45%</td>
+        </tr>
+        <tr>
+          <td><div class="ticker">FXAIX</div><div class="name">Fidelity 500 Index Fund</div></td>
+          <td>478.1030</td>
+          <td>$263.74</td>
+          <td>$126,094.89</td>
+          <td>28.7%</td>
+          <td class="up">$55,839.53</td>
+          <td class="up">+79.48%</td>
+          <td class="up">+0.22%</td>
+        </tr>
+        <tr>
+          <td><div class="ticker">VWO</div><div class="name">Vanguard FTSE EM ETF</div></td>
+          <td>850.0000</td>
+          <td>$59.88</td>
+          <td>$50,898.00</td>
+          <td>11.6%</td>
+          <td class="up">$12,856.25</td>
+          <td class="up">+33.80%</td>
+          <td class="down">-0.03%</td>
+        </tr>
+        <tr>
+          <td><div class="ticker">TMUS</div><div class="name">T-Mobile US Inc</div></td>
+          <td>132.0000</td>
+          <td>$187.53</td>
+          <td>$24,753.96</td>
+          <td>5.6%</td>
+          <td class="up">$8,352.77</td>
+          <td class="up">+50.93%</td>
+          <td class="down">-0.24%</td>
+        </tr>
+        <tr>
+          <td><div class="ticker">NVDA</div><div class="name">Nvidia Corporation</div></td>
+          <td>108.0000</td>
+          <td>$211.14</td>
+          <td>$22,803.12</td>
+          <td>5.2%</td>
+          <td class="up">$4,354.02</td>
+          <td class="up">+23.60%</td>
+          <td class="down">-1.45%</td>
+        </tr>
+        <tr>
+          <td><div class="ticker">FBTC</div><div class="name">Fidelity Bitcoin ETF</div></td>
+          <td>290.0000</td>
+          <td>$63.90</td>
+          <td>$18,531.00</td>
+          <td>4.2%</td>
+          <td class="down">-$1,918.96</td>
+          <td class="down">-9.38%</td>
+          <td class="up">+0.09%</td>
+        </tr>
+        <tr>
+          <td><div class="ticker">GLD</div><div class="name">SPDR Gold Shares</div></td>
+          <td>37.0000</td>
+          <td>$417.12</td>
+          <td>$15,433.44</td>
+          <td>3.5%</td>
+          <td class="up">$5,764.72</td>
+          <td class="up">+59.62%</td>
+          <td class="up">+1.05%</td>
+        </tr></tbody>
+    </table>
+  </div>
+  <div class="grid-2">
+    <div class="chart-card">
+      <div class="chart-card-title">Gain / loss by position</div>
+      <div class="chart-card-subtitle">Total dollar return</div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="gainChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-title">Return % by position</div>
+      <div class="chart-card-subtitle">Percentage since purchase</div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="returnPct"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PERFORMANCE -->
+<div class="content panel" id="tab-performance">
+  <div class="section-head">12-month relative performance (normalised to 100)</div>
+  <div class="chart-card">
+    <div class="chart-card-title">Price performance – top 5 holdings</div>
+    <div class="chart-card-subtitle">Rebased to 100 at start of period</div>
+    <div class="chart-wrap" style="height:300px;">
+      <canvas id="histChart"></canvas>
+    </div>
+    <div class="legend-row" id="histLegend"></div>
+  </div>
+</div>
+
+<!-- MACRO -->
+<div class="content panel" id="tab-macro">
+  <div class="section-head">Key macro indicators – updated manually each quarter</div>
+  <div class="grid-3">
+    <div class="indicator">
+      <div class="ind-header"><div><div class="ind-name">Fed funds rate</div><div class="ind-value" style="color:var(--amber);">3.5–3.75%</div></div><span class="signal sig-amber">Watch</span></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:62%;background:var(--amber);"></div></div>
+      <div class="ind-desc">Drives borrowing costs. Lower rates benefit MSFT, NVDA (growth stocks) and bonds.</div>
+    </div>
+    <div class="indicator">
+      <div class="ind-header"><div><div class="ind-name">10-yr Treasury yield</div><div class="ind-value" style="color:var(--amber);">~4.1%</div></div><span class="signal sig-amber">Elevated</span></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:70%;background:var(--amber);"></div></div>
+      <div class="ind-desc">Benchmark for risk-free return. Rising yields compress growth stock valuations.</div>
+    </div>
+    <div class="indicator">
+      <div class="ind-header"><div><div class="ind-name">Core PCE inflation</div><div class="ind-value" style="color:var(--red);">~3.0%</div></div><span class="signal sig-red">Above target</span></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:80%;background:var(--red);"></div></div>
+      <div class="ind-desc">Fed's preferred inflation gauge. Keeps rates high, suppresses bonds, supports gold.</div>
+    </div>
+    <div class="indicator">
+      <div class="ind-header"><div><div class="ind-name">S&amp;P 500 P/E ratio</div><div class="ind-value" style="color:var(--amber);">~22x</div></div><span class="signal sig-amber">Stretched</span></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:65%;background:var(--amber);"></div></div>
+      <div class="ind-desc">Valuation gauge. Affects FXAIX and MSFT directly. Historical avg ~16–17x.</div>
+    </div>
+    <div class="indicator">
+      <div class="ind-header"><div><div class="ind-name">US dollar index (DXY)</div><div class="ind-value" style="color:var(--blue);">~103</div></div><span class="signal sig-blue">Neutral</span></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:50%;background:var(--blue);"></div></div>
+      <div class="ind-desc">Weaker dollar boosts VWO returns and gold. MSFT earns ~50% revenue overseas.</div>
+    </div>
+    <div class="indicator">
+      <div class="ind-header"><div><div class="ind-name">VIX (fear gauge)</div><div class="ind-value" style="color:var(--green);">~18</div></div><span class="signal sig-green">Calm</span></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:30%;background:var(--green);"></div></div>
+      <div class="ind-desc">Below 20 = calm. Above 30 = stress. Spikes above 30 are historically good long-term buying opportunities.</div>
+    </div>
+    <div class="indicator">
+      <div class="ind-header"><div><div class="ind-name">US GDP growth</div><div class="ind-value" style="color:var(--green);">+2.2%</div></div><span class="signal sig-green">Healthy</span></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:55%;background:var(--green);"></div></div>
+      <div class="ind-desc">Above 2% supports corporate earnings and FXAIX returns.</div>
+    </div>
+    <div class="indicator">
+      <div class="ind-header"><div><div class="ind-name">Gold spot price</div><div class="ind-value" style="color:var(--green);">$3,300+</div></div><span class="signal sig-green">Strong</span></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:78%;background:var(--green);"></div></div>
+      <div class="ind-desc">Directly drives your GLD position. Supported by inflation, geopolitical risk, and central bank buying.</div>
+    </div>
+    <div class="indicator">
+      <div class="ind-header"><div><div class="ind-name">EM equity trend</div><div class="ind-value" style="color:var(--blue);">Neutral</div></div><span class="signal sig-blue">Monitor</span></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:45%;background:var(--blue);"></div></div>
+      <div class="ind-desc">Drives your VWO position. Key inputs: China PMI, commodity prices, dollar direction.</div>
+    </div>
+  </div>
+</div>
+
+<!-- HEALTH -->
+<div class="content panel" id="tab-health">
+  <div class="section-head">Long-term portfolio health</div>
+  <div class="grid-4">
+    <div class="stat">
+      <div class="stat-label">Top concentration</div>
+      <div class="stat-value" style="color:var(--amber);">41.2%</div>
+      <div class="stat-sub" style="color:var(--amber);">⚠ Target below 25%</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Bond allocation</div>
+      <div class="stat-value" style="color:var(--red);">0%</div>
+      <div class="stat-sub" style="color:var(--red);">Target: 15–25%</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">International</div>
+      <div class="stat-value" style="color:var(--green);">11.6%</div>
+      <div class="stat-sub up">Target: 15–25%</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Commodities / hedge</div>
+      <div class="stat-value" style="color:var(--amber);">3.5%</div>
+      <div class="stat-sub" style="color:var(--amber);">Target: 7–10%</div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="chart-card">
+      <div class="chart-card-title">Health scorecard</div>
+      <div class="chart-card-subtitle">Current vs. moderate-risk target</div>
+      <div class="chart-wrap" style="height:260px;">
+        <canvas id="radarChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-title">Monitoring schedule</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+        <div style="padding:14px;border:1px solid var(--border);border-radius:8px;">
+          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:8px;">Monthly</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.8;">• Core PCE / CPI report<br>• Fed meeting minutes<br>• VIX level trend<br>• Top holding % weight</div>
+        </div>
+        <div style="padding:14px;border:1px solid var(--border);border-radius:8px;">
+          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-bottom:8px;">Quarterly</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.8;">• GDP growth print<br>• MSFT / NVDA earnings<br>• S&amp;P 500 P/E ratio<br>• Rebalancing check</div>
+        </div>
+        <div style="padding:14px;border:1px solid var(--border);border-radius:8px;">
+          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin-bottom:8px;">Trigger alerts</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.8;">• MSFT drops &gt;20%<br>• VIX spikes above 35<br>• Fed surprise rate hike<br>• Any single stock &gt;45%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+}
+
+const monoFont = "'DM Mono', monospace";
+const gridColor = 'rgba(255,255,255,0.05)';
+const tickers   = ["MSFT", "FXAIX", "VWO", "TMUS", "NVDA", "FBTC", "GLD"];
+const bgColors  = ["#60a5fa", "#34d399", "#a78bfa", "#fbbf24", "#f472b6", "#fb923c", "#9ca3af"];
+
+new Chart(document.getElementById('growthChart'), {
+  type: 'line',
+  data: {
+    labels: [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035, 2036],
+    datasets: [
+      { label:'Moderate 7%', data:[439969, 470767, 503721, 538981, 576710, 617080, 660275, 706495, 755949, 808866, 865486], borderColor:'#34d399', backgroundColor:'rgba(52,211,153,0.06)', tension:.4, borderWidth:2, pointRadius:3, pointBackgroundColor:'#34d399', fill:true },
+      { label:'Conservative 5%', data:[439969, 461968, 485066, 509319, 534785, 561525, 589601, 619081, 650035, 682537, 716664], borderColor:'#60a5fa', borderDash:[4,4], backgroundColor:'transparent', tension:.4, borderWidth:1.5, pointRadius:0 },
+      { label:'Optimistic 10%', data:[439969, 483966, 532363, 585599, 644159, 708575, 779432, 857376, 943113, 1037425, 1141167], borderColor:'#fbbf24', borderDash:[2,4], backgroundColor:'transparent', tension:.4, borderWidth:1.5, pointRadius:0 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' $'+c.parsed.y.toLocaleString()}} },
+    scales:{
+      x:{ticks:{color:'#6b7280',font:{family:monoFont,size:11}},grid:{color:gridColor}},
+      y:{ticks:{color:'#6b7280',font:{family:monoFont,size:11},callback:v=>'$'+(v/1000).toFixed(0)+'K'},grid:{color:gridColor}}
+    }
+  }
+});
+
+new Chart(document.getElementById('allocDonut'), {
+  type: 'doughnut',
+  data: { labels: tickers, datasets: [{ data: [41.24, 28.66, 11.57, 5.63, 5.18, 4.21, 3.51], backgroundColor: bgColors, borderWidth:0, hoverOffset:4 }] },
+  options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.label+': '+c.parsed+'%'}} } }
+});
+
+new Chart(document.getElementById('gainChart'), {
+  type:'bar',
+  data:{ labels:tickers, datasets:[{ data:[145666.36, 55839.53, 12856.25, 8352.77, 4354.02, -1918.96, 5764.72], backgroundColor:ctx=>ctx.raw<0?'#f87171':'#34d399', borderWidth:0, borderRadius:3 }] },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' $'+c.parsed.y.toLocaleString()}}},
+    scales:{
+      x:{ticks:{color:'#6b7280',font:{family:monoFont,size:11}},grid:{display:false}},
+      y:{ticks:{color:'#6b7280',font:{family:monoFont,size:11},callback:v=>'$'+(v/1000).toFixed(0)+'K'},grid:{color:gridColor}}
+    }
+  }
+});
+
+new Chart(document.getElementById('returnPct'), {
+  type:'bar',
+  data:{ labels:tickers, datasets:[{ data:[407.02, 79.48, 33.8, 50.93, 23.6, -9.38, 59.62], backgroundColor:ctx=>ctx.raw<0?'#f87171':'#60a5fa', borderWidth:0, borderRadius:3 }] },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.parsed.y.toFixed(1)+'%'}}},
+    scales:{
+      x:{ticks:{color:'#6b7280',font:{family:monoFont,size:11}},grid:{display:false}},
+      y:{ticks:{color:'#6b7280',font:{family:monoFont,size:11},callback:v=>v+'%'},grid:{color:gridColor}}
+    }
+  }
+});
+
+const histDatasets = [{"label": "MSFT", "data": [100.0, 99.28, 99.56, 99.93, 100.28, 100.49, 100.69, 101.52, 102.1, 102.62, 102.22, 102.59, 103.95, 103.1, 104.0, 103.77, 104.24, 103.63, 105.49, 106.39, 106.85, 107.98, 107.65, 107.97, 106.81, 106.6, 108.28, 108.04, 107.8, 109.29, 108.85, 109.25, 109.19, 109.8, 109.75, 111.07, 110.71, 110.72, 109.68, 109.81, 110.89, 111.51, 111.25, 111.26, 111.41, 115.8, 113.77, 116.27, 114.56, 113.95, 113.06, 113.32, 113.26, 114.88, 113.0, 113.41, 112.91, 112.24, 110.65, 109.77, 109.63, 110.28, 109.64, 109.15, 110.18, 110.81, 110.17, 109.82, 109.87, 110.44, 107.62, 108.32, 108.37, 108.79, 108.93, 110.86, 112.05, 110.68, 110.89, 110.55, 112.61, 111.85, 110.72, 110.92, 110.24, 111.2, 111.89, 112.61, 113.0, 112.13, 112.48, 114.92, 113.93, 114.11, 113.58, 111.09, 111.77, 111.66, 111.63, 111.24, 111.66, 112.36, 112.55, 113.18, 113.18, 113.84, 115.56, 117.86, 117.75, 114.31, 112.58, 112.41, 111.83, 110.27, 108.08, 108.02, 110.02, 110.6, 111.13, 109.43, 110.92, 110.34, 107.36, 105.91, 104.22, 102.84, 103.25, 103.9, 105.76, 107.17, 106.03, 106.74, 104.06, 104.74, 105.25, 106.96, 107.18, 104.24, 105.31, 104.24, 103.43, 103.77, 103.71, 105.43, 105.85, 105.63, 106.05, 106.31, 106.24, 106.1, 106.19, 105.35, 103.02, 103.0, 104.23, 105.31, 104.15, 104.4, 103.94, 102.53, 100.07, 99.47, 100.17, 99.01, 96.74, 98.27, 101.5, 102.44, 104.68, 104.91, 94.43, 93.73, 92.22, 89.57, 90.22, 85.75, 87.38, 90.09, 90.02, 88.08, 87.53, 87.42, 86.45, 87.04, 86.99, 86.73, 83.94, 84.93, 87.46, 87.71, 85.75, 87.01, 88.19, 88.47, 89.66, 89.29, 89.39, 88.59, 88.4, 87.74, 86.36, 87.32, 87.2, 85.54, 84.93, 83.37, 83.62, 81.38, 81.01, 79.9, 77.89, 78.37, 80.82, 80.64, 81.54, 81.41, 81.28, 81.73, 81.45, 80.97, 83.92, 85.83, 89.78, 91.75, 92.31, 91.28, 92.61, 94.52, 90.77, 92.71, 92.75, 93.72, 92.67, 89.03, 90.48, 90.3, 89.82, 90.38, 91.87, 90.63, 90.09, 89.03, 88.47, 89.39, 92.12, 92.47, 91.13, 91.93, 91.7, 91.58, 91.03, 90.29, 93.43, 98.51], "borderColor": "#34d399", "backgroundColor": "transparent", "borderWidth": 1.5, "tension": 0.3, "pointRadius": 0}, {"label": "FXAIX", "data": [100.0, 99.45, 99.84, 99.84, 100.27, 100.85, 100.86, 100.34, 101.38, 101.49, 102.04, 101.76, 102.16, 101.02, 101.98, 101.14, 101.14, 101.11, 101.86, 103.0, 103.0, 103.83, 104.37, 104.92, 104.81, 105.31, 106.2, 105.37, 105.29, 105.93, 106.24, 105.89, 106.04, 105.63, 105.96, 106.53, 106.53, 106.68, 106.75, 107.59, 107.66, 108.1, 108.12, 107.8, 107.66, 107.27, 105.56, 107.12, 106.61, 107.38, 107.3, 108.14, 107.88, 109.11, 109.46, 109.5, 109.21, 109.21, 108.58, 108.32, 107.9, 109.54, 109.07, 109.53, 109.8, 110.15, 109.45, 108.71, 109.27, 110.19, 109.86, 110.09, 110.39, 110.73, 111.67, 111.62, 112.17, 112.03, 111.92, 112.46, 113.01, 113.52, 112.89, 112.57, 112.01, 112.67, 112.97, 113.44, 113.83, 113.91, 113.93, 114.35, 113.91, 114.58, 114.26, 111.18, 112.92, 112.74, 113.2, 112.49, 113.09, 114.29, 114.3, 113.69, 114.36, 115.26, 116.68, 116.95, 116.94, 115.79, 116.09, 116.3, 114.94, 115.36, 114.07, 114.23, 116.0, 116.24, 116.32, 114.39, 114.37, 113.33, 112.4, 112.82, 111.08, 112.18, 113.92, 114.96, 115.76, 116.38, 115.77, 116.06, 116.41, 116.54, 116.79, 116.39, 116.29, 117.08, 117.33, 116.08, 115.91, 115.64, 114.3, 115.21, 116.23, 116.99, 117.52, 117.9, 117.88, 117.47, 117.3, 116.45, 116.7, 117.44, 118.18, 117.77, 117.78, 118.55, 118.74, 118.52, 117.89, 118.2, 118.13, 115.69, 117.04, 117.68, 117.73, 118.32, 118.8, 118.79, 118.64, 118.14, 118.78, 117.78, 117.19, 115.75, 118.03, 118.6, 118.22, 118.22, 116.37, 116.45, 116.58, 117.24, 116.92, 117.74, 116.52, 117.42, 118.37, 117.74, 117.24, 117.29, 116.19, 117.09, 116.44, 114.91, 115.87, 115.64, 115.55, 113.79, 113.12, 114.28, 114.57, 113.0, 112.7, 111.0, 112.27, 111.86, 112.46, 110.51, 108.66, 108.24, 111.4, 112.2, 112.34, 112.84, 112.93, 115.76, 116.48, 116.36, 117.55, 118.93, 119.89, 120.2, 121.65, 121.37, 120.6, 121.86, 121.36, 122.33, 122.48, 121.88, 121.84, 123.09, 123.45, 122.96, 123.96, 125.77, 125.29, 126.36, 126.61, 126.41, 127.16, 128.13, 126.57, 126.49, 125.65, 127.01, 127.24, 127.73, 128.51, 128.54, 129.28, 129.56], "borderColor": "#60a5fa", "backgroundColor": "transparent", "borderWidth": 1.5, "tension": 0.3, "pointRadius": 0}, {"label": "VWO", "data": [100.0, 99.39, 99.83, 98.68, 99.37, 99.6, 100.59, 100.84, 101.28, 102.02, 102.77, 103.11, 103.13, 101.57, 102.52, 101.36, 101.09, 100.14, 100.96, 103.15, 103.41, 104.1, 104.0, 104.14, 104.56, 104.86, 105.32, 104.08, 104.48, 104.46, 104.56, 104.42, 104.54, 105.3, 105.79, 106.44, 106.31, 106.86, 106.88, 107.87, 107.34, 107.05, 106.21, 106.27, 105.41, 104.86, 104.31, 105.28, 105.62, 106.08, 106.86, 106.73, 106.61, 107.83, 109.05, 107.83, 108.14, 108.96, 108.19, 108.14, 107.95, 109.85, 109.39, 109.15, 108.42, 108.82, 108.5, 108.35, 108.65, 108.19, 109.43, 110.5, 110.92, 111.43, 112.82, 112.61, 113.37, 114.08, 114.8, 114.27, 114.12, 114.44, 114.42, 114.21, 113.55, 113.34, 114.16, 114.67, 115.39, 115.71, 115.96, 116.37, 115.73, 116.39, 115.37, 111.2, 114.29, 113.28, 114.99, 115.37, 115.1, 116.47, 115.43, 115.37, 116.24, 116.79, 117.76, 117.7, 118.04, 116.81, 116.34, 116.6, 114.97, 115.99, 115.54, 115.43, 116.98, 117.11, 117.09, 116.05, 116.09, 114.76, 114.38, 114.12, 112.77, 112.32, 113.47, 113.97, 114.52, 114.93, 114.82, 114.57, 114.42, 114.67, 115.14, 114.72, 114.52, 115.48, 115.22, 114.16, 113.83, 113.19, 112.45, 113.4, 114.62, 115.35, 115.89, 115.85, 116.58, 115.7, 116.13, 116.02, 118.55, 119.32, 119.97, 119.24, 119.37, 119.62, 121.48, 120.77, 121.03, 121.59, 120.85, 119.86, 121.09, 122.04, 122.52, 122.86, 124.39, 124.87, 124.39, 121.87, 122.54, 122.47, 121.74, 120.94, 123.57, 124.63, 125.19, 126.27, 124.65, 124.63, 124.72, 125.06, 124.29, 126.31, 125.3, 126.64, 127.35, 125.75, 125.39, 123.53, 119.19, 119.95, 118.37, 117.55, 118.98, 119.8, 119.91, 117.21, 116.58, 118.74, 119.26, 116.99, 116.56, 113.43, 116.11, 115.05, 117.27, 114.06, 113.28, 113.13, 116.65, 116.99, 116.15, 116.56, 116.73, 121.93, 121.8, 122.47, 123.4, 125.13, 125.37, 125.62, 127.72, 127.14, 125.6, 126.81, 125.0, 127.37, 126.75, 125.86, 125.34, 127.18, 127.31, 126.75, 128.11, 131.11, 129.94, 130.65, 130.33, 128.17, 129.36, 129.4, 126.12, 126.21, 124.89, 126.62, 126.68, 127.29, 129.98, 130.11, 129.27, 129.23], "borderColor": "#a78bfa", "backgroundColor": "transparent", "borderWidth": 1.5, "tension": 0.3, "pointRadius": 0}, {"label": "TMUS", "data": [100.0, 99.24, 98.33, 99.89, 100.25, 100.58, 99.79, 101.0, 101.4, 98.14, 97.74, 95.25, 94.32, 94.03, 95.27, 91.32, 91.14, 91.36, 93.61, 94.78, 95.23, 95.44, 97.02, 98.27, 99.61, 97.92, 99.29, 98.01, 97.32, 95.81, 94.1, 93.94, 94.1, 93.22, 94.34, 93.63, 93.71, 95.94, 96.2, 96.48, 102.08, 100.45, 98.24, 98.67, 99.63, 98.33, 97.83, 99.4, 98.54, 98.66, 100.19, 101.04, 102.64, 104.05, 103.45, 103.24, 105.02, 105.24, 106.5, 106.82, 106.47, 103.91, 103.83, 103.6, 103.67, 103.34, 104.29, 105.91, 104.57, 104.35, 104.61, 100.53, 100.46, 99.49, 99.91, 100.04, 99.22, 98.35, 99.1, 98.85, 98.57, 98.27, 99.12, 98.67, 98.48, 98.29, 98.49, 99.08, 96.54, 95.25, 95.31, 93.11, 94.23, 93.78, 93.62, 94.69, 93.15, 94.95, 93.81, 93.72, 94.92, 95.23, 94.81, 94.12, 91.05, 90.13, 91.34, 91.05, 88.99, 87.18, 86.94, 84.15, 85.38, 84.74, 83.19, 85.67, 85.21, 87.74, 88.02, 88.81, 89.43, 89.33, 88.19, 87.44, 87.13, 86.7, 85.81, 85.63, 85.99, 86.93, 85.94, 87.4, 86.73, 86.52, 87.19, 85.03, 83.75, 81.24, 81.24, 81.17, 81.59, 82.36, 82.93, 83.3, 81.83, 81.42, 82.22, 82.78, 83.6, 84.5, 84.77, 84.45, 83.01, 83.54, 82.6, 82.06, 82.32, 83.42, 82.15, 78.89, 79.87, 79.3, 77.5, 76.39, 76.37, 77.11, 77.38, 78.18, 76.74, 77.47, 78.73, 82.03, 81.1, 82.22, 83.93, 83.96, 82.1, 82.21, 82.95, 87.15, 89.29, 91.3, 91.34, 88.7, 89.55, 89.62, 91.48, 92.33, 90.95, 88.66, 90.73, 90.32, 91.33, 91.82, 92.17, 92.6, 90.9, 91.44, 89.2, 89.59, 90.85, 89.78, 89.17, 86.35, 86.34, 87.13, 87.25, 88.29, 88.33, 88.43, 88.11, 89.41, 87.78, 85.36, 84.17, 83.01, 83.81, 82.6, 82.56, 81.79, 80.42, 79.41, 79.49, 82.38, 82.61, 82.9, 81.66, 78.96, 81.11, 79.32, 76.38, 78.04, 82.82, 81.71, 81.94, 81.25, 81.21, 80.73, 81.16, 80.92, 79.76, 80.79, 79.52, 78.65, 77.41, 79.68, 80.84, 79.47, 79.78, 80.02, 79.87, 79.75, 78.99, 78.8], "borderColor": "#fbbf24", "backgroundColor": "transparent", "borderWidth": 1.5, "tension": 0.3, "pointRadius": 0}, {"label": "NVDA", "data": [100.0, 99.49, 102.72, 99.73, 101.39, 104.22, 104.74, 103.31, 104.59, 105.26, 106.24, 105.42, 107.02, 104.78, 106.79, 106.37, 107.37, 106.17, 106.41, 109.16, 113.89, 114.41, 116.43, 116.61, 113.14, 116.06, 117.6, 116.79, 118.09, 120.22, 121.12, 121.72, 121.09, 125.99, 126.48, 127.68, 127.25, 126.49, 123.28, 126.05, 128.23, 128.05, 130.45, 129.54, 132.31, 131.28, 128.22, 132.85, 131.57, 132.42, 133.42, 134.84, 134.37, 135.18, 134.02, 134.34, 133.18, 134.33, 129.63, 129.46, 129.15, 131.37, 132.71, 134.16, 134.03, 132.98, 128.56, 126.05, 125.93, 126.7, 123.27, 124.22, 126.03, 130.88, 130.77, 131.25, 131.2, 129.08, 125.69, 130.08, 130.4, 135.52, 131.7, 130.62, 131.15, 131.52, 134.22, 137.71, 138.2, 139.42, 138.48, 136.95, 136.58, 139.58, 142.14, 135.19, 139.0, 132.88, 132.73, 134.19, 135.23, 134.81, 133.71, 133.06, 134.45, 137.48, 141.34, 148.38, 152.82, 149.75, 149.46, 152.7, 146.65, 144.08, 138.82, 138.87, 146.92, 142.57, 143.04, 137.92, 140.36, 137.73, 133.86, 137.67, 133.33, 132.03, 134.74, 131.25, 133.05, 130.64, 132.8, 133.94, 132.56, 135.36, 134.64, 136.96, 136.53, 135.66, 133.55, 129.19, 130.13, 131.18, 126.18, 128.54, 133.6, 135.59, 139.66, 139.22, 140.64, 138.93, 138.43, 137.66, 139.4, 138.86, 138.21, 139.59, 136.59, 136.45, 136.51, 137.15, 135.18, 138.07, 137.46, 131.44, 135.32, 136.44, 138.53, 137.64, 139.15, 141.37, 142.1, 141.08, 137.01, 133.12, 128.58, 126.87, 136.86, 140.28, 139.17, 140.28, 137.99, 134.94, 136.53, 138.76, 138.7, 140.11, 141.39, 142.35, 144.35, 136.47, 130.79, 134.7, 132.9, 135.11, 135.33, 131.26, 134.82, 136.39, 137.32, 135.19, 133.06, 135.25, 134.3, 133.17, 131.81, 127.48, 129.65, 129.33, 131.9, 126.41, 123.66, 121.93, 128.74, 129.74, 130.95, 131.13, 131.47, 134.41, 135.76, 139.24, 139.75, 145.06, 146.8, 146.42, 148.88, 149.16, 147.55, 149.48, 147.37, 153.74, 159.9, 157.36, 154.46, 147.32, 146.49, 146.51, 145.05, 153.42, 156.13, 158.86, 161.99, 162.98, 166.7, 174.02, 166.33, 164.11, 162.85, 164.96, 162.04, 158.95, 158.61, 156.94, 158.16, 155.86], "borderColor": "#f472b6", "backgroundColor": "transparent", "borderWidth": 1.5, "tension": 0.3, "pointRadius": 0}];
+const histColors = ['#34d399','#60a5fa','#a78bfa','#fbbf24','#f472b6'];
+new Chart(document.getElementById('histChart'), {
+  type:'line',
+  data:{ labels:["2025-05-27", "2025-05-28", "2025-05-29", "2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-09", "2025-06-10", "2025-06-11", "2025-06-12", "2025-06-13", "2025-06-16", "2025-06-17", "2025-06-18", "2025-06-20", "2025-06-23", "2025-06-24", "2025-06-25", "2025-06-26", "2025-06-27", "2025-06-30", "2025-07-01", "2025-07-02", "2025-07-03", "2025-07-07", "2025-07-08", "2025-07-09", "2025-07-10", "2025-07-11", "2025-07-14", "2025-07-15", "2025-07-16", "2025-07-17", "2025-07-18", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25", "2025-07-28", "2025-07-29", "2025-07-30", "2025-07-31", "2025-08-01", "2025-08-04", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08", "2025-08-11", "2025-08-12", "2025-08-13", "2025-08-14", "2025-08-15", "2025-08-18", "2025-08-19", "2025-08-20", "2025-08-21", "2025-08-22", "2025-08-25", "2025-08-26", "2025-08-27", "2025-08-28", "2025-08-29", "2025-09-02", "2025-09-03", "2025-09-04", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-28", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-26", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25", "2026-03-26", "2026-03-27", "2026-03-30", "2026-03-31", "2026-04-01", "2026-04-02", "2026-04-06", "2026-04-07", "2026-04-08", "2026-04-09", "2026-04-10", "2026-04-13", "2026-04-14", "2026-04-15", "2026-04-16", "2026-04-17", "2026-04-20", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-26", "2026-05-27", "2026-05-28", "2026-05-29"], datasets:histDatasets },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.parsed.y.toFixed(1)}}},
+    scales:{
+      x:{ticks:{color:'#6b7280',font:{family:monoFont,size:10},maxTicksLimit:8},grid:{color:gridColor}},
+      y:{ticks:{color:'#6b7280',font:{family:monoFont,size:11},callback:v=>v.toFixed(0)},grid:{color:gridColor}}
+    }
+  }
+});
+
+const legend = document.getElementById('histLegend');
+histDatasets.forEach((d,i) => {
+  const el = document.createElement('span');
+  el.className = 'legend-item';
+  el.innerHTML = `<span class="legend-dot" style="background:${histColors[i]};"></span>${d.label}`;
+  legend.appendChild(el);
+});
+
+new Chart(document.getElementById('radarChart'), {
+  type:'radar',
+  data:{
+    labels:['Diversification','Bond coverage','Geog. spread','Inflation hedge','Sector coverage','Income generation'],
+    datasets:[
+      { label:'Current', data:[40,0,55,45,40,20], borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,0.1)', pointBackgroundColor:'#60a5fa', borderWidth:2 },
+      { label:'Target',  data:[75,70,70,70,75,65], borderColor:'#34d399', backgroundColor:'rgba(52,211,153,0.05)', pointBackgroundColor:'#34d399', borderWidth:1.5, borderDash:[4,4] }
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'rgba(255,255,255,0.06)'},pointLabels:{color:'#6b7280',font:{family:monoFont,size:10}},angleLines:{color:'rgba(255,255,255,0.06)'}}}
+  }
+});
+</script>
+</body>
+</html>
