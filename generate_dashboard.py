@@ -26,6 +26,81 @@ COST_BASIS = {
 }
 GROWTH_CAGR = {"conservative": 0.05, "moderate": 0.07, "optimistic": 0.10}
 
+# ── Macro signals (update manually each quarter) ──────────────────────────────
+# signal: +1 = tailwind for markets, 0 = neutral, -1 = headwind
+MACRO_SIGNALS = {
+    "fed_rate":  {"label": "Fed Funds Rate", "value": "3.5–3.75%", "signal": -1, "context": "Elevated — headwind for growth & valuation"},
+    "treasury":  {"label": "10-yr Treasury", "value": "~4.1%",     "signal": -1, "context": "Elevated — pressure on equity multiples"},
+    "inflation": {"label": "Core PCE",       "value": "~3.0%",     "signal": -1, "context": "Above 2% target — keeps rates high longer"},
+    "pe_ratio":  {"label": "S&P 500 P/E",    "value": "~22x",      "signal": -1, "context": "Stretched vs 17x historical avg"},
+    "dollar":    {"label": "DXY",            "value": "~103",      "signal":  0, "context": "Neutral — watch for breakout in either direction"},
+    "vix":       {"label": "VIX",            "value": "~18",       "signal": +1, "context": "Below 20 — calm markets, risk appetite intact"},
+    "gdp":       {"label": "GDP Growth",     "value": "+2.2%",     "signal": +1, "context": "Healthy — supports corporate earnings"},
+    "gold":      {"label": "Gold Spot",      "value": "$3,300+",   "signal": +1, "context": "Strong — hedge demand, inflation premium"},
+    "em_trend":  {"label": "EM Trend",       "value": "Neutral",   "signal":  0, "context": "Mixed — China/commodity cycle dependent"},
+}
+
+# Per-fund macro impact given CURRENT levels: +1 tailwind, 0 neutral, -1 headwind
+INV_FUND_IMPACT = {
+    "MSFT":  {"fed_rate": -1, "treasury": -1, "inflation": -1, "pe_ratio": -1, "dollar": -1, "vix":  0, "gdp": +1, "gold":  0, "em_trend":  0},
+    "FXAIX": {"fed_rate": -1, "treasury": -1, "inflation": -1, "pe_ratio": -1, "dollar":  0, "vix": +1, "gdp": +1, "gold":  0, "em_trend":  0},
+    "VWO":   {"fed_rate": -1, "treasury":  0, "inflation":  0, "pe_ratio":  0, "dollar": -1, "vix":  0, "gdp":  0, "gold": +1, "em_trend":  0},
+    "TMUS":  {"fed_rate": -1, "treasury": -1, "inflation":  0, "pe_ratio":  0, "dollar":  0, "vix":  0, "gdp": +1, "gold":  0, "em_trend":  0},
+    "NVDA":  {"fed_rate": -1, "treasury": -1, "inflation": -1, "pe_ratio": -1, "dollar": -1, "vix":  0, "gdp": +1, "gold":  0, "em_trend": +1},
+    "FBTC":  {"fed_rate": -1, "treasury": -1, "inflation": +1, "pe_ratio":  0, "dollar": -1, "vix":  0, "gdp":  0, "gold": +1, "em_trend":  0},
+    "GLD":   {"fed_rate": -1, "treasury": -1, "inflation": +1, "pe_ratio":  0, "dollar": -1, "vix":  0, "gdp":  0, "gold": +1, "em_trend":  0},
+}
+
+# Retirement asset-class impact given current macro
+RET_CLASS_IMPACT = {
+    "US Equity":    {"fed_rate": -1, "treasury": -1, "inflation": -1, "pe_ratio": -1, "dollar":  0, "vix": +1, "gdp": +1, "gold":  0, "em_trend":  0},
+    "Intl Equity":  {"fed_rate": -1, "treasury":  0, "inflation":  0, "pe_ratio":  0, "dollar": -1, "vix":  0, "gdp":  0, "gold":  0, "em_trend":  0},
+    "Target Date":  {"fed_rate": -1, "treasury": -1, "inflation": -1, "pe_ratio": -1, "dollar":  0, "vix": +1, "gdp": +1, "gold": +1, "em_trend":  0},
+    "Bonds":        {"fed_rate": -1, "treasury": -1, "inflation": -1, "pe_ratio":  0, "dollar":  0, "vix": +1, "gdp":  0, "gold":  0, "em_trend":  0},
+    "Balanced":     {"fed_rate": -1, "treasury": -1, "inflation": -1, "pe_ratio":  0, "dollar":  0, "vix": +1, "gdp": +1, "gold":  0, "em_trend":  0},
+    "Alternatives": {"fed_rate": -1, "treasury": -1, "inflation": +1, "pe_ratio":  0, "dollar":  0, "vix":  0, "gdp": +1, "gold":  0, "em_trend":  0},
+    "Commodities":  {"fed_rate":  0, "treasury":  0, "inflation": +1, "pe_ratio":  0, "dollar": -1, "vix":  0, "gdp":  0, "gold": +1, "em_trend":  0},
+}
+
+# Long-term fund forecast (3–5 year fundamental view)
+FUND_FORECAST = {
+    "MSFT": {
+        "outlook": "Bullish",           "color": "#34d399", "horizon": "3–5 yr", "scenario": "+60–90%",
+        "driver": "AI/cloud secular tailwind; Azure market share acceleration",
+        "risk":   "Premium valuation; regulatory scrutiny on AI",
+    },
+    "FXAIX": {
+        "outlook": "Moderate",          "color": "#60a5fa", "horizon": "3–5 yr", "scenario": "+35–55%",
+        "driver": "Broad US earnings growth ~10% annually; diversified exposure",
+        "risk":   "Valuation compression if rates remain elevated",
+    },
+    "VWO": {
+        "outlook": "Neutral",           "color": "#9ca3af", "horizon": "3–5 yr", "scenario": "+20–40%",
+        "driver": "EM demographic dividend; cheaper valuations vs US equities",
+        "risk":   "Dollar strength; China slowdown; geopolitical risk",
+    },
+    "TMUS": {
+        "outlook": "Moderate",          "color": "#60a5fa", "horizon": "3–5 yr", "scenario": "+25–40%",
+        "driver": "5G monetization; strong free cash flow generation",
+        "risk":   "Debt load sensitive to high-rate environment",
+    },
+    "NVDA": {
+        "outlook": "Very Bullish",      "color": "#34d399", "horizon": "3–5 yr", "scenario": "+80–150%",
+        "driver": "AI infrastructure supercycle; data center GPU dominance; CUDA moat",
+        "risk":   "Competition (AMD/custom chips); export restrictions; demand cycles",
+    },
+    "FBTC": {
+        "outlook": "Speculative",       "color": "#a78bfa", "horizon": "3–5 yr", "scenario": "+50–200%",
+        "driver": "Post-halving supply reduction; institutional ETF adoption growing",
+        "risk":   "Regulatory risk; no earnings floor; extreme volatility",
+    },
+    "GLD": {
+        "outlook": "Bullish",           "color": "#fbbf24", "horizon": "3–5 yr", "scenario": "+25–45%",
+        "driver": "Central bank buying; geopolitical risk premium; inflation persistence",
+        "risk":   "Rate normalization; dollar strength if economy re-accelerates",
+    },
+}
+
 # ── Load holdings ─────────────────────────────────────────────────────────────
 def load_holdings():
     holdings = []
@@ -477,6 +552,103 @@ def build_html(metrics, ret_metrics, proj, history, asset_s, updated_at):
             f'{fmt_pct(data["total_gain_pct"])} total</div></div></div>'
         )
 
+    # ── Pre-compute Outlook tab sections ─────────────────────────────────────
+    ind_keys   = list(MACRO_SIGNALS.keys())
+    ind_short  = {"fed_rate": "Fed", "treasury": "Yield", "inflation": "PCE",
+                  "pe_ratio": "P/E", "dollar": "DXY", "vix": "VIX",
+                  "gdp": "GDP", "gold": "Gold", "em_trend": "EM"}
+
+    # Market health score (0–100)
+    sig_sum      = sum(m["signal"] for m in MACRO_SIGNALS.values())
+    n_ind        = len(MACRO_SIGNALS)
+    health_score = round((sig_sum + n_ind) / (2 * n_ind) * 100)
+    pos_count    = sum(1 for m in MACRO_SIGNALS.values() if m["signal"] > 0)
+    neg_count    = sum(1 for m in MACRO_SIGNALS.values() if m["signal"] < 0)
+    if health_score >= 70:
+        health_label, health_color = "Bullish",      "#34d399"
+    elif health_score >= 55:
+        health_label, health_color = "Constructive", "#60a5fa"
+    elif health_score >= 45:
+        health_label, health_color = "Neutral",      "#9ca3af"
+    elif health_score >= 30:
+        health_label, health_color = "Cautious",     "#fbbf24"
+    else:
+        health_label, health_color = "Bearish",      "#f87171"
+
+    def impact_cell(v):
+        if v == 1:
+            return '<td style="text-align:center;background:rgba(52,211,153,0.12);color:#34d399;font-size:13px;">↑</td>'
+        elif v == -1:
+            return '<td style="text-align:center;background:rgba(248,113,113,0.12);color:#f87171;font-size:13px;">↓</td>'
+        return '<td style="text-align:center;color:#3a4050;">—</td>'
+
+    def net_cell(net):
+        if net > 0:
+            return f'<td style="text-align:center;color:#34d399;font-weight:500;">+{net}</td>'
+        elif net < 0:
+            return f'<td style="text-align:center;color:#f87171;font-weight:500;">{net}</td>'
+        return '<td style="text-align:center;color:#6b7280;">0</td>'
+
+    # Macro indicators table
+    macro_ind_rows = ""
+    for k, m in MACRO_SIGNALS.items():
+        if m["signal"] == 1:
+            sig_html = '<span style="color:#34d399;">↑ Tailwind</span>'
+        elif m["signal"] == -1:
+            sig_html = '<span style="color:#f87171;">↓ Headwind</span>'
+        else:
+            sig_html = '<span style="color:#6b7280;">→ Neutral</span>'
+        macro_ind_rows += (
+            f'<tr><td style="padding:9px 12px;font-size:12px;font-weight:500;">{m["label"]}</td>'
+            f'<td style="padding:9px 12px;font-size:12px;">{m["value"]}</td>'
+            f'<td style="padding:9px 12px;font-size:12px;">{sig_html}</td>'
+            f'<td style="padding:9px 12px;font-size:11px;color:#6b7280;">{m["context"]}</td></tr>'
+        )
+
+    # Investment impact matrix
+    inv_impact_header = "".join(
+        f'<th style="text-align:center;padding:6px 8px;">{ind_short[k]}</th>'
+        for k in ind_keys
+    )
+    inv_impact_rows_html = ""
+    for ticker, impacts in INV_FUND_IMPACT.items():
+        net = sum(impacts.values())
+        fc  = FUND_FORECAST.get(ticker, {})
+        cells = "".join(impact_cell(impacts[k]) for k in ind_keys)
+        outlook_cell = (
+            f'<td style="font-size:11px;padding:9px 10px;color:{fc.get("color","#6b7280")};white-space:nowrap;">'
+            f'{fc.get("outlook","—")}</td>'
+        )
+        inv_impact_rows_html += (
+            f'<tr><td style="padding:9px 12px;font-weight:500;">{ticker}</td>'
+            f'{cells}{net_cell(net)}{outlook_cell}</tr>'
+        )
+
+    # Forecast cards (investments)
+    forecast_cards_html = ""
+    for ticker, fc in FUND_FORECAST.items():
+        forecast_cards_html += (
+            f'<div class="stat" style="padding:16px;">'
+            f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">'
+            f'<div style="font-size:15px;font-weight:500;">{ticker}</div>'
+            f'<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:{fc["color"]}22;color:{fc["color"]};letter-spacing:.05em;">{fc["outlook"]}</span>'
+            f'</div>'
+            f'<div style="font-size:10px;color:#6b7280;margin-bottom:8px;">{fc["horizon"]} &nbsp;·&nbsp; {fc["scenario"]}</div>'
+            f'<div style="font-size:11px;color:#9ca3af;margin-bottom:6px;"><span style="color:#e8eaf0;">Driver:</span> {fc["driver"]}</div>'
+            f'<div style="font-size:11px;color:#9ca3af;"><span style="color:#fbbf24;">Risk:</span> {fc["risk"]}</div>'
+            f'</div>'
+        )
+
+    # Retirement class impact matrix
+    ret_cls_impact_rows_html = ""
+    for cls, impacts in RET_CLASS_IMPACT.items():
+        net   = sum(impacts.values())
+        cells = "".join(impact_cell(impacts[k]) for k in ind_keys)
+        ret_cls_impact_rows_html += (
+            f'<tr><td style="padding:9px 12px;font-weight:500;">{cls}</td>'
+            f'{cells}{net_cell(net)}</tr>'
+        )
+
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -576,6 +748,7 @@ def build_html(metrics, ret_metrics, proj, history, asset_s, updated_at):
   <button class="tab" onclick="showTab('retirement',this)">Retirement</button>
   <button class="tab" onclick="showTab('performance',this)">Performance</button>
   <button class="tab" onclick="showTab('macro',this)">Macro</button>
+  <button class="tab" onclick="showTab('outlook',this)">Outlook</button>
   <button class="tab" onclick="showTab('health',this)">Health</button>
 </div>
 
@@ -786,6 +959,81 @@ def build_html(metrics, ret_metrics, proj, history, asset_s, updated_at):
   </div>
 </div>
 
+<!-- ══════════════════ OUTLOOK ══════════════════ -->
+<div class="content panel" id="tab-outlook">
+
+  <!-- Market health + macro snapshot -->
+  <div class="grid-2" style="margin-bottom:20px;">
+    <div class="chart-card">
+      <div class="chart-card-title">Overall market health score</div>
+      <div class="chart-card-subtitle">Based on {n_ind} macro indicators · {updated_at}</div>
+      <div style="position:relative;height:140px;"><canvas id="healthGauge"></canvas></div>
+      <div style="text-align:center;margin-top:-40px;">
+        <div style="font-size:42px;font-family:'Fraunces',serif;font-weight:300;color:{health_color};">{health_score}</div>
+        <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:{health_color};">{health_label}</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
+        <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(52,211,153,0.12);color:#34d399;">↑ {pos_count} tailwind{'s' if pos_count != 1 else ''}</span>
+        <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(248,113,113,0.12);color:#f87171;">↓ {neg_count} headwind{'s' if neg_count != 1 else ''}</span>
+        <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:var(--surface2);color:#6b7280;">→ {n_ind - pos_count - neg_count} neutral</span>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-title">Current macro environment</div>
+      <table style="width:100%;">
+        <thead><tr>
+          <th style="padding:6px 12px;">Indicator</th>
+          <th style="padding:6px 12px;">Level</th>
+          <th style="padding:6px 12px;">Signal</th>
+          <th style="padding:6px 12px;">Context</th>
+        </tr></thead>
+        <tbody>{macro_ind_rows}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Investment fund impact matrix -->
+  <div class="section-head">Investment holdings · macro impact matrix</div>
+  <div class="chart-card" style="overflow-x:auto;margin-bottom:20px;">
+    <div style="font-size:11px;color:#6b7280;margin-bottom:12px;">
+      ↑ = current level is a tailwind &nbsp;·&nbsp; ↓ = headwind &nbsp;·&nbsp; — = neutral &nbsp;·&nbsp; Net = sum of impacts
+    </div>
+    <table style="width:100%;min-width:600px;">
+      <thead><tr>
+        <th style="padding:6px 12px;">Fund</th>
+        {inv_impact_header}
+        <th style="text-align:center;padding:6px 8px;">Net</th>
+        <th style="padding:6px 10px;">3–5yr Outlook</th>
+      </tr></thead>
+      <tbody>{inv_impact_rows_html}</tbody>
+    </table>
+  </div>
+
+  <!-- Long-term forecast cards -->
+  <div class="section-head">Long-term investment forecast · 3–5 year fundamental view</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-bottom:24px;">
+    {forecast_cards_html}
+  </div>
+
+  <!-- Retirement asset class impact -->
+  <div class="section-head">Retirement portfolio · macro impact by asset class</div>
+  <div class="chart-card" style="overflow-x:auto;margin-bottom:20px;">
+    <table style="width:100%;min-width:600px;">
+      <thead><tr>
+        <th style="padding:6px 12px;">Asset class</th>
+        {inv_impact_header}
+        <th style="text-align:center;padding:6px 8px;">Net</th>
+      </tr></thead>
+      <tbody>{ret_cls_impact_rows_html}</tbody>
+    </table>
+  </div>
+
+  <div style="font-size:10px;color:#3a4050;padding:12px;border:1px solid var(--border);border-radius:8px;">
+    ⚠ Outlook is qualitative analysis based on current macro conditions. Updated manually each quarter.
+    Not financial advice. Past performance is not indicative of future results.
+  </div>
+</div>
+
 <!-- ══════════════════ HEALTH ══════════════════ -->
 <div class="content panel" id="tab-health">
   <div class="section-head">Portfolio health · investments</div>
@@ -975,6 +1223,22 @@ histDatasets.forEach((d,i) => {{
   const el = document.createElement('span'); el.className='legend-item';
   el.innerHTML=`<span class="legend-dot" style="background:${{lineColors[i]}};"></span>${{d.label}}`;
   leg.appendChild(el);
+}});
+
+// ── Outlook: market health gauge ──
+new Chart(document.getElementById('healthGauge'), {{
+  type:'doughnut',
+  data:{{
+    datasets:[{{
+      data:[{health_score}, {100 - health_score}],
+      backgroundColor:['{health_color}', '#1a1e25'],
+      circumference:180, rotation:270, borderWidth:0,
+    }}]
+  }},
+  options:{{
+    responsive:true, maintainAspectRatio:false, cutout:'72%',
+    plugins:{{ legend:{{display:false}}, tooltip:{{enabled:false}} }}
+  }}
 }});
 
 // ── Health radar ──
