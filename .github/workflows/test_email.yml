@@ -1,0 +1,56 @@
+name: Test Email Only
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Gmail SMTP connection
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
+          NOTIFY_EMAIL:  ${{ secrets.NOTIFY_EMAIL }}
+        run: |
+          python3 - <<'EOF'
+          import os, smtplib, ssl
+
+          addr = os.environ["GMAIL_ADDRESS"]
+          pwd  = os.environ["GMAIL_APP_PASS"]
+          to   = os.environ["NOTIFY_EMAIL"]
+
+          print(f"GMAIL_ADDRESS  : {addr[:3]}***{addr[addr.index('@'):]  if '@' in addr else '  (no @ found — not a valid email!)'}")
+          print(f"GMAIL_APP_PASS : length={len(pwd)}  (should be 16)")
+          print(f"NOTIFY_EMAIL   : {to[:3]}***")
+          print()
+
+          if "@gmail.com" not in addr.lower():
+              print("ERROR: GMAIL_ADDRESS does not end in @gmail.com")
+              print("Gmail SMTP only works with a Gmail account.")
+              exit(1)
+
+          if len(pwd.replace(" ","")) != 16:
+              print(f"ERROR: App Password is {len(pwd.replace(' ',''))} chars, expected 16")
+              exit(1)
+
+          print("Connecting to smtp.gmail.com:465 ...")
+          try:
+              with smtplib.SMTP_SSL("smtp.gmail.com", 465,
+                                    context=ssl.create_default_context()) as s:
+                  s.login(addr, pwd.replace(" ",""))
+                  print("LOGIN SUCCESS — credentials are valid!")
+                  s.sendmail(addr, to,
+                    f"Subject: Portfolio dashboard test\r\n\r\nSMTP test passed.")
+                  print(f"Test email sent to {to}")
+          except smtplib.SMTPAuthenticationError as e:
+              print(f"AUTH FAILED: {e}")
+              print()
+              print("Fix: go to myaccount.google.com/apppasswords")
+              print("     delete old entry, create new App Password,")
+              print("     update GMAIL_APP_PASS secret with the 16-char code.")
+              exit(1)
+          except Exception as e:
+              print(f"ERROR: {e}")
+              exit(1)
+          EOF
