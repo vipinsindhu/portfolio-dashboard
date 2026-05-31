@@ -96,24 +96,40 @@ def load_and_price_retirement():
     with open(RETIREMENT_FILE) as f:
         for row in csv.DictReader(f):
             holdings.append({
-                "ticker":      row["ticker"].strip(),
-                "shares":      float(row["shares"]),
-                "name":        row["name"].strip(),
-                "account":     row["account"].strip(),
-                "fetch_live":  row["fetch_live"].strip().lower() == "yes",
-                "last_price":  float(row["last_price"]),
-                "cost_basis":  float(row["cost_basis"]),
-                "last_day_gain":     float(row["last_day_gain"]),
-                "last_day_gain_pct": float(row["last_day_gain_pct"]),
+                "ticker":       row["ticker"].strip(),
+                "shares":       float(row["shares"]),
+                "name":         row["name"].strip(),
+                "account":      row["account"].strip(),
+                "fetch_live":   row["fetch_live"].strip().lower() == "yes",
+                "last_price":   float(row["last_price"]),
+                "cost_basis":   float(row["cost_basis"]),
+                "last_day_gain":      float(row["last_day_gain"]),
+                "last_day_gain_pct":  float(row["last_day_gain_pct"]),
+                "price_ticker": row.get("price_ticker", "").strip(),
+                "exact_proxy":  row.get("exact_proxy", "no").strip().lower() == "yes",
             })
 
-    live_ticker = next((h["ticker"] for h in holdings if h["fetch_live"]), None)
-    live_price = None
-    if live_ticker:
+    # Batch-fetch all unique proxy tickers
+    proxy_tickers = list({h["price_ticker"] for h in holdings if h["fetch_live"] and h["price_ticker"]})
+    price_map = {}
+    if proxy_tickers:
         try:
-            raw = yf.download(live_ticker, period="2d", auto_adjust=True, progress=False)
-            closes = raw["Close"].dropna()
-            live_price = float(closes.iloc[-1])
+            if len(proxy_tickers) == 1:
+                raw = yf.download(proxy_tickers[0], period="2d", auto_adjust=True, progress=False)
+                closes = raw["Close"].dropna()
+                p_today = float(closes.iloc[-1])
+                p_prev  = float(closes.iloc[-2]) if len(closes) >= 2 else p_today
+                price_map[proxy_tickers[0]] = {"price": p_today, "day_pct": (p_today - p_prev) / p_prev * 100 if p_prev else 0}
+            else:
+                raw = yf.download(proxy_tickers, period="2d", auto_adjust=True, progress=False)
+                for pt in proxy_tickers:
+                    try:
+                        closes = raw["Close"][pt].dropna()
+                        p_today = float(closes.iloc[-1])
+                        p_prev  = float(closes.iloc[-2]) if len(closes) >= 2 else p_today
+                        price_map[pt] = {"price": p_today, "day_pct": (p_today - p_prev) / p_prev * 100 if p_prev else 0}
+                    except Exception:
+                        pass
         except Exception:
             pass
 
@@ -121,7 +137,15 @@ def load_and_price_retirement():
     by_account = {}
 
     for h in holdings:
-        price = live_price if (h["fetch_live"] and live_price) else h["last_price"]
+        pt = h["price_ticker"]
+        if h["fetch_live"] and pt and pt in price_map:
+            if pt == h["ticker"]:
+                price = price_map[pt]["price"]
+            else:
+                price = h["last_price"] * (1 + price_map[pt]["day_pct"] / 100)
+        else:
+            price = h["last_price"]
+        price = round(price, 6)
         value = round(price * h["shares"], 2)
         cost  = h["cost_basis"]
         gain  = round(value - cost, 2)

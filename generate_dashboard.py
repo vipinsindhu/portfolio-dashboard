@@ -54,6 +54,8 @@ def load_retirement_holdings():
                 "cost_basis":        float(row["cost_basis"]),
                 "last_day_gain":     float(row["last_day_gain"]),
                 "last_day_gain_pct": float(row["last_day_gain_pct"]),
+                "price_ticker":      row.get("price_ticker", "").strip(),
+                "exact_proxy":       row.get("exact_proxy", "no").strip().lower() == "yes",
             })
     return holdings
 
@@ -78,40 +80,74 @@ def fetch_prices(holdings):
             results[t] = {"price": 0, "day_change": 0, "day_change_pct": 0}
     return results
 
-# ── Fetch retirement prices (live for public tickers, static for private) ─────
+# ── Fetch retirement prices ───────────────────────────────────────────────────
+# Strategy:
+#   - fetch_live=yes + price_ticker == ticker  → direct live price (e.g. FFFGX)
+#   - fetch_live=yes + price_ticker != ticker  → apply proxy's day-% to last VA unit value
+#   - fetch_live=no                            → cached last_price
 def fetch_retirement_prices(ret_holdings):
-    live_tickers = [h["ticker"] for h in ret_holdings if h["fetch_live"]]
-    live_data = {}
-    if live_tickers:
+    # Collect unique price tickers to fetch in one batch
+    proxy_tickers = list({
+        h["price_ticker"]
+        for h in ret_holdings
+        if h["fetch_live"] and h["price_ticker"]
+    })
+
+    # price_map[pt] = {"price": actual_price, "day_pct": day_change_%}
+    price_map = {}
+    if proxy_tickers:
         try:
-            t = live_tickers[0]
-            raw = yf.download(t, period="2d", auto_adjust=True, progress=False)
-            closes = raw["Close"].dropna()
-            p_today = float(closes.iloc[-1])
-            p_prev  = float(closes.iloc[-2]) if len(closes) >= 2 else p_today
-            live_data[t] = {
-                "price":          round(p_today, 4),
-                "day_change":     round((p_today - p_prev) * 1, 4),
-                "day_change_pct": round((p_today - p_prev) / p_prev * 100, 2),
-            }
+            if len(proxy_tickers) == 1:
+                raw = yf.download(proxy_tickers[0], period="2d", auto_adjust=True, progress=False)
+                closes = raw["Close"].dropna()
+                p_today = float(closes.iloc[-1])
+                p_prev  = float(closes.iloc[-2]) if len(closes) >= 2 else p_today
+                price_map[proxy_tickers[0]] = {
+                    "price":   round(p_today, 6),
+                    "day_pct": round((p_today - p_prev) / p_prev * 100, 2) if p_prev else 0,
+                }
+            else:
+                raw = yf.download(proxy_tickers, period="2d", auto_adjust=True, progress=False)
+                for pt in proxy_tickers:
+                    try:
+                        closes = raw["Close"][pt].dropna()
+                        p_today = float(closes.iloc[-1])
+                        p_prev  = float(closes.iloc[-2]) if len(closes) >= 2 else p_today
+                        price_map[pt] = {
+                            "price":   round(p_today, 6),
+                            "day_pct": round((p_today - p_prev) / p_prev * 100, 2) if p_prev else 0,
+                        }
+                    except Exception as e:
+                        print(f"Warning: could not price {pt}: {e}")
         except Exception as e:
-            print(f"Warning: could not fetch live retirement price: {e}")
+            print(f"Warning: proxy fetch failed: {e}")
 
     results = {}
     for h in ret_holdings:
-        t = h["ticker"]
-        if h["fetch_live"] and t in live_data:
-            ld = live_data[t]
-            results[t] = {
-                "price":          ld["price"],
-                "day_gain":       round(ld["day_change"] * h["shares"], 2),
-                "day_gain_pct":   ld["day_change_pct"],
-            }
+        t  = h["ticker"]
+        pt = h["price_ticker"]
+
+        if h["fetch_live"] and pt and pt in price_map:
+            pd = price_map[pt]
+            if pt == t:
+                # Direct live price — ticker IS the public fund (e.g. FFFGX)
+                price    = pd["price"]
+                day_pct  = pd["day_pct"]
+                day_gain = round(price * h["shares"] * (day_pct / 100) / (1 + day_pct / 100), 2)
+                src      = "live"
+            else:
+                # Proxy — apply proxy's day-% to last known VA unit value
+                day_pct  = pd["day_pct"]
+                price    = round(h["last_price"] * (1 + day_pct / 100), 6)
+                day_gain = round((price - h["last_price"]) * h["shares"], 2)
+                src      = "exact" if h["exact_proxy"] else "proxy"
+            results[t] = {"price": price, "day_gain": day_gain, "day_gain_pct": day_pct, "price_source": src}
         else:
             results[t] = {
                 "price":        h["last_price"],
                 "day_gain":     h["last_day_gain"],
                 "day_gain_pct": h["last_day_gain_pct"],
+                "price_source": "cached",
             }
     return results
 
@@ -199,7 +235,9 @@ def compute_retirement_metrics(ret_holdings, ret_prices):
 
         rows.append({
             "ticker": t, "name": h["name"], "asset_class": h["asset_class"],
-            "account": h["account"], "is_live": h["fetch_live"],
+            "account": h["account"],
+            "price_source": p.get("price_source", "cached"),
+            "price_ticker": h.get("price_ticker", ""),
             "shares": shares, "price": price, "value": value, "cost": cost,
             "gain": gain, "gain_pct": gain_pct,
             "day_gain": day_gain, "day_gain_pct": day_gain_pct,
@@ -318,32 +356,53 @@ def build_html(metrics, ret_metrics, proj, history, asset_s, updated_at):
         </div>"""
 
     # ── Retirement table rows per account ──
-    def ret_account_table(acct_rows, is_live_acct):
+    PRICE_BADGES = {
+        "live":   "",
+        "exact":  '<span style="font-size:9px;background:var(--green-dim);color:var(--green);padding:1px 5px;border-radius:3px;margin-left:4px;">live</span>',
+        "proxy":  '<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span>',
+        "cached": '<span style="font-size:9px;background:var(--amber-dim);color:var(--amber);padding:1px 5px;border-radius:3px;margin-left:4px;">cached</span>',
+    }
+
+    def ret_account_table(acct_rows):
         html = ""
         for r in acct_rows:
             g_cls  = color_class(r["gain"])
             dg_cls = color_class(r["day_gain"])
-            badge  = "" if r["is_live"] else '<span style="font-size:9px;background:var(--amber-dim);color:var(--amber);padding:1px 5px;border-radius:3px;margin-left:4px;">cached</span>'
+            src    = r.get("price_source", "cached")
+            badge  = PRICE_BADGES.get(src, "")
+            pt     = r.get("price_ticker", "")
+            proxy_note = f'<div style="font-size:9px;color:var(--dim);">via {pt}</div>' if pt and pt != r["ticker"] else ""
+            gain_display = fmt_usd(r["gain"]) if r["cost"] > 0 else "—"
+            gain_pct_display = fmt_pct(r["gain_pct"]) if r["cost"] > 0 else "—"
             html += f"""
             <tr>
-              <td><div class="ticker" style="font-size:11px;">{r['name']}{badge}</div><div class="name">{r['asset_class']}</div></td>
+              <td><div style="font-size:11px;font-weight:500;">{r['name']}{badge}</div>
+                  <div class="name">{r['asset_class']}{proxy_note}</div></td>
               <td>{r['shares']:,.3f}</td>
               <td>${r['price']:,.4f}</td>
               <td>${r['value']:,.2f}</td>
               <td>{r['weight']:.1f}%</td>
-              <td class="{g_cls}">{fmt_usd(r['gain'])}</td>
-              <td class="{g_cls}">{fmt_pct(r['gain_pct'])}</td>
+              <td class="{g_cls}">{gain_display}</td>
+              <td class="{g_cls}">{gain_pct_display}</td>
               <td class="{dg_cls}">{fmt_pct(r['day_gain_pct'])}</td>
             </tr>"""
         return html
 
     ret_sections_html = ""
     for acct_name, acct_data in by_acct.items():
-        is_live = all(r["is_live"] for r in acct_data["rows"])
-        cached_note = "" if is_live else """
-        <div style="background:var(--amber-dim);border:1px solid rgba(251,191,36,.2);border-radius:6px;padding:8px 14px;font-size:11px;color:var(--amber);margin-bottom:12px;">
-          ⚡ Fund prices from last exported file · not live market data
+        sources = {r.get("price_source", "cached") for r in acct_data["rows"]}
+        has_cached = "cached" in sources
+        has_proxy  = "proxy" in sources or "exact" in sources
+        if has_cached and has_proxy:
+            cached_note = """<div style="background:var(--surface2);border-radius:6px;padding:8px 14px;font-size:11px;color:var(--muted);margin-bottom:12px;">
+          <span style="color:var(--green);">live</span> = same portfolio · <span style="color:var(--blue);">~est</span> = daily proxy estimate · <span style="color:var(--amber);">cached</span> = last export
         </div>"""
+        elif has_cached:
+            cached_note = """<div style="background:var(--amber-dim);border:1px solid rgba(251,191,36,.2);border-radius:6px;padding:8px 14px;font-size:11px;color:var(--amber);margin-bottom:12px;">
+          ⚡ Prices from last exported file · not live
+        </div>"""
+        else:
+            cached_note = ""
         acct_g_cls = color_class(acct_data["total_gain"])
         ret_sections_html += f"""
     <div style="margin-bottom:28px;">
@@ -363,7 +422,7 @@ def build_html(metrics, ret_metrics, proj, history, asset_s, updated_at):
             <th>Fund</th><th>Units</th><th>Price</th>
             <th>Value</th><th>Weight</th><th>Gain $</th><th>Gain %</th><th>Today</th>
           </tr></thead>
-          <tbody>{ret_account_table(acct_data['rows'], is_live)}</tbody>
+          <tbody>{ret_account_table(acct_data['rows'])}</tbody>
         </table>
       </div>
     </div>"""

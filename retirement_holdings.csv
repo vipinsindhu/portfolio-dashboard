@@ -1,23 +1,23 @@
-ticker,shares,asset_class,name,account,fetch_live,last_price,cost_basis,last_day_gain,last_day_gain_pct
-FFFGX,1611.52,Target Date,Fidelity Freedom 2045,Traditional IRA,yes,17.28,11509.09,-16.12,-0.06
-NON40OJPF,240.406,US Equity,LG Cap US Stock Index,AT&T 401k,no,288.1165,52160.98,154.22,0.22
-NON40OJI9,857.193,Target Date,AT&T Asset Alloc 2040,AT&T 401k,no,41.2266,27571.52,-8.43,-0.02
-NON40OJJ4,617.014,US Equity,Total US Stock Index,AT&T 401k,no,68.1845,34721.19,89.39,0.21
-NON40OJJ8,803.135,Intl Equity,International Stock Index,AT&T 401k,no,22.9592,13355.08,95.35,0.52
-NON40OJJ6,864.834,Intl Equity,AT&T Intl Stock Fund,AT&T 401k,no,20.9301,13498.73,91.23,0.51
-NON40OJPG,165.712,US Equity,Small & Mid US Stock Index,AT&T 401k,no,104.30,14204.21,20.06,0.12
-NON40OJPH,104.96,US Equity,AT&T Shares Fund,AT&T 401k,no,9.0616,968.64,-3.07,-0.32
-VA103,1580.2347,Bonds,NYLIM VP MacKay US Infrastructure Bond,NY Life Annuity,no,11.163473,17640.91,0,0
-VA109,2188.6643,Intl Equity,NYLIM VP PineStone International Equity,NY Life Annuity,no,16.783403,36733.23,0,0
-VA115,878.0194,US Equity,Fidelity VIP Contrafund,NY Life Annuity,no,44.641514,39196.12,0,0
-VA122,782.0135,US Equity,NYLIM VP Winslow Large Cap Growth,NY Life Annuity,no,46.900016,36676.45,0,0
-VA139,1419.8104,US Equity,Fidelity VIP Mid Cap,NY Life Annuity,no,29.965985,42546.02,0,0
-VA145,933.0061,Balanced,NYLIM VP Balanced,NY Life Annuity,no,19.902333,18569.00,0,0
-VA149,979.9863,Balanced,NYLIM VP Moderate Allocation,NY Life Annuity,no,19.386217,18998.23,0,0
-VA156,1232.2394,Bonds,NYLIM VP MacKay Strategic Bond,NY Life Annuity,no,14.531941,17906.83,0,0
-VA158,1053.1479,Commodities,NYLIM VP Natural Resources,NY Life Annuity,no,21.217310,22344.97,0,0
-VA172,1655.4613,Intl Equity,American Funds IS New World Fund,NY Life Annuity,no,25.051172,41471.25,0,0
-VA174,1929.4034,Intl Equity,American Funds IS SMALLCAP World Fund,NY Life Annuity,no,20.349013,39261.45,0,0
-VA176,1859.1185,Alternatives,NYLIM VP CBRE Global Infrastructure,NY Life Annuity,no,10.282274,19115.97,0,0
-VA349,1489.4410,Alternatives,Principal VC Real Estate Securities,NY Life Annuity,no,13.119110,19540.14,0,0
-VA353,1606.0029,US Equity,NYLIM VP MFS Investors Trust,NY Life Annuity,no,11.883900,19085.58,0,0
+ticker,shares,asset_class,name,account,fetch_live,last_price,cost_basis,last_day_gain,last_day_gain_pct,price_ticker,exact_proxy
+FFFGX,1611.52,Target Date,Fidelity Freedom 2045,Traditional IRA,yes,17.28,11509.09,-16.12,-0.06,FFFGX,yes
+NON40OJPF,240.406,US Equity,LG Cap US Stock Index,AT&T 401k,no,288.1165,52160.98,154.22,0.22,,no
+NON40OJI9,857.193,Target Date,AT&T Asset Alloc 2040,AT&T 401k,no,41.2266,27571.52,-8.43,-0.02,,no
+NON40OJJ4,617.014,US Equity,Total US Stock Index,AT&T 401k,no,68.1845,34721.19,89.39,0.21,,no
+NON40OJJ8,803.135,Intl Equity,International Stock Index,AT&T 401k,no,22.9592,13355.08,95.35,0.52,,no
+NON40OJJ6,864.834,Intl Equity,AT&T Intl Stock Fund,AT&T 401k,no,20.9301,13498.73,91.23,0.51,,no
+NON40OJPG,165.712,US Equity,Small & Mid US Stock Index,AT&T 401k,no,104.30,14204.21,20.06,0.12,,no
+NON40OJPH,104.96,US Equity,AT&T Shares Fund,AT&T 401k,no,9.0616,968.64,-3.07,-0.32,,no
+VA103,1580.2347,Bonds,NYLIM VP MacKay US Infrastructure Bond,NY Life Annuity,yes,11.163473,17640.91,0,0,BND,no
+VA109,2188.6643,Intl Equity,NYLIM VP PineStone International Equity,NY Life Annuity,yes,16.783403,36733.23,0,0,EFA,no
+VA115,878.0194,US Equity,Fidelity VIP Contrafund,NY Life Annuity,yes,44.641514,39196.12,0,0,FCNTX,yes
+VA122,782.0135,US Equity,NYLIM VP Winslow Large Cap Growth,NY Life Annuity,yes,46.900016,36676.45,0,0,VUG,no
+VA139,1419.8104,US Equity,Fidelity VIP Mid Cap,NY Life Annuity,yes,29.965985,42546.02,0,0,FMCSX,no
+VA145,933.0061,Balanced,NYLIM VP Balanced,NY Life Annuity,yes,19.902333,18569.00,0,0,AOM,no
+VA149,979.9863,Balanced,NYLIM VP Moderate Allocation,NY Life Annuity,yes,19.386217,18998.23,0,0,AOM,no
+VA156,1232.2394,Bonds,NYLIM VP MacKay Strategic Bond,NY Life Annuity,yes,14.531941,17906.83,0,0,AGG,no
+VA158,1053.1479,Commodities,NYLIM VP Natural Resources,NY Life Annuity,yes,21.217310,22344.97,0,0,IGE,no
+VA172,1655.4613,Intl Equity,American Funds IS New World Fund,NY Life Annuity,yes,25.051172,41471.25,0,0,FNWFX,yes
+VA174,1929.4034,Intl Equity,American Funds IS SMALLCAP World Fund,NY Life Annuity,yes,20.349013,39261.45,0,0,SMCWX,yes
+VA176,1859.1185,Alternatives,NYLIM VP CBRE Global Infrastructure,NY Life Annuity,yes,10.282274,19115.97,0,0,IGF,no
+VA349,1489.4410,Alternatives,Principal VC Real Estate Securities,NY Life Annuity,yes,13.119110,19540.14,0,0,VNQ,no
+VA353,1606.0029,US Equity,NYLIM VP MFS Investors Trust,NY Life Annuity,yes,11.883900,19085.58,0,0,VFIAX,no
