@@ -400,6 +400,24 @@ def build_html(metrics, ret_metrics, proj, history, asset_s, updated_at):
     worst = min(inv_rows, key=lambda x: x["gain_pct"])
     top_w = max(inv_rows, key=lambda x: x["weight"])
 
+    # ── Pre-compute retirement breakdown cards (avoid nested f-string triple-quotes) ──
+    ret_breakdown_html = ""
+    for acct, data in by_acct.items():
+        n = len(data["rows"])
+        fund_label = "fund" if n == 1 else "funds"
+        gain_color = "green" if data["total_gain"] >= 0 else "red"
+        ret_breakdown_html += (
+            f'<div style="display:flex;justify-content:space-between;align-items:center;'
+            f'padding:10px;background:var(--surface2);border-radius:8px;">'
+            f'<div><div style="font-size:12px;">{acct}</div>'
+            f'<div style="font-size:10px;color:var(--muted);">{n} {fund_label}</div></div>'
+            f'<div style="text-align:right;">'
+            f'<div style="font-size:14px;font-family:\'Fraunces\',serif;">'
+            f'${data["total_value"]:,.0f}</div>'
+            f'<div style="font-size:11px;color:var(--{gain_color});">'
+            f'{fmt_pct(data["total_gain_pct"])} total</div></div></div>'
+        )
+
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -550,11 +568,7 @@ def build_html(metrics, ret_metrics, proj, history, asset_s, updated_at):
     <div class="stat" style="padding:20px;">
       <div class="stat-label">Retirement breakdown</div>
       <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px;">
-        {''.join(f"""<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--surface2);border-radius:8px;">
-          <div><div style="font-size:12px;">{acct}</div><div style="font-size:10px;color:var(--muted);">{len(data['rows'])} {'fund' if len(data['rows'])==1 else 'funds'}</div></div>
-          <div style="text-align:right;"><div style="font-size:14px;font-family:'Fraunces',serif;">${data['total_value']:,.0f}</div>
-          <div style="font-size:11px;color:var(--{'green' if data['total_gain']>=0 else 'red'});">{fmt_pct(data['total_gain_pct'])} total</div></div>
-        </div>""" for acct, data in by_acct.items())}
+        {ret_breakdown_html}
       </div>
     </div>
     <div class="stat" style="padding:20px;">
