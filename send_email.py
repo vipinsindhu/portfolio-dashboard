@@ -30,7 +30,7 @@ COST_BASIS = {
 GMAIL_ADDRESS = os.environ["GMAIL_ADDRESS"]
 GMAIL_APP_PASS = os.environ["GMAIL_APP_PASS"]
 NOTIFY_EMAIL  = os.environ["NOTIFY_EMAIL"]
-DASHBOARD_URL = os.environ.get("DASHBOARD_URL", "https://vipinsindhu.github.io/portfolio-dashboard")
+DASHBOARD_URL = os.environ.get("DASHBOARD_URL", "")
 
 # ── Load & price investments ──────────────────────────────────────────────────
 def load_and_price():
