@@ -1,0 +1,9 @@
+ticker,shares,asset_class,name,account,fetch_live,last_price,cost_basis,last_day_gain,last_day_gain_pct
+FFFGX,1611.52,Target Date,Fidelity Freedom 2045,Traditional IRA,yes,17.28,11509.09,-16.12,-0.06
+NON40OJPF,240.406,US Equity,LG Cap US Stock Index,AT&T 401k,no,288.1165,52160.98,154.22,0.22
+NON40OJI9,857.193,Target Date,AT&T Asset Alloc 2040,AT&T 401k,no,41.2266,27571.52,-8.43,-0.02
+NON40OJJ4,617.014,US Equity,Total US Stock Index,AT&T 401k,no,68.1845,34721.19,89.39,0.21
+NON40OJJ8,803.135,Intl Equity,International Stock Index,AT&T 401k,no,22.9592,13355.08,95.35,0.52
+NON40OJJ6,864.834,Intl Equity,AT&T Intl Stock Fund,AT&T 401k,no,20.9301,13498.73,91.23,0.51
+NON40OJPG,165.712,US Equity,Small & Mid US Stock Index,AT&T 401k,no,104.30,14204.21,20.06,0.12
+NON40OJPH,104.96,US Equity,AT&T Shares Fund,AT&T 401k,no,9.0616,968.64,-3.07,-0.32
