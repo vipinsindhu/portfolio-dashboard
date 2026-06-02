@@ -1,0 +1,61 @@
+{
+  "macro_signals": {
+    "fed_rate": {
+      "label": "Fed Funds Rate",
+      "value": "3.5\u00e2\u20ac\u201c3.75%",
+      "signal": -1,
+      "context": "Elevated \u00e2\u20ac\u201d headwind for growth & valuation",
+      "manual": true
+    },
+    "treasury": {
+      "value": "~4.45%",
+      "signal": -1,
+      "label": "10-yr Treasury",
+      "context": "Elevated \u2014 pressure on equity multiples"
+    },
+    "inflation": {
+      "label": "Core PCE",
+      "value": "~3.0%",
+      "signal": -1,
+      "context": "Above 2% target \u00e2\u20ac\u201d keeps rates high longer",
+      "manual": true
+    },
+    "pe_ratio": {
+      "value": "~28.4x",
+      "signal": -1,
+      "label": "S&P 500 P/E",
+      "context": "Stretched vs 17x historical avg"
+    },
+    "dollar": {
+      "label": "DXY",
+      "value": "~103",
+      "signal": 0,
+      "context": "Dollar strength/weakness. Watch for 101 or 105 inflection points."
+    },
+    "vix": {
+      "value": "~15.3",
+      "signal": 1,
+      "label": "VIX",
+      "context": "Below 20 = calm markets, risk appetite intact"
+    },
+    "gdp": {
+      "label": "GDP Growth",
+      "value": "+2.2%",
+      "signal": 1,
+      "context": "Above 2% supports earnings. Below 1% signals slowdown risk."
+    },
+    "gold": {
+      "value": "$4,564",
+      "signal": 1,
+      "label": "Gold Spot",
+      "context": "Strong \u2014 hedge demand, inflation premium"
+    },
+    "em_trend": {
+      "label": "EM Trend",
+      "value": "Neutral",
+      "signal": 0,
+      "context": "Emerging markets. Cyclical recovery play. Watch China, commodities."
+    }
+  },
+  "last_updated": "2026-06-01T02:02:02.885590"
+}

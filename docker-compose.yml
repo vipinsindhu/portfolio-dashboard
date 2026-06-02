@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  portfolio-backend:
+    build: ./backend
+    container_name: portfolio-backend
+    volumes:
+      - ./backend/macro_config.json:/app/macro_config.json
+    expose:
+      - "5000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  portfolio-frontend:
+    build: ./frontend
+    container_name: portfolio-frontend
+    ports:
+      - "5001:80"
+    depends_on:
+      - portfolio-backend
+    restart: unless-stopped

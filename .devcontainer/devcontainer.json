@@ -1,0 +1,32 @@
+{
+  "name": "Portfolio Dashboard",
+  "image": "mcr.microsoft.com/devcontainers/universal:2-focal",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "forwardPorts": [5001, 5000, 5173],
+  "portsAttributes": {
+    "5001": {
+      "label": "Portfolio Frontend",
+      "onAutoForward": "notify"
+    },
+    "5000": {
+      "label": "Portfolio Backend API",
+      "onAutoForward": "notify"
+    },
+    "5173": {
+      "label": "Vite Dev Server",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "echo 'Codespaces environment ready! Run: docker-compose up --build'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-vscode.makefile-tools",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}

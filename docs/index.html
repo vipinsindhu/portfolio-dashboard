@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Long-term Portfolio</title>
+<title>Portfolio Builder</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
@@ -19,24 +19,19 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;min-height:100vh;line-height:1.5;}
-  .header{padding:28px 32px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;}
-  .header-left h1{font-family:'Fraunces',serif;font-size:26px;font-weight:300;letter-spacing:-0.5px;}
-  .header-left p{font-size:11px;color:var(--muted);margin-top:3px;}
-  .header-right{text-align:right;font-size:11px;color:var(--muted);}
-  .header-right .big{display:block;font-size:24px;font-family:'Fraunces',serif;font-weight:300;color:var(--text);margin-bottom:2px;}
+  .header{padding:28px 32px 20px;border-bottom:1px solid var(--border);}
+  .header h1{font-family:'Fraunces',serif;font-size:26px;font-weight:300;letter-spacing:-0.5px;}
+  .header p{font-size:11px;color:var(--muted);margin-top:3px;}
   .tabs{display:flex;padding:0 32px;border-bottom:1px solid var(--border);overflow-x:auto;}
   .tab{padding:14px 18px;font-size:11px;letter-spacing:.08em;color:var(--muted);cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;text-transform:uppercase;transition:all .2s;white-space:nowrap;}
   .tab:hover{color:var(--text);} .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
   .content{padding:24px 32px;} .panel{display:none;} .panel.active{display:block;}
-  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
   .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
   .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
-  .grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;}
   .stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;}
   .stat-label{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;}
   .stat-value{font-size:22px;font-family:'Fraunces',serif;font-weight:300;}
   .stat-sub{font-size:11px;margin-top:4px;}
-  .up{color:var(--green);} .down{color:var(--red);} .neutral{color:var(--muted);}
   .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;}
   .chart-card-title{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
   .chart-card-subtitle{font-size:12px;color:var(--text);margin-bottom:16px;font-family:'Fraunces',serif;font-weight:300;}
@@ -46,7 +41,6 @@
   td{padding:11px 12px;border-bottom:1px solid var(--border);font-size:12px;}
   td:not(:first-child){text-align:right;} tr:last-child td{border-bottom:none;}
   tr:hover td{background:rgba(255,255,255,.02);}
-  .ticker{font-weight:500;} .name{font-size:11px;color:var(--muted);margin-top:1px;}
   .indicator{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;}
   .ind-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
   .ind-name{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
@@ -58,19 +52,9 @@
   .gauge-track{height:4px;background:var(--surface2);border-radius:2px;margin-top:12px;overflow:hidden;}
   .gauge-fill{height:100%;border-radius:2px;}
   .section-head{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-  .alloc-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
-  .alloc-name{width:55px;font-size:11px;color:var(--muted);flex-shrink:0;}
-  .alloc-bar-bg{flex:1;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;}
-  .alloc-bar-fill{height:100%;border-radius:3px;}
-  .alloc-pct{width:40px;text-align:right;font-size:12px;}
-  .legend-row{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;}
-  .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
-  .legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
-  .refresh-badge{display:inline-block;font-size:10px;padding:3px 10px;border-radius:20px;background:var(--green-dim);color:var(--green);letter-spacing:.06em;margin-top:6px;}
-  .account-pill{display:inline-block;font-size:10px;padding:2px 8px;border-radius:12px;background:var(--surface2);color:var(--muted);margin-left:6px;}
   @media(max-width:768px){
-    .grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(2,1fr);}
-    .grid-2,.grid-2-1{grid-template-columns:1fr;}
+    .grid-3{grid-template-columns:repeat(2,1fr);}
+    .grid-2{grid-template-columns:1fr;}
     .content{padding:16px;} .tabs{padding:0 16px;}
     .header{padding:20px 16px 16px;}
   }
@@ -79,693 +63,231 @@
 <body>
 
 <div class="header">
-  <div class="header-left">
-    <h1>Long-term Portfolio</h1>
-    <p>Investments · Retirement · Updated May 31, 2026 07:32 UTC</p>
-    <span class="refresh-badge">Live prices via yfinance</span>
-  </div>
-  <div class="header-right">
-    <span class="big">$1,058,718</span>
-    Combined portfolio &nbsp;·&nbsp;
-    <span class="up">+2.19% investments today</span>
+  <h1>Portfolio Builder</h1>
+  <p>Macro Indicators · Market Outlook · Updated Jun 01, 2026 02:02 UTC</p>
+</div>
+
+<div style="padding:0 32px;margin-bottom:20px;">
+  <div class="chart-card" style="margin-bottom:0;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:16px;">
+      <div>
+        <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">What is this?</div>
+        <div style="font-size:11px;color:#e8eaf0;line-height:1.6;">
+          Real-time macro indicators that measure economic health. They're like vital signs — they predict whether markets will trend up or down.
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Why it matters</div>
+        <div style="font-size:11px;color:#e8eaf0;line-height:1.6;">
+          High rates + stretched valuations = headwinds for growth stocks. Low rates + GDP growth = tailwinds. Your portfolio reacts to these forces.
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">How to use it</div>
+        <div style="font-size:11px;color:#e8eaf0;line-height:1.6;">
+          Check the health score below. <span style="color:#34d399;">Bullish (70+)</span> = add risk. <span style="color:#f87171;">Bearish (&lt;30)</span> = reduce risk. Use it before major allocation changes.
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;font-size:10px;color:#6b7280;line-height:1.6;">
+      <strong>Examples:</strong> Fed raises rates → bonds become attractive, growth stocks struggle. GDP slows → earnings compress, valuations compress. VIX spikes → fear = potential entry point. Gold rises → inflation hedge needed. P/E stretched + rates high = high risk, wait for better setup.
+    </div>
   </div>
 </div>
 
 <div class="tabs">
-  <button class="tab active" onclick="showTab('overview',this)">Overview</button>
-  <button class="tab" onclick="showTab('investments',this)">Investments</button>
-  <button class="tab" onclick="showTab('retirement',this)">Retirement</button>
-  <button class="tab" onclick="showTab('performance',this)">Performance</button>
-  <button class="tab" onclick="showTab('macro',this)">Macro</button>
-  <button class="tab" onclick="showTab('health',this)">Health</button>
-</div>
-
-<!-- ══════════════════ OVERVIEW ══════════════════ -->
-<div class="content panel active" id="tab-overview">
-  <div class="grid-4">
-    <div class="stat">
-      <div class="stat-label">Combined total</div>
-      <div class="stat-value">$1,058,718</div>
-      <div class="stat-sub up">$292,587.84 (+38.19%) all time</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Investments</div>
-      <div class="stat-value">$439,969</div>
-      <div class="stat-sub up">$9,412.22 today (+2.19%)</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Retirement</div>
-      <div class="stat-value">$618,749</div>
-      <div class="stat-sub up">$61,673.15 (+11.07%) all time</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Best investment</div>
-      <div class="stat-value">MSFT</div>
-      <div class="stat-sub up">+407.02% total</div>
-    </div>
-  </div>
-
-  <div class="grid-2-1">
-    <div class="chart-card">
-      <div class="chart-card-title">10-year growth projection</div>
-      <div class="chart-card-subtitle">From $1,058,718 combined at 5%, 7%, 10% CAGR</div>
-      <div style="position:relative;height:220px;"><canvas id="growthChart"></canvas></div>
-      <div class="legend-row">
-        <span class="legend-item"><span class="legend-dot" style="background:#34d399;"></span>Moderate 7%</span>
-        <span class="legend-item"><span class="legend-dot" style="background:#60a5fa;"></span>Conservative 5%</span>
-        <span class="legend-item"><span class="legend-dot" style="background:#fbbf24;"></span>Optimistic 10%</span>
-      </div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-card-title">Investment allocation</div>
-      <div class="chart-card-subtitle">By market value</div>
-      <div style="position:relative;height:160px;"><canvas id="allocDonut"></canvas></div>
-      <div style="margin-top:14px;">
-        <div class="alloc-row">
-          <span class="alloc-name">MSFT</span>
-          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:41.24%;background:#60a5fa;"></div></div>
-          <span class="alloc-pct">41.2%</span>
-        </div>
-        <div class="alloc-row">
-          <span class="alloc-name">FXAIX</span>
-          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:28.66%;background:#34d399;"></div></div>
-          <span class="alloc-pct">28.7%</span>
-        </div>
-        <div class="alloc-row">
-          <span class="alloc-name">VWO</span>
-          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:11.57%;background:#a78bfa;"></div></div>
-          <span class="alloc-pct">11.6%</span>
-        </div>
-        <div class="alloc-row">
-          <span class="alloc-name">TMUS</span>
-          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:5.63%;background:#fbbf24;"></div></div>
-          <span class="alloc-pct">5.6%</span>
-        </div>
-        <div class="alloc-row">
-          <span class="alloc-name">NVDA</span>
-          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:5.18%;background:#f472b6;"></div></div>
-          <span class="alloc-pct">5.2%</span>
-        </div>
-        <div class="alloc-row">
-          <span class="alloc-name">FBTC</span>
-          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:4.21%;background:#fb923c;"></div></div>
-          <span class="alloc-pct">4.2%</span>
-        </div>
-        <div class="alloc-row">
-          <span class="alloc-name">GLD</span>
-          <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:3.51%;background:#9ca3af;"></div></div>
-          <span class="alloc-pct">3.5%</span>
-        </div></div>
-    </div>
-  </div>
-
-  <div class="grid-2">
-    <div class="stat" style="padding:20px;">
-      <div class="stat-label">Retirement breakdown</div>
-      <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--surface2);border-radius:8px;"><div><div style="font-size:12px;">Traditional IRA</div><div style="font-size:10px;color:var(--muted);">1 fund</div></div><div style="text-align:right;"><div style="font-size:14px;font-family:'Fraunces',serif;">$27,847</div><div style="font-size:11px;color:var(--green);">+141.96% total</div></div></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--surface2);border-radius:8px;"><div><div style="font-size:12px;">AT&T 401k</div><div style="font-size:10px;color:var(--muted);">7 funds</div></div><div style="text-align:right;"><div style="font-size:14px;font-family:'Fraunces',serif;">$201,835</div><div style="font-size:11px;color:var(--green);">+28.98% total</div></div></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--surface2);border-radius:8px;"><div><div style="font-size:12px;">NY Life Annuity</div><div style="font-size:10px;color:var(--muted);">14 funds</div></div><div style="text-align:right;"><div style="font-size:14px;font-family:'Fraunces',serif;">$389,067</div><div style="font-size:11px;color:var(--red);">-0.01% total</div></div></div>
-      </div>
-    </div>
-    <div class="stat" style="padding:20px;">
-      <div class="stat-label">Portfolio split</div>
-      <div style="position:relative;height:160px;margin-top:10px;"><canvas id="splitDonut"></canvas></div>
-    </div>
-  </div>
-  <div style="background:var(--amber-dim);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:12px 16px;font-size:11px;color:var(--amber);line-height:1.6;">⚠ Concentration alert: MSFT represents 41.24% of your investment portfolio. Target below 25% for moderate risk.</div>
-</div>
-
-<!-- ══════════════════ INVESTMENTS ══════════════════ -->
-<div class="content panel" id="tab-investments">
-  <div class="grid-4">
-    <div class="stat">
-      <div class="stat-label">Total value</div>
-      <div class="stat-value">$439,969</div>
-      <div class="stat-sub up">$9,412.22 today (+2.19%)</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Total gain</div>
-      <div class="stat-value up">$230,914.69</div>
-      <div class="stat-sub up">+110.46% all time</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Best performer</div>
-      <div class="stat-value">MSFT</div>
-      <div class="stat-sub up">+407.02% total</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Worst performer</div>
-      <div class="stat-value">FBTC</div>
-      <div class="stat-sub down">-9.38% total</div>
-    </div>
-  </div>
-
-  <div class="chart-card">
-    <table>
-      <thead><tr>
-        <th>Symbol / name</th><th>Shares</th><th>Price</th>
-        <th>Value</th><th>Weight</th><th>Gain $</th><th>Gain %</th><th>Today</th>
-      </tr></thead>
-      <tbody>
-        <tr>
-          <td><div class="ticker">MSFT</div><div class="name">Microsoft Corp</div></td>
-          <td>403.0181</td>
-          <td>$450.24</td>
-          <td>$181,454.87</td>
-          <td><span style="color:var(--amber);">41.2%</span></td>
-          <td class="up">$145,666.36</td>
-          <td class="up">+407.02%</td>
-          <td class="up">+5.45%</td>
-        </tr>
-        <tr>
-          <td><div class="ticker">FXAIX</div><div class="name">Fidelity 500 Index Fund</div></td>
-          <td>478.1030</td>
-          <td>$263.74</td>
-          <td>$126,094.89</td>
-          <td>28.7%</td>
-          <td class="up">$55,839.53</td>
-          <td class="up">+79.48%</td>
-          <td class="up">+0.22%</td>
-        </tr>
-        <tr>
-          <td><div class="ticker">VWO</div><div class="name">Vanguard FTSE EM ETF</div></td>
-          <td>850.0000</td>
-          <td>$59.88</td>
-          <td>$50,898.00</td>
-          <td>11.6%</td>
-          <td class="up">$12,856.25</td>
-          <td class="up">+33.80%</td>
-          <td class="down">-0.03%</td>
-        </tr>
-        <tr>
-          <td><div class="ticker">TMUS</div><div class="name">T-Mobile US Inc</div></td>
-          <td>132.0000</td>
-          <td>$187.53</td>
-          <td>$24,753.96</td>
-          <td>5.6%</td>
-          <td class="up">$8,352.77</td>
-          <td class="up">+50.93%</td>
-          <td class="down">-0.24%</td>
-        </tr>
-        <tr>
-          <td><div class="ticker">NVDA</div><div class="name">Nvidia Corporation</div></td>
-          <td>108.0000</td>
-          <td>$211.14</td>
-          <td>$22,803.12</td>
-          <td>5.2%</td>
-          <td class="up">$4,354.02</td>
-          <td class="up">+23.60%</td>
-          <td class="down">-1.45%</td>
-        </tr>
-        <tr>
-          <td><div class="ticker">FBTC</div><div class="name">Fidelity Bitcoin ETF</div></td>
-          <td>290.0000</td>
-          <td>$63.90</td>
-          <td>$18,531.00</td>
-          <td>4.2%</td>
-          <td class="down">-$1,918.96</td>
-          <td class="down">-9.38%</td>
-          <td class="up">+0.09%</td>
-        </tr>
-        <tr>
-          <td><div class="ticker">GLD</div><div class="name">SPDR Gold Shares</div></td>
-          <td>37.0000</td>
-          <td>$417.12</td>
-          <td>$15,433.44</td>
-          <td>3.5%</td>
-          <td class="up">$5,764.72</td>
-          <td class="up">+59.62%</td>
-          <td class="up">+1.05%</td>
-        </tr></tbody>
-    </table>
-  </div>
-
-  <div class="grid-2">
-    <div class="chart-card">
-      <div class="chart-card-title">Gain / loss by position</div>
-      <div class="chart-card-subtitle">Total dollar return</div>
-      <div style="position:relative;height:220px;"><canvas id="gainChart"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-card-title">Return % by position</div>
-      <div class="chart-card-subtitle">Percentage since purchase</div>
-      <div style="position:relative;height:220px;"><canvas id="returnPct"></canvas></div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════ RETIREMENT ══════════════════ -->
-<div class="content panel" id="tab-retirement">
-  <div class="grid-3">
-    <div class="stat">
-      <div class="stat-label">Total retirement</div>
-      <div class="stat-value">$618,749</div>
-      <div class="stat-sub up">$348.70 today</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Total gain</div>
-      <div class="stat-value up">$61,673.15</div>
-      <div class="stat-sub up">+11.07% all time</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Accounts</div>
-      <div class="stat-value">3</div>
-      <div class="stat-sub neutral">IRA + 401k</div>
-    </div>
-  </div>
-
-  
-    <div style="margin-bottom:28px;">
-      <div class="section-head" style="margin-top:8px;">Traditional IRA</div>
-      
-      <div class="chart-card" style="margin-bottom:0;">
-        <div style="display:flex;gap:20px;margin-bottom:14px;">
-          <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Value</div>
-            <div style="font-size:18px;font-family:'Fraunces',serif;font-weight:300;">$27,847</div></div>
-          <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Total gain</div>
-            <div style="font-size:18px;font-family:'Fraunces',serif;font-weight:300;color:var(--green);">$16,337.98</div></div>
-          <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Return</div>
-            <div style="font-size:18px;font-family:'Fraunces',serif;font-weight:300;color:var(--green);">+141.96%</div></div>
-        </div>
-        <table>
-          <thead><tr>
-            <th>Fund</th><th>Units</th><th>Price</th>
-            <th>Value</th><th>Weight</th><th>Gain $</th><th>Gain %</th><th>Today</th>
-          </tr></thead>
-          <tbody>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">Fidelity Freedom 2045</div>
-                  <div class="name">Target Date</div></td>
-              <td>1,611.520</td>
-              <td>$17.2800</td>
-              <td>$27,847.07</td>
-              <td>4.5%</td>
-              <td class="up">$16,337.98</td>
-              <td class="up">+141.96%</td>
-              <td class="down">-0.06%</td>
-            </tr></tbody>
-        </table>
-      </div>
-    </div>
-    <div style="margin-bottom:28px;">
-      <div class="section-head" style="margin-top:8px;">AT&T 401k</div>
-      
-      <div class="chart-card" style="margin-bottom:0;">
-        <div style="display:flex;gap:20px;margin-bottom:14px;">
-          <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Value</div>
-            <div style="font-size:18px;font-family:'Fraunces',serif;font-weight:300;">$201,835</div></div>
-          <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Total gain</div>
-            <div style="font-size:18px;font-family:'Fraunces',serif;font-weight:300;color:var(--green);">$45,354.71</div></div>
-          <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Return</div>
-            <div style="font-size:18px;font-family:'Fraunces',serif;font-weight:300;color:var(--green);">+28.98%</div></div>
-        </div>
-        <table>
-          <thead><tr>
-            <th>Fund</th><th>Units</th><th>Price</th>
-            <th>Value</th><th>Weight</th><th>Gain $</th><th>Gain %</th><th>Today</th>
-          </tr></thead>
-          <tbody>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">LG Cap US Stock Index<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">US Equity<div style="font-size:9px;color:var(--dim);">via SPY</div></div></td>
-              <td>240.406</td>
-              <td>$288.8368</td>
-              <td>$69,438.10</td>
-              <td>11.2%</td>
-              <td class="up">$17,277.12</td>
-              <td class="up">+33.12%</td>
-              <td class="up">+0.25%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">Total US Stock Index<span style="font-size:9px;background:var(--green-dim);color:var(--green);padding:1px 5px;border-radius:3px;margin-left:4px;">live</span></div>
-                  <div class="name">US Equity<div style="font-size:9px;color:var(--dim);">via VTI</div></div></td>
-              <td>617.014</td>
-              <td>$68.3481</td>
-              <td>$42,171.76</td>
-              <td>6.8%</td>
-              <td class="up">$7,450.57</td>
-              <td class="up">+21.46%</td>
-              <td class="up">+0.24%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">AT&T Asset Alloc 2040<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">Target Date<div style="font-size:9px;color:var(--dim);">via VFORX</div></div></td>
-              <td>857.193</td>
-              <td>$41.3008</td>
-              <td>$35,402.76</td>
-              <td>5.7%</td>
-              <td class="up">$7,831.24</td>
-              <td class="up">+28.40%</td>
-              <td class="up">+0.18%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">International Stock Index<span style="font-size:9px;background:var(--green-dim);color:var(--green);padding:1px 5px;border-radius:3px;margin-left:4px;">live</span></div>
-                  <div class="name">Intl Equity<div style="font-size:9px;color:var(--dim);">via VXUS</div></div></td>
-              <td>803.135</td>
-              <td>$22.9776</td>
-              <td>$18,454.09</td>
-              <td>3.0%</td>
-              <td class="up">$5,099.01</td>
-              <td class="up">+38.18%</td>
-              <td class="up">+0.08%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">AT&T Intl Stock Fund<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">Intl Equity<div style="font-size:9px;color:var(--dim);">via EFA</div></div></td>
-              <td>864.834</td>
-              <td>$20.9531</td>
-              <td>$18,120.97</td>
-              <td>2.9%</td>
-              <td class="up">$4,622.24</td>
-              <td class="up">+34.24%</td>
-              <td class="up">+0.11%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">Small & Mid US Stock Index<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">US Equity<div style="font-size:9px;color:var(--dim);">via VXF</div></div></td>
-              <td>165.712</td>
-              <td>$104.3939</td>
-              <td>$17,299.32</td>
-              <td>2.8%</td>
-              <td class="up">$3,095.11</td>
-              <td class="up">+21.79%</td>
-              <td class="up">+0.09%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">AT&T Shares Fund<span style="font-size:9px;background:var(--green-dim);color:var(--green);padding:1px 5px;border-radius:3px;margin-left:4px;">live</span></div>
-                  <div class="name">US Equity<div style="font-size:9px;color:var(--dim);">via T</div></div></td>
-              <td>104.960</td>
-              <td>$9.0326</td>
-              <td>$948.06</td>
-              <td>0.1%</td>
-              <td class="down">-$20.58</td>
-              <td class="down">-2.12%</td>
-              <td class="down">-0.32%</td>
-            </tr></tbody>
-        </table>
-      </div>
-    </div>
-    <div style="margin-bottom:28px;">
-      <div class="section-head" style="margin-top:8px;">NY Life Annuity</div>
-      
-      <div class="chart-card" style="margin-bottom:0;">
-        <div style="display:flex;gap:20px;margin-bottom:14px;">
-          <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Value</div>
-            <div style="font-size:18px;font-family:'Fraunces',serif;font-weight:300;">$389,067</div></div>
-          <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Total gain</div>
-            <div style="font-size:18px;font-family:'Fraunces',serif;font-weight:300;color:var(--red);">-$19.54</div></div>
-          <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Return</div>
-            <div style="font-size:18px;font-family:'Fraunces',serif;font-weight:300;color:var(--red);">-0.01%</div></div>
-        </div>
-        <table>
-          <thead><tr>
-            <th>Fund</th><th>Units</th><th>Price</th>
-            <th>Value</th><th>Weight</th><th>Gain $</th><th>Gain %</th><th>Today</th>
-          </tr></thead>
-          <tbody>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">Fidelity VIP Mid Cap<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">US Equity<div style="font-size:9px;color:var(--dim);">via FMCSX</div></div></td>
-              <td>1,419.810</td>
-              <td>$29.9930</td>
-              <td>$42,584.31</td>
-              <td>6.9%</td>
-              <td class="up">$38.29</td>
-              <td class="up">+0.09%</td>
-              <td class="up">+0.09%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">American Funds IS New World Fund<span style="font-size:9px;background:var(--green-dim);color:var(--green);padding:1px 5px;border-radius:3px;margin-left:4px;">live</span></div>
-                  <div class="name">Intl Equity<div style="font-size:9px;color:var(--dim);">via FNWFX</div></div></td>
-              <td>1,655.461</td>
-              <td>$25.1464</td>
-              <td>$41,628.84</td>
-              <td>6.7%</td>
-              <td class="up">$157.59</td>
-              <td class="up">+0.38%</td>
-              <td class="up">+0.38%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">American Funds IS SMALLCAP World Fund<span style="font-size:9px;background:var(--green-dim);color:var(--green);padding:1px 5px;border-radius:3px;margin-left:4px;">live</span></div>
-                  <div class="name">Intl Equity<div style="font-size:9px;color:var(--dim);">via SMCWX</div></div></td>
-              <td>1,929.403</td>
-              <td>$20.2697</td>
-              <td>$39,108.34</td>
-              <td>6.3%</td>
-              <td class="down">-$153.11</td>
-              <td class="down">-0.39%</td>
-              <td class="down">-0.39%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">Fidelity VIP Contrafund<span style="font-size:9px;background:var(--green-dim);color:var(--green);padding:1px 5px;border-radius:3px;margin-left:4px;">live</span></div>
-                  <div class="name">US Equity<div style="font-size:9px;color:var(--dim);">via FCNTX</div></div></td>
-              <td>878.019</td>
-              <td>$44.5388</td>
-              <td>$39,105.96</td>
-              <td>6.3%</td>
-              <td class="down">-$90.16</td>
-              <td class="down">-0.23%</td>
-              <td class="down">-0.23%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">NYLIM VP Winslow Large Cap Growth<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">US Equity<div style="font-size:9px;color:var(--dim);">via VUG</div></div></td>
-              <td>782.014</td>
-              <td>$47.1017</td>
-              <td>$36,834.15</td>
-              <td>6.0%</td>
-              <td class="up">$157.70</td>
-              <td class="up">+0.43%</td>
-              <td class="up">+0.43%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">NYLIM VP PineStone International Equity<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">Intl Equity<div style="font-size:9px;color:var(--dim);">via EFA</div></div></td>
-              <td>2,188.664</td>
-              <td>$16.8019</td>
-              <td>$36,773.64</td>
-              <td>5.9%</td>
-              <td class="up">$40.41</td>
-              <td class="up">+0.11%</td>
-              <td class="up">+0.11%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">NYLIM VP Natural Resources<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">Commodities<div style="font-size:9px;color:var(--dim);">via IGE</div></div></td>
-              <td>1,053.148</td>
-              <td>$21.1685</td>
-              <td>$22,293.57</td>
-              <td>3.6%</td>
-              <td class="down">-$51.40</td>
-              <td class="down">-0.23%</td>
-              <td class="down">-0.23%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">Principal VC Real Estate Securities<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">Alternatives<div style="font-size:9px;color:var(--dim);">via VNQ</div></div></td>
-              <td>1,489.441</td>
-              <td>$13.0037</td>
-              <td>$19,368.19</td>
-              <td>3.1%</td>
-              <td class="down">-$171.95</td>
-              <td class="down">-0.88%</td>
-              <td class="down">-0.88%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">NYLIM VP MFS Investors Trust<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">US Equity<div style="font-size:9px;color:var(--dim);">via VFIAX</div></div></td>
-              <td>1,606.003</td>
-              <td>$11.9100</td>
-              <td>$19,127.57</td>
-              <td>3.1%</td>
-              <td class="up">$41.99</td>
-              <td class="up">+0.22%</td>
-              <td class="up">+0.22%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">NYLIM VP CBRE Global Infrastructure<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">Alternatives<div style="font-size:9px;color:var(--dim);">via IGF</div></div></td>
-              <td>1,859.119</td>
-              <td>$10.2535</td>
-              <td>$19,062.44</td>
-              <td>3.1%</td>
-              <td class="down">-$53.53</td>
-              <td class="down">-0.28%</td>
-              <td class="down">-0.28%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">NYLIM VP Moderate Allocation<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">Balanced<div style="font-size:9px;color:var(--dim);">via AOM</div></div></td>
-              <td>979.986</td>
-              <td>$19.4095</td>
-              <td>$19,021.02</td>
-              <td>3.1%</td>
-              <td class="up">$22.79</td>
-              <td class="up">+0.12%</td>
-              <td class="up">+0.12%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">NYLIM VP Balanced<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">Balanced<div style="font-size:9px;color:var(--dim);">via AOM</div></div></td>
-              <td>933.006</td>
-              <td>$19.9262</td>
-              <td>$18,591.28</td>
-              <td>3.0%</td>
-              <td class="up">$22.28</td>
-              <td class="up">+0.12%</td>
-              <td class="up">+0.12%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">NYLIM VP MacKay Strategic Bond<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">Bonds<div style="font-size:9px;color:var(--dim);">via AGG</div></div></td>
-              <td>1,232.239</td>
-              <td>$14.5407</td>
-              <td>$17,917.57</td>
-              <td>2.9%</td>
-              <td class="up">$10.74</td>
-              <td class="up">+0.06%</td>
-              <td class="up">+0.06%</td>
-            </tr>
-            <tr>
-              <td><div style="font-size:11px;font-weight:500;">NYLIM VP MacKay US Infrastructure Bond<span style="font-size:9px;background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:3px;margin-left:4px;">~est</span></div>
-                  <div class="name">Bonds<div style="font-size:9px;color:var(--dim);">via BND</div></div></td>
-              <td>1,580.235</td>
-              <td>$11.1691</td>
-              <td>$17,649.73</td>
-              <td>2.9%</td>
-              <td class="up">$8.82</td>
-              <td class="up">+0.05%</td>
-              <td class="up">+0.05%</td>
-            </tr></tbody>
-        </table>
-      </div>
-    </div>
-
-  <div class="grid-2">
-    <div class="chart-card">
-      <div class="chart-card-title">Retirement allocation</div>
-      <div class="chart-card-subtitle">By fund value</div>
-      <div style="position:relative;height:220px;"><canvas id="retAllocDonut"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-card-title">Gain by fund</div>
-      <div class="chart-card-subtitle">Total dollar return</div>
-      <div style="position:relative;height:220px;"><canvas id="retGainChart"></canvas></div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════ PERFORMANCE ══════════════════ -->
-<div class="content panel" id="tab-performance">
-  <div class="section-head">12-month relative performance · investments (normalised to 100)</div>
-  <div class="chart-card">
-    <div class="chart-card-title">Price performance – top 5 holdings</div>
-    <div class="chart-card-subtitle">Rebased to 100 at start of period</div>
-    <div style="position:relative;height:300px;"><canvas id="histChart"></canvas></div>
-    <div class="legend-row" id="histLegend"></div>
-  </div>
+  <button class="tab active" onclick="showTab('macro',this)">Macro</button>
+  <button class="tab" onclick="showTab('outlook',this)">Outlook</button>
+  <button class="tab" onclick="showTab('invest',this)">Investment Plan</button>
 </div>
 
 <!-- ══════════════════ MACRO ══════════════════ -->
-<div class="content panel" id="tab-macro">
+<div class="content panel active" id="tab-macro">
   <div class="section-head">Key macro indicators – updated manually each quarter</div>
   <div class="grid-3">
     <div class="indicator">
       <div class="ind-header"><div><div class="ind-name">Fed funds rate</div><div class="ind-value" style="color:var(--amber);">3.5–3.75%</div></div><span class="signal sig-amber">Watch</span></div>
       <div class="gauge-track"><div class="gauge-fill" style="width:62%;background:var(--amber);"></div></div>
-      <div class="ind-desc">Drives borrowing costs. Lower rates benefit MSFT, NVDA and bonds.</div>
+      <div class="ind-desc">Drives borrowing costs and discount rates for equities.</div>
     </div>
     <div class="indicator">
       <div class="ind-header"><div><div class="ind-name">10-yr Treasury yield</div><div class="ind-value" style="color:var(--amber);">~4.1%</div></div><span class="signal sig-amber">Elevated</span></div>
       <div class="gauge-track"><div class="gauge-fill" style="width:70%;background:var(--amber);"></div></div>
-      <div class="ind-desc">Benchmark for risk-free return. Rising yields compress growth stock valuations.</div>
+      <div class="ind-desc">Benchmark for risk-free return. Rising yields compress valuations.</div>
     </div>
     <div class="indicator">
       <div class="ind-header"><div><div class="ind-name">Core PCE inflation</div><div class="ind-value" style="color:var(--red);">~3.0%</div></div><span class="signal sig-red">Above target</span></div>
       <div class="gauge-track"><div class="gauge-fill" style="width:80%;background:var(--red);"></div></div>
-      <div class="ind-desc">Fed's preferred inflation gauge. Keeps rates high, supports gold (GLD).</div>
+      <div class="ind-desc">Fed's preferred inflation gauge. Above 2% target keeps rates sticky.</div>
     </div>
     <div class="indicator">
-      <div class="ind-header"><div><div class="ind-name">S&amp;P 500 P/E ratio</div><div class="ind-value" style="color:var(--amber);">~22x</div></div><span class="signal sig-amber">Stretched</span></div>
+      <div class="ind-header"><div><div class="ind-name">S&P 500 P/E ratio</div><div class="ind-value" style="color:var(--amber);">~22x</div></div><span class="signal sig-amber">Stretched</span></div>
       <div class="gauge-track"><div class="gauge-fill" style="width:65%;background:var(--amber);"></div></div>
-      <div class="ind-desc">Affects FXAIX and MSFT directly. Historical avg ~16–17x.</div>
+      <div class="ind-desc">Valuation. Historical avg ~16–17x. High for economic cycle stage.</div>
     </div>
     <div class="indicator">
       <div class="ind-header"><div><div class="ind-name">US dollar index (DXY)</div><div class="ind-value" style="color:var(--blue);">~103</div></div><span class="signal sig-blue">Neutral</span></div>
       <div class="gauge-track"><div class="gauge-fill" style="width:50%;background:var(--blue);"></div></div>
-      <div class="ind-desc">Weaker dollar boosts VWO and GLD. MSFT earns ~50% overseas.</div>
+      <div class="ind-desc">Dollar strength/weakness. Watch for 101 or 105 inflection points.</div>
     </div>
     <div class="indicator">
       <div class="ind-header"><div><div class="ind-name">VIX (fear gauge)</div><div class="ind-value" style="color:var(--green);">~18</div></div><span class="signal sig-green">Calm</span></div>
       <div class="gauge-track"><div class="gauge-fill" style="width:30%;background:var(--green);"></div></div>
-      <div class="ind-desc">Below 20 = calm. Above 30 = stress and potential buying opportunity.</div>
+      <div class="ind-desc">Below 20 = calm. Above 30 = stress. Spike often signals entry point.</div>
     </div>
     <div class="indicator">
       <div class="ind-header"><div><div class="ind-name">US GDP growth</div><div class="ind-value" style="color:var(--green);">+2.2%</div></div><span class="signal sig-green">Healthy</span></div>
       <div class="gauge-track"><div class="gauge-fill" style="width:55%;background:var(--green);"></div></div>
-      <div class="ind-desc">Above 2% supports FXAIX and retirement index funds.</div>
+      <div class="ind-desc">Above 2% supports earnings. Below 1% signals slowdown risk.</div>
     </div>
     <div class="indicator">
       <div class="ind-header"><div><div class="ind-name">Gold spot price</div><div class="ind-value" style="color:var(--green);">$3,300+</div></div><span class="signal sig-green">Strong</span></div>
       <div class="gauge-track"><div class="gauge-fill" style="width:78%;background:var(--green);"></div></div>
-      <div class="ind-desc">Directly drives your GLD position. Supported by inflation and central bank buying.</div>
+      <div class="ind-desc">Inflation hedge and risk-off safe haven. Driven by central bank demand.</div>
     </div>
     <div class="indicator">
       <div class="ind-header"><div><div class="ind-name">EM equity trend</div><div class="ind-value" style="color:var(--blue);">Neutral</div></div><span class="signal sig-blue">Monitor</span></div>
       <div class="gauge-track"><div class="gauge-fill" style="width:45%;background:var(--blue);"></div></div>
-      <div class="ind-desc">Drives VWO and your retirement international stock funds.</div>
+      <div class="ind-desc">Emerging markets. Cyclical recovery play. Watch China, commodities.</div>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════ HEALTH ══════════════════ -->
-<div class="content panel" id="tab-health">
-  <div class="section-head">Portfolio health · investments</div>
-  <div class="grid-4">
-    <div class="stat">
-      <div class="stat-label">Top concentration</div>
-      <div class="stat-value" style="color:var(--amber);">41.2%</div>
-      <div class="stat-sub" style="color:var(--amber);">⚠ Target below 25%</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Bond allocation</div>
-      <div class="stat-value" style="color:var(--red);">0%</div>
-      <div class="stat-sub" style="color:var(--red);">Target: 15–25%</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">International</div>
-      <div class="stat-value" style="color:var(--green);">11.6%</div>
-      <div class="stat-sub up">Target: 15–25%</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Commodities / hedge</div>
-      <div class="stat-value" style="color:var(--amber);">3.5%</div>
-      <div class="stat-sub" style="color:var(--amber);">Target: 7–10%</div>
-    </div>
-  </div>
-  <div class="grid-2">
-    <div class="chart-card">
-      <div class="chart-card-title">Health scorecard</div>
-      <div class="chart-card-subtitle">Current vs. moderate-risk target</div>
-      <div style="position:relative;height:260px;"><canvas id="radarChart"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-card-title">Monitoring schedule</div>
-      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
-        <div style="padding:14px;border:1px solid var(--border);border-radius:8px;">
-          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:8px;">Monthly</div>
-          <div style="font-size:11px;color:var(--muted);line-height:1.8;">• Core PCE / CPI<br>• Fed meeting minutes<br>• VIX level<br>• Top holding weight</div>
+<!-- ══════════════════ OUTLOOK ══════════════════ -->
+<div class="content panel" id="tab-outlook">
+
+  <div style="margin-bottom:20px;">
+    <div class="chart-card" style="margin-bottom:0;">
+      <div class="chart-card-title">How Outlook helps you decide</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;">
+        <div style="font-size:11px;color:#e8eaf0;line-height:1.6;">
+          <strong>The health score (0–100)</strong> is a single number that rolls up all 9 macro indicators into one verdict. Instead of juggling fed rates, inflation, valuations, and sentiment separately, you get a clear signal:
+          <br><br>
+          <strong style="color:#34d399;">Bullish (70+):</strong> Tailwinds dominate. Low rates + rising GDP + reasonable valuations. <span style="color:#6b7280;">→ Increase equity %, add growth stocks.</span>
+          <br><br>
+          <strong style="color:#60a5fa;">Constructive (55–69):</strong> Mixed signals. Some tailwinds, some headwinds. <span style="color:#6b7280;">→ Normal allocation, stay balanced.</span>
+          <br><br>
+          <strong style="color:#9ca3af;">Neutral (45–54):</strong> Evenly balanced. High uncertainty. <span style="color:#6b7280;">→ Hedge with bonds/gold, reduce leverage.</span>
         </div>
-        <div style="padding:14px;border:1px solid var(--border);border-radius:8px;">
-          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-bottom:8px;">Quarterly</div>
-          <div style="font-size:11px;color:var(--muted);line-height:1.8;">• GDP growth<br>• MSFT / NVDA earnings<br>• S&amp;P 500 P/E<br>• Rebalancing check<br>• Update 401k export</div>
-        </div>
-        <div style="padding:14px;border:1px solid var(--border);border-radius:8px;">
-          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin-bottom:8px;">Trigger alerts</div>
-          <div style="font-size:11px;color:var(--muted);line-height:1.8;">• MSFT drops &gt;20%<br>• VIX spikes above 35<br>• Any single stock &gt;45%<br>• Retirement fund closes</div>
+        <div style="font-size:11px;color:#e8eaf0;line-height:1.6;">
+          <strong style="color:#fbbf24;">Cautious (30–44):</strong> Headwinds dominate. High rates + stretched P/E + inflation sticky. <span style="color:#6b7280;">→ Cut risk, raise cash, go defensive.</span>
+          <br><br>
+          <strong style="color:#f87171;">Bearish (&lt;30):</strong> Severe headwinds. Recession risk + valuation crash + high rates. <span style="color:#6b7280;">→ Aggressive deleveraging, prepare for 20%+ correction.</span>
+          <br><br>
+          <strong>Tailwind/Headwind breakdown</strong> shows which indicators are working for or against you. If 7 tailwinds but 2 headwinds, the score is Bullish. If 4 tailwinds and 5 headwinds, it's Cautious.
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Market health + macro snapshot -->
+  <div class="grid-2" style="margin-bottom:20px;">
+    <div class="chart-card">
+      <div class="chart-card-title">Overall market health score</div>
+      <div class="chart-card-subtitle">Based on 9 macro indicators · Jun 01, 2026 02:02 UTC</div>
+      <div style="position:relative;height:140px;"><canvas id="healthGauge"></canvas></div>
+      <div style="text-align:center;margin-top:-40px;">
+        <div style="font-size:42px;font-family:'Fraunces',serif;font-weight:300;color:#fbbf24;">44</div>
+        <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#fbbf24;">Cautious</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
+        <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(52,211,153,0.12);color:#34d399;">↑ 3 tailwinds</span>
+        <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(248,113,113,0.12);color:#f87171;">↓ 4 headwinds</span>
+        <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:var(--surface2);color:#6b7280;">→ 2 neutral</span>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-title">Current macro environment</div>
+      <table style="width:100%;">
+        <thead><tr>
+          <th style="padding:6px 12px;">Indicator</th>
+          <th style="padding:6px 12px;">Level</th>
+          <th style="padding:6px 12px;">Signal</th>
+          <th style="padding:6px 12px;">Context</th>
+        </tr></thead>
+        <tbody><tr><td style="padding:9px 12px;font-size:12px;font-weight:500;">Fed Funds Rate</td><td style="padding:9px 12px;font-size:12px;">3.5â€“3.75%</td><td style="padding:9px 12px;font-size:12px;"><span style="color:#f87171;">↓ Headwind</span></td><td style="padding:9px 12px;font-size:11px;color:#6b7280;">Elevated â€” headwind for growth & valuation</td></tr><tr><td style="padding:9px 12px;font-size:12px;font-weight:500;">10-yr Treasury</td><td style="padding:9px 12px;font-size:12px;">~4.45%</td><td style="padding:9px 12px;font-size:12px;"><span style="color:#f87171;">↓ Headwind</span></td><td style="padding:9px 12px;font-size:11px;color:#6b7280;">Elevated — pressure on equity multiples</td></tr><tr><td style="padding:9px 12px;font-size:12px;font-weight:500;">Core PCE</td><td style="padding:9px 12px;font-size:12px;">~3.0%</td><td style="padding:9px 12px;font-size:12px;"><span style="color:#f87171;">↓ Headwind</span></td><td style="padding:9px 12px;font-size:11px;color:#6b7280;">Above 2% target â€” keeps rates high longer</td></tr><tr><td style="padding:9px 12px;font-size:12px;font-weight:500;">S&P 500 P/E</td><td style="padding:9px 12px;font-size:12px;">~28.4x</td><td style="padding:9px 12px;font-size:12px;"><span style="color:#f87171;">↓ Headwind</span></td><td style="padding:9px 12px;font-size:11px;color:#6b7280;">Stretched vs 17x historical avg</td></tr><tr><td style="padding:9px 12px;font-size:12px;font-weight:500;">DXY</td><td style="padding:9px 12px;font-size:12px;">~103</td><td style="padding:9px 12px;font-size:12px;"><span style="color:#6b7280;">→ Neutral</span></td><td style="padding:9px 12px;font-size:11px;color:#6b7280;">Dollar strength/weakness. Watch for 101 or 105 inflection points.</td></tr><tr><td style="padding:9px 12px;font-size:12px;font-weight:500;">VIX</td><td style="padding:9px 12px;font-size:12px;">~15.3</td><td style="padding:9px 12px;font-size:12px;"><span style="color:#34d399;">↑ Tailwind</span></td><td style="padding:9px 12px;font-size:11px;color:#6b7280;">Below 20 = calm markets, risk appetite intact</td></tr><tr><td style="padding:9px 12px;font-size:12px;font-weight:500;">GDP Growth</td><td style="padding:9px 12px;font-size:12px;">+2.2%</td><td style="padding:9px 12px;font-size:12px;"><span style="color:#34d399;">↑ Tailwind</span></td><td style="padding:9px 12px;font-size:11px;color:#6b7280;">Above 2% supports earnings. Below 1% signals slowdown risk.</td></tr><tr><td style="padding:9px 12px;font-size:12px;font-weight:500;">Gold Spot</td><td style="padding:9px 12px;font-size:12px;">$4,564</td><td style="padding:9px 12px;font-size:12px;"><span style="color:#34d399;">↑ Tailwind</span></td><td style="padding:9px 12px;font-size:11px;color:#6b7280;">Strong — hedge demand, inflation premium</td></tr><tr><td style="padding:9px 12px;font-size:12px;font-weight:500;">EM Trend</td><td style="padding:9px 12px;font-size:12px;">Neutral</td><td style="padding:9px 12px;font-size:12px;"><span style="color:#6b7280;">→ Neutral</span></td><td style="padding:9px 12px;font-size:11px;color:#6b7280;">Emerging markets. Cyclical recovery play. Watch China, commodities.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="font-size:10px;color:#3a4050;padding:12px;border:1px solid var(--border);border-radius:8px;">
+    ⚠ Outlook is qualitative macro analysis. Updated manually each quarter. Not financial advice.
+  </div>
+</div>
+
+<!-- ══════════════════ INVESTMENT PLAN ══════════════════ -->
+<div class="content panel" id="tab-invest">
+  <div class="section-head">Build your investment plan</div>
+  <p style="font-size:11px;color:var(--muted);margin-bottom:20px;">Answer a few questions about your situation, and we'll generate a macro-aligned investment framework based on the current market environment.</p>
+
+  <div class="chart-card" style="max-width:600px;">
+    <form id="investForm">
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:11px;font-weight:500;margin-bottom:8px;color:var(--text);">1. How much are you investing?</label>
+        <select id="amount" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;" required>
+          <option value="">Select amount...</option>
+          <option value="small">$1,000 – $10,000</option>
+          <option value="medium">$10,000 – $50,000</option>
+          <option value="large">$50,000 – $250,000</option>
+          <option value="xlarge">$250,000+</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:11px;font-weight:500;margin-bottom:8px;color:var(--text);">2. What's your investment timeline?</label>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;">
+            <input type="radio" name="timeline" value="short" style="cursor:pointer;" required>
+            <span>Short-term (0–3 months) — I need results fast</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;">
+            <input type="radio" name="timeline" value="medium" style="cursor:pointer;">
+            <span>Medium-term (6–12 months) — Balanced</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;">
+            <input type="radio" name="timeline" value="long" style="cursor:pointer;">
+            <span>Long-term (3+ years) — I can weather volatility</span>
+          </label>
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:11px;font-weight:500;margin-bottom:8px;color:var(--text);">3. Do you have an existing portfolio?</label>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;">
+            <input type="radio" name="existing" value="none" style="cursor:pointer;" required>
+            <span>No — this is new money</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;">
+            <input type="radio" name="existing" value="yes" style="cursor:pointer;">
+            <span>Yes — I already have investments</span>
+          </label>
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:11px;font-weight:500;margin-bottom:8px;color:var(--text);">4. What's your risk tolerance?</label>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;">
+            <input type="radio" name="risk" value="low" style="cursor:pointer;" required>
+            <span>Conservative — Can't handle 20%+ losses</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;">
+            <input type="radio" name="risk" value="moderate" style="cursor:pointer;">
+            <span>Moderate — Can stomach 20–30% swings</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;">
+            <input type="radio" name="risk" value="high" style="cursor:pointer;">
+            <span>Aggressive — Can handle 30%+ drawdowns</span>
+          </label>
+        </div>
+      </div>
+
+      <button type="submit" style="width:100%;padding:12px;background:#34d399;color:#0d0f12;border:none;border-radius:6px;font-weight:500;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:.08em;">Generate My Investment Plan</button>
+    </form>
+  </div>
+
+  <div id="recommendationBox" style="display:none;margin-top:30px;"></div>
 </div>
 
 <script>
@@ -777,153 +299,208 @@ function showTab(name, el) {
 }
 
 const mono = "'DM Mono', monospace";
-const grid = 'rgba(255,255,255,0.05)';
 
-// ── Investment data ──
-const invTickers  = ["MSFT", "FXAIX", "VWO", "TMUS", "NVDA", "FBTC", "GLD"];
-const invBgColors = ["#60a5fa", "#34d399", "#a78bfa", "#fbbf24", "#f472b6", "#fb923c", "#9ca3af"];
-const invValues   = [181454.87, 126094.89, 50898.0, 24753.96, 22803.12, 18531.0, 15433.44];
-const invGains    = [145666.36, 55839.53, 12856.25, 8352.77, 4354.02, -1918.96, 5764.72];
-const invGainPcts = [407.02, 79.48, 33.8, 50.93, 23.6, -9.38, 59.62];
-const invWeights  = [41.24, 28.66, 11.57, 5.63, 5.18, 4.21, 3.51];
-
-// ── Retirement data ──
-const retLabels   = ["LG Cap US Stock In", "Fidelity VIP Mid C", "Total US Stock Ind", "American Funds IS ", "American Funds IS ", "Fidelity VIP Contr", "NYLIM VP Winslow L", "NYLIM VP PineStone", "AT&T Asset Alloc 2", "Fidelity Freedom 2", "NYLIM VP Natural R", "Principal VC Real ", "NYLIM VP MFS Inves", "NYLIM VP CBRE Glob", "NYLIM VP Moderate ", "NYLIM VP Balanced", "International Stoc", "AT&T Intl Stock Fu", "NYLIM VP MacKay St", "NYLIM VP MacKay US", "Small & Mid US Sto", "AT&T Shares Fund"];
-const retValues   = [69438.1, 42584.31, 42171.76, 41628.84, 39108.34, 39105.96, 36834.15, 36773.64, 35402.76, 27847.07, 22293.57, 19368.19, 19127.57, 19062.44, 19021.02, 18591.28, 18454.09, 18120.97, 17917.57, 17649.73, 17299.32, 948.06];
-const retGains    = [17277.12, 38.29, 7450.57, 157.59, -153.11, -90.16, 157.7, 40.41, 7831.24, 16337.98, -51.4, -171.95, 41.99, -53.53, 22.79, 22.28, 5099.01, 4622.24, 10.74, 8.82, 3095.11, -20.58];
-const retWeights  = [11.22, 6.88, 6.82, 6.73, 6.32, 6.32, 5.95, 5.94, 5.72, 4.5, 3.6, 3.13, 3.09, 3.08, 3.07, 3.0, 2.98, 2.93, 2.9, 2.85, 2.8, 0.15];
-const retColors   = ["#60a5fa", "#34d399", "#a78bfa", "#fbbf24", "#f472b6", "#fb923c", "#9ca3af"];
-
-// ── Growth projection ──
-new Chart(document.getElementById('growthChart'), {
-  type: 'line',
-  data: {
-    labels: [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035, 2036],
-    datasets: [
-      { label:'Moderate 7%', data:[1058718, 1132828, 1212126, 1296975, 1387763, 1484907, 1588850, 1700070, 1819075, 1946410, 2082659], borderColor:'#34d399', backgroundColor:'rgba(52,211,153,0.06)', tension:.4, borderWidth:2, pointRadius:3, fill:true },
-      { label:'Conservative 5%', data:[1058718, 1111654, 1167237, 1225598, 1286878, 1351222, 1418783, 1489723, 1564209, 1642419, 1724540], borderColor:'#60a5fa', borderDash:[4,4], backgroundColor:'transparent', tension:.4, borderWidth:1.5, pointRadius:0 },
-      { label:'Optimistic 10%', data:[1058718, 1164590, 1281049, 1409154, 1550069, 1705076, 1875584, 2063142, 2269456, 2496402, 2746042], borderColor:'#fbbf24', borderDash:[2,4], backgroundColor:'transparent', tension:.4, borderWidth:1.5, pointRadius:0 }
-    ]
-  },
-  options: {
-    responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' $'+c.parsed.y.toLocaleString()}} },
-    scales:{
-      x:{ticks:{color:'#6b7280',font:{family:mono,size:11}},grid:{color:grid}},
-      y:{ticks:{color:'#6b7280',font:{family:mono,size:11},callback:v=>'$'+(v/1000).toFixed(0)+'K'},grid:{color:grid}}
-    }
-  }
-});
-
-// ── Investment allocation donut ──
-new Chart(document.getElementById('allocDonut'), {
-  type:'doughnut',
-  data:{ labels:invTickers, datasets:[{ data:invWeights, backgroundColor:invBgColors, borderWidth:0, hoverOffset:4 }] },
-  options:{ responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.label+': '+c.parsed+'%'}} } }
-});
-
-// ── Portfolio split donut (investments vs retirement) ──
-new Chart(document.getElementById('splitDonut'), {
+// ── Outlook: market health gauge ──
+new Chart(document.getElementById('healthGauge'), {
   type:'doughnut',
   data:{
-    labels:['Investments','Retirement'],
-    datasets:[{ data:[439969.28, 618748.74], backgroundColor:['#60a5fa','#34d399'], borderWidth:0, hoverOffset:4 }]
-  },
-  options:{ responsive:true, maintainAspectRatio:false, cutout:'60%',
-    plugins:{ legend:{display:true, position:'bottom', labels:{color:'#6b7280',font:{family:mono,size:10},boxWidth:8}},
-    tooltip:{callbacks:{label:c=>' $'+c.parsed.toLocaleString()}} }
-  }
-});
-
-// ── Investment gain bar ──
-new Chart(document.getElementById('gainChart'), {
-  type:'bar',
-  data:{ labels:invTickers, datasets:[{ data:invGains, backgroundColor:ctx=>ctx.raw<0?'#f87171':'#34d399', borderWidth:0, borderRadius:3 }] },
-  options:{
-    responsive:true, maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' $'+c.parsed.y.toLocaleString()}}},
-    scales:{
-      x:{ticks:{color:'#6b7280',font:{family:mono,size:11}},grid:{display:false}},
-      y:{ticks:{color:'#6b7280',font:{family:mono,size:11},callback:v=>'$'+(v/1000).toFixed(0)+'K'},grid:{color:grid}}
-    }
-  }
-});
-
-// ── Investment return % bar ──
-new Chart(document.getElementById('returnPct'), {
-  type:'bar',
-  data:{ labels:invTickers, datasets:[{ data:invGainPcts, backgroundColor:ctx=>ctx.raw<0?'#f87171':'#60a5fa', borderWidth:0, borderRadius:3 }] },
-  options:{
-    responsive:true, maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.parsed.y.toFixed(1)+'%'}}},
-    scales:{
-      x:{ticks:{color:'#6b7280',font:{family:mono,size:11}},grid:{display:false}},
-      y:{ticks:{color:'#6b7280',font:{family:mono,size:11},callback:v=>v+'%'},grid:{color:grid}}
-    }
-  }
-});
-
-// ── Retirement allocation donut ──
-new Chart(document.getElementById('retAllocDonut'), {
-  type:'doughnut',
-  data:{ labels:retLabels, datasets:[{ data:retWeights, backgroundColor:retColors, borderWidth:0, hoverOffset:4 }] },
-  options:{ responsive:true, maintainAspectRatio:false, cutout:'60%',
-    plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.parsed.toFixed(1)+'%'}} }
-  }
-});
-
-// ── Retirement gain bar ──
-new Chart(document.getElementById('retGainChart'), {
-  type:'bar',
-  data:{ labels:retLabels, datasets:[{ data:retGains, backgroundColor:ctx=>ctx.raw<0?'#f87171':'#34d399', borderWidth:0, borderRadius:3 }] },
-  options:{
-    responsive:true, maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' $'+c.parsed.y.toLocaleString()}}},
-    scales:{
-      x:{ticks:{color:'#6b7280',font:{family:mono,size:9},maxRotation:30},grid:{display:false}},
-      y:{ticks:{color:'#6b7280',font:{family:mono,size:11},callback:v=>'$'+(v/1000).toFixed(0)+'K'},grid:{color:grid}}
-    }
-  }
-});
-
-// ── Performance history ──
-const histDatasets = [{"label": "MSFT", "data": [100.0, 99.28, 99.56, 99.93, 100.28, 100.49, 100.69, 101.52, 102.1, 102.62, 102.22, 102.59, 103.95, 103.1, 104.0, 103.77, 104.24, 103.63, 105.49, 106.39, 106.85, 107.98, 107.65, 107.97, 106.81, 106.6, 108.28, 108.04, 107.8, 109.29, 108.85, 109.25, 109.19, 109.8, 109.75, 111.07, 110.71, 110.72, 109.68, 109.81, 110.89, 111.51, 111.25, 111.26, 111.41, 115.8, 113.77, 116.27, 114.56, 113.95, 113.06, 113.32, 113.26, 114.88, 113.0, 113.41, 112.91, 112.24, 110.65, 109.77, 109.63, 110.28, 109.64, 109.15, 110.18, 110.81, 110.17, 109.82, 109.87, 110.44, 107.62, 108.32, 108.37, 108.79, 108.93, 110.86, 112.05, 110.68, 110.89, 110.55, 112.61, 111.85, 110.72, 110.92, 110.24, 111.2, 111.89, 112.61, 113.0, 112.13, 112.48, 114.92, 113.93, 114.11, 113.58, 111.09, 111.77, 111.66, 111.63, 111.24, 111.66, 112.36, 112.55, 113.18, 113.18, 113.84, 115.56, 117.86, 117.75, 114.31, 112.58, 112.41, 111.83, 110.27, 108.08, 108.02, 110.02, 110.6, 111.13, 109.43, 110.92, 110.34, 107.36, 105.91, 104.22, 102.84, 103.25, 103.9, 105.76, 107.17, 106.03, 106.74, 104.06, 104.74, 105.25, 106.96, 107.18, 104.24, 105.31, 104.24, 103.43, 103.77, 103.71, 105.43, 105.85, 105.63, 106.05, 106.31, 106.24, 106.1, 106.19, 105.35, 103.02, 103.0, 104.23, 105.31, 104.15, 104.4, 103.94, 102.53, 100.07, 99.47, 100.17, 99.01, 96.74, 98.27, 101.5, 102.44, 104.68, 104.91, 94.43, 93.73, 92.22, 89.57, 90.22, 85.75, 87.38, 90.09, 90.02, 88.08, 87.53, 87.42, 86.45, 87.04, 86.99, 86.73, 83.94, 84.93, 87.46, 87.71, 85.75, 87.01, 88.19, 88.47, 89.66, 89.29, 89.39, 88.59, 88.4, 87.74, 86.36, 87.32, 87.2, 85.54, 84.93, 83.37, 83.62, 81.38, 81.01, 79.9, 77.89, 78.37, 80.82, 80.64, 81.54, 81.41, 81.28, 81.73, 81.45, 80.97, 83.92, 85.83, 89.78, 91.75, 92.31, 91.28, 92.61, 94.52, 90.77, 92.71, 92.75, 93.72, 92.67, 89.03, 90.48, 90.3, 89.82, 90.38, 91.87, 90.63, 90.09, 89.03, 88.47, 89.39, 92.12, 92.47, 91.13, 91.93, 91.7, 91.58, 91.03, 90.29, 93.43, 98.51], "borderColor": "#34d399", "backgroundColor": "transparent", "borderWidth": 1.5, "tension": 0.3, "pointRadius": 0}, {"label": "FXAIX", "data": [100.0, 99.45, 99.84, 99.84, 100.27, 100.85, 100.86, 100.34, 101.38, 101.49, 102.04, 101.76, 102.16, 101.02, 101.98, 101.14, 101.14, 101.11, 101.86, 103.0, 103.0, 103.83, 104.37, 104.92, 104.81, 105.31, 106.2, 105.37, 105.29, 105.93, 106.24, 105.89, 106.04, 105.63, 105.96, 106.53, 106.53, 106.68, 106.75, 107.59, 107.66, 108.1, 108.12, 107.8, 107.66, 107.27, 105.56, 107.12, 106.61, 107.38, 107.3, 108.14, 107.88, 109.11, 109.46, 109.5, 109.21, 109.21, 108.58, 108.32, 107.9, 109.54, 109.07, 109.53, 109.8, 110.15, 109.45, 108.71, 109.27, 110.19, 109.86, 110.09, 110.39, 110.73, 111.67, 111.62, 112.17, 112.03, 111.92, 112.46, 113.01, 113.52, 112.89, 112.57, 112.01, 112.67, 112.97, 113.44, 113.83, 113.91, 113.93, 114.35, 113.91, 114.58, 114.26, 111.18, 112.92, 112.74, 113.2, 112.49, 113.09, 114.29, 114.3, 113.69, 114.36, 115.26, 116.68, 116.95, 116.94, 115.79, 116.09, 116.3, 114.94, 115.36, 114.07, 114.23, 116.0, 116.24, 116.32, 114.39, 114.37, 113.33, 112.4, 112.82, 111.08, 112.18, 113.92, 114.96, 115.76, 116.38, 115.77, 116.06, 116.41, 116.54, 116.79, 116.39, 116.29, 117.08, 117.33, 116.08, 115.91, 115.64, 114.3, 115.21, 116.23, 116.99, 117.52, 117.9, 117.88, 117.47, 117.3, 116.45, 116.7, 117.44, 118.18, 117.77, 117.78, 118.55, 118.74, 118.52, 117.89, 118.2, 118.13, 115.69, 117.04, 117.68, 117.73, 118.32, 118.8, 118.79, 118.64, 118.14, 118.78, 117.78, 117.19, 115.75, 118.03, 118.6, 118.22, 118.22, 116.37, 116.45, 116.58, 117.24, 116.92, 117.74, 116.52, 117.42, 118.37, 117.74, 117.24, 117.29, 116.19, 117.09, 116.44, 114.91, 115.87, 115.64, 115.55, 113.79, 113.12, 114.28, 114.57, 113.0, 112.7, 111.0, 112.27, 111.86, 112.46, 110.51, 108.66, 108.24, 111.4, 112.2, 112.34, 112.84, 112.93, 115.76, 116.48, 116.36, 117.55, 118.93, 119.89, 120.2, 121.65, 121.37, 120.6, 121.86, 121.36, 122.33, 122.48, 121.88, 121.84, 123.09, 123.45, 122.96, 123.96, 125.77, 125.29, 126.36, 126.61, 126.41, 127.16, 128.13, 126.57, 126.49, 125.65, 127.01, 127.24, 127.73, 128.51, 128.54, 129.28, 129.56], "borderColor": "#60a5fa", "backgroundColor": "transparent", "borderWidth": 1.5, "tension": 0.3, "pointRadius": 0}, {"label": "VWO", "data": [100.0, 99.39, 99.83, 98.68, 99.37, 99.6, 100.59, 100.84, 101.28, 102.02, 102.77, 103.11, 103.13, 101.57, 102.52, 101.36, 101.09, 100.14, 100.96, 103.15, 103.41, 104.1, 104.0, 104.14, 104.56, 104.86, 105.32, 104.08, 104.48, 104.46, 104.56, 104.42, 104.54, 105.3, 105.79, 106.44, 106.31, 106.86, 106.88, 107.87, 107.34, 107.05, 106.21, 106.27, 105.41, 104.86, 104.31, 105.28, 105.62, 106.08, 106.86, 106.73, 106.61, 107.83, 109.05, 107.83, 108.14, 108.96, 108.19, 108.14, 107.95, 109.85, 109.39, 109.15, 108.42, 108.82, 108.5, 108.35, 108.65, 108.19, 109.43, 110.5, 110.92, 111.43, 112.82, 112.61, 113.37, 114.08, 114.8, 114.27, 114.12, 114.44, 114.42, 114.21, 113.55, 113.34, 114.16, 114.67, 115.39, 115.71, 115.96, 116.37, 115.73, 116.39, 115.37, 111.2, 114.29, 113.28, 114.99, 115.37, 115.1, 116.47, 115.43, 115.37, 116.24, 116.79, 117.76, 117.7, 118.04, 116.81, 116.34, 116.6, 114.97, 115.99, 115.54, 115.43, 116.98, 117.11, 117.09, 116.05, 116.09, 114.76, 114.38, 114.12, 112.77, 112.32, 113.47, 113.97, 114.52, 114.93, 114.82, 114.57, 114.42, 114.67, 115.14, 114.72, 114.52, 115.48, 115.22, 114.16, 113.83, 113.19, 112.45, 113.4, 114.62, 115.35, 115.89, 115.85, 116.58, 115.7, 116.13, 116.02, 118.55, 119.32, 119.97, 119.24, 119.37, 119.62, 121.48, 120.77, 121.03, 121.59, 120.85, 119.86, 121.09, 122.04, 122.52, 122.86, 124.39, 124.87, 124.39, 121.87, 122.54, 122.47, 121.74, 120.94, 123.57, 124.63, 125.19, 126.27, 124.65, 124.63, 124.72, 125.06, 124.29, 126.31, 125.3, 126.64, 127.35, 125.75, 125.39, 123.53, 119.19, 119.95, 118.37, 117.55, 118.98, 119.8, 119.91, 117.21, 116.58, 118.74, 119.26, 116.99, 116.56, 113.43, 116.11, 115.05, 117.27, 114.06, 113.28, 113.13, 116.65, 116.99, 116.15, 116.56, 116.73, 121.93, 121.8, 122.47, 123.4, 125.13, 125.37, 125.62, 127.72, 127.14, 125.6, 126.81, 125.0, 127.37, 126.75, 125.86, 125.34, 127.18, 127.31, 126.75, 128.11, 131.11, 129.94, 130.65, 130.33, 128.17, 129.36, 129.4, 126.12, 126.21, 124.89, 126.62, 126.68, 127.29, 129.98, 130.11, 129.27, 129.23], "borderColor": "#a78bfa", "backgroundColor": "transparent", "borderWidth": 1.5, "tension": 0.3, "pointRadius": 0}, {"label": "TMUS", "data": [100.0, 99.24, 98.33, 99.89, 100.25, 100.58, 99.79, 101.0, 101.4, 98.14, 97.74, 95.25, 94.32, 94.03, 95.27, 91.32, 91.14, 91.36, 93.61, 94.78, 95.23, 95.44, 97.02, 98.27, 99.61, 97.92, 99.29, 98.01, 97.32, 95.81, 94.1, 93.94, 94.1, 93.22, 94.34, 93.63, 93.71, 95.94, 96.2, 96.48, 102.08, 100.45, 98.24, 98.67, 99.63, 98.33, 97.83, 99.4, 98.54, 98.66, 100.19, 101.04, 102.64, 104.05, 103.45, 103.24, 105.02, 105.24, 106.5, 106.82, 106.47, 103.91, 103.83, 103.6, 103.67, 103.34, 104.29, 105.91, 104.57, 104.35, 104.61, 100.53, 100.46, 99.49, 99.91, 100.04, 99.22, 98.35, 99.1, 98.85, 98.57, 98.27, 99.12, 98.67, 98.48, 98.29, 98.49, 99.08, 96.54, 95.25, 95.31, 93.11, 94.23, 93.78, 93.62, 94.69, 93.15, 94.95, 93.81, 93.72, 94.92, 95.23, 94.81, 94.12, 91.05, 90.13, 91.34, 91.05, 88.99, 87.18, 86.94, 84.15, 85.38, 84.74, 83.19, 85.67, 85.21, 87.74, 88.02, 88.81, 89.43, 89.33, 88.19, 87.44, 87.13, 86.7, 85.81, 85.63, 85.99, 86.93, 85.94, 87.4, 86.73, 86.52, 87.19, 85.03, 83.75, 81.24, 81.24, 81.17, 81.59, 82.36, 82.93, 83.3, 81.83, 81.42, 82.22, 82.78, 83.6, 84.5, 84.77, 84.45, 83.01, 83.54, 82.6, 82.06, 82.32, 83.42, 82.15, 78.89, 79.87, 79.3, 77.5, 76.39, 76.37, 77.11, 77.38, 78.18, 76.74, 77.47, 78.73, 82.03, 81.1, 82.22, 83.93, 83.96, 82.1, 82.21, 82.95, 87.15, 89.29, 91.3, 91.34, 88.7, 89.55, 89.62, 91.48, 92.33, 90.95, 88.66, 90.73, 90.32, 91.33, 91.82, 92.17, 92.6, 90.9, 91.44, 89.2, 89.59, 90.85, 89.78, 89.17, 86.35, 86.34, 87.13, 87.25, 88.29, 88.33, 88.43, 88.11, 89.41, 87.78, 85.36, 84.17, 83.01, 83.81, 82.6, 82.56, 81.79, 80.42, 79.41, 79.49, 82.38, 82.61, 82.9, 81.66, 78.96, 81.11, 79.32, 76.38, 78.04, 82.82, 81.71, 81.94, 81.25, 81.21, 80.73, 81.16, 80.92, 79.76, 80.79, 79.52, 78.65, 77.41, 79.68, 80.84, 79.47, 79.78, 80.02, 79.87, 79.75, 78.99, 78.8], "borderColor": "#fbbf24", "backgroundColor": "transparent", "borderWidth": 1.5, "tension": 0.3, "pointRadius": 0}, {"label": "NVDA", "data": [100.0, 99.49, 102.72, 99.73, 101.39, 104.22, 104.74, 103.31, 104.59, 105.26, 106.24, 105.42, 107.02, 104.78, 106.79, 106.37, 107.37, 106.17, 106.41, 109.16, 113.89, 114.41, 116.43, 116.61, 113.14, 116.06, 117.6, 116.79, 118.09, 120.22, 121.12, 121.72, 121.09, 125.99, 126.48, 127.68, 127.25, 126.49, 123.28, 126.05, 128.23, 128.05, 130.45, 129.54, 132.31, 131.28, 128.22, 132.85, 131.57, 132.42, 133.42, 134.84, 134.37, 135.18, 134.02, 134.34, 133.18, 134.33, 129.63, 129.46, 129.15, 131.37, 132.71, 134.16, 134.03, 132.98, 128.56, 126.05, 125.93, 126.7, 123.27, 124.22, 126.03, 130.88, 130.77, 131.25, 131.2, 129.08, 125.69, 130.08, 130.4, 135.52, 131.7, 130.62, 131.15, 131.52, 134.22, 137.71, 138.2, 139.42, 138.48, 136.95, 136.58, 139.58, 142.14, 135.19, 139.0, 132.88, 132.73, 134.19, 135.23, 134.81, 133.71, 133.06, 134.45, 137.48, 141.34, 148.38, 152.82, 149.75, 149.46, 152.7, 146.65, 144.08, 138.82, 138.87, 146.92, 142.57, 143.04, 137.92, 140.36, 137.73, 133.86, 137.67, 133.33, 132.03, 134.74, 131.25, 133.05, 130.64, 132.8, 133.94, 132.56, 135.36, 134.64, 136.96, 136.53, 135.66, 133.55, 129.19, 130.13, 131.18, 126.18, 128.54, 133.6, 135.59, 139.66, 139.22, 140.64, 138.93, 138.43, 137.66, 139.4, 138.86, 138.21, 139.59, 136.59, 136.45, 136.51, 137.15, 135.18, 138.07, 137.46, 131.44, 135.32, 136.44, 138.53, 137.64, 139.15, 141.37, 142.1, 141.08, 137.01, 133.12, 128.58, 126.87, 136.86, 140.28, 139.17, 140.28, 137.99, 134.94, 136.53, 138.76, 138.7, 140.11, 141.39, 142.35, 144.35, 136.47, 130.79, 134.7, 132.9, 135.11, 135.33, 131.26, 134.82, 136.39, 137.32, 135.19, 133.06, 135.25, 134.3, 133.17, 131.81, 127.48, 129.65, 129.33, 131.9, 126.41, 123.66, 121.93, 128.74, 129.74, 130.95, 131.13, 131.47, 134.41, 135.76, 139.24, 139.75, 145.06, 146.8, 146.42, 148.88, 149.16, 147.55, 149.48, 147.37, 153.74, 159.9, 157.36, 154.46, 147.32, 146.49, 146.51, 145.05, 153.42, 156.13, 158.86, 161.99, 162.98, 166.7, 174.02, 166.33, 164.11, 162.85, 164.96, 162.04, 158.95, 158.61, 156.94, 158.16, 155.86], "borderColor": "#f472b6", "backgroundColor": "transparent", "borderWidth": 1.5, "tension": 0.3, "pointRadius": 0}];
-const lineColors   = ['#34d399','#60a5fa','#a78bfa','#fbbf24','#f472b6'];
-new Chart(document.getElementById('histChart'), {
-  type:'line',
-  data:{ labels:["2025-05-27", "2025-05-28", "2025-05-29", "2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-09", "2025-06-10", "2025-06-11", "2025-06-12", "2025-06-13", "2025-06-16", "2025-06-17", "2025-06-18", "2025-06-20", "2025-06-23", "2025-06-24", "2025-06-25", "2025-06-26", "2025-06-27", "2025-06-30", "2025-07-01", "2025-07-02", "2025-07-03", "2025-07-07", "2025-07-08", "2025-07-09", "2025-07-10", "2025-07-11", "2025-07-14", "2025-07-15", "2025-07-16", "2025-07-17", "2025-07-18", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25", "2025-07-28", "2025-07-29", "2025-07-30", "2025-07-31", "2025-08-01", "2025-08-04", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08", "2025-08-11", "2025-08-12", "2025-08-13", "2025-08-14", "2025-08-15", "2025-08-18", "2025-08-19", "2025-08-20", "2025-08-21", "2025-08-22", "2025-08-25", "2025-08-26", "2025-08-27", "2025-08-28", "2025-08-29", "2025-09-02", "2025-09-03", "2025-09-04", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-28", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-26", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25", "2026-03-26", "2026-03-27", "2026-03-30", "2026-03-31", "2026-04-01", "2026-04-02", "2026-04-06", "2026-04-07", "2026-04-08", "2026-04-09", "2026-04-10", "2026-04-13", "2026-04-14", "2026-04-15", "2026-04-16", "2026-04-17", "2026-04-20", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-26", "2026-05-27", "2026-05-28", "2026-05-29"], datasets:histDatasets },
-  options:{
-    responsive:true, maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.parsed.y.toFixed(1)}}},
-    scales:{
-      x:{ticks:{color:'#6b7280',font:{family:mono,size:10},maxTicksLimit:8},grid:{color:grid}},
-      y:{ticks:{color:'#6b7280',font:{family:mono,size:11},callback:v=>v.toFixed(0)},grid:{color:grid}}
-    }
-  }
-});
-const leg = document.getElementById('histLegend');
-histDatasets.forEach((d,i) => {
-  const el = document.createElement('span'); el.className='legend-item';
-  el.innerHTML=`<span class="legend-dot" style="background:${lineColors[i]};"></span>${d.label}`;
-  leg.appendChild(el);
-});
-
-// ── Health radar ──
-new Chart(document.getElementById('radarChart'), {
-  type:'radar',
-  data:{
-    labels:['Diversification','Bond coverage','Geog. spread','Inflation hedge','Sector coverage','Retirement coverage'],
-    datasets:[
-      { label:'Current', data:[40,0,55,45,40,100], borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,0.1)', pointBackgroundColor:'#60a5fa', borderWidth:2 },
-      { label:'Target',  data:[75,70,70,70,75,75], borderColor:'#34d399', backgroundColor:'rgba(52,211,153,0.05)', pointBackgroundColor:'#34d399', borderWidth:1.5, borderDash:[4,4] }
-    ]
+    datasets:[{
+      data:[44, 56],
+      backgroundColor:['#fbbf24', '#1a1e25'],
+      circumference:180, rotation:270, borderWidth:0,
+    }]
   },
   options:{
-    responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
-    scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'rgba(255,255,255,0.06)'},
-      pointLabels:{color:'#6b7280',font:{family:mono,size:10}},angleLines:{color:'rgba(255,255,255,0.06)'}}}
+    responsive:true, maintainAspectRatio:false, cutout:'72%',
+    plugins:{ legend:{display:false}, tooltip:{enabled:false} }
   }
 });
+
+// ── Investment Plan Form Handler ──
+const healthScore = 44;
+const regimeInfo = {'score': 44, 'color': '#fbbf24', 'label': 'Cautious'};
+document.getElementById('investForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const amount = document.getElementById('amount').value;
+  const timeline = document.querySelector('input[name="timeline"]:checked').value;
+  const existing = document.querySelector('input[name="existing"]:checked').value;
+  const risk = document.querySelector('input[name="risk"]:checked').value;
+
+  const recommendation = generateRecommendation(amount, timeline, existing, risk, healthScore, regimeInfo);
+
+  const box = document.getElementById('recommendationBox');
+  box.innerHTML = recommendation;
+  box.style.display = 'block';
+  setTimeout(() => box.scrollIntoView({ behavior: 'smooth' }), 100);
+});
+
+function generateRecommendation(amount, timeline, existing, risk, score, regimeInfo) {
+  // Determine macro regime
+  let regime = 'cautious';
+  let regimeColor = regimeInfo.color;
+  let regimeLabel = regimeInfo.label;
+
+  if (score >= 70) { regime = 'bullish'; regimeColor = '#34d399'; regimeLabel = 'BULLISH'; }
+  else if (score >= 55) { regime = 'constructive'; regimeColor = '#60a5fa'; regimeLabel = 'CONSTRUCTIVE'; }
+  else if (score >= 45) { regime = 'neutral'; regimeColor = '#9ca3af'; regimeLabel = 'NEUTRAL'; }
+  else if (score >= 30) { regime = 'cautious'; regimeColor = '#fbbf24'; regimeLabel = 'CAUTIOUS'; }
+  else { regime = 'bearish'; regimeColor = '#f87171'; regimeLabel = 'BEARISH'; }
+
+  // Build allocation based on macro + risk tolerance
+  let equityAlloc = 60;
+  let bondAlloc = 30;
+  let cashAlloc = 10;
+
+  if (regime === 'bearish') {
+    equityAlloc = risk === 'high' ? 40 : risk === 'moderate' ? 25 : 10;
+    bondAlloc = risk === 'high' ? 40 : risk === 'moderate' ? 50 : 60;
+    cashAlloc = 20 + (risk === 'high' ? 0 : 20);
+  } else if (regime === 'cautious') {
+    equityAlloc = risk === 'high' ? 65 : risk === 'moderate' ? 50 : 30;
+    bondAlloc = risk === 'high' ? 20 : risk === 'moderate' ? 35 : 50;
+    cashAlloc = 15 + (risk === 'high' ? 0 : 15);
+  } else if (regime === 'neutral') {
+    equityAlloc = risk === 'high' ? 70 : risk === 'moderate' ? 60 : 40;
+    bondAlloc = risk === 'high' ? 20 : risk === 'moderate' ? 30 : 45;
+    cashAlloc = 10;
+  } else if (regime === 'constructive') {
+    equityAlloc = risk === 'high' ? 80 : risk === 'moderate' ? 70 : 50;
+    bondAlloc = risk === 'high' ? 15 : risk === 'moderate' ? 25 : 40;
+    cashAlloc = 5;
+  } else {
+    equityAlloc = risk === 'high' ? 90 : risk === 'moderate' ? 80 : 60;
+    bondAlloc = risk === 'high' ? 8 : risk === 'moderate' ? 15 : 30;
+    cashAlloc = 2;
+  }
+
+  // Adjust for timeline
+  if (timeline === 'short') {
+    cashAlloc += 10;
+    equityAlloc -= 5;
+    bondAlloc -= 5;
+  }
+
+  // Build specific fund recommendations
+  let fundRecommendations = '';
+  let defensiveAlloc = 40;
+  let growthAlloc = equityAlloc - defensiveAlloc;
+  if (growthAlloc < 0) growthAlloc = 0;
+
+  if (regime === 'bearish' || regime === 'cautious') {
+    fundRecommendations = `
+      <div style="margin-top:16px;background:var(--surface2);border-radius:8px;padding:14px;">
+        <div style="font-weight:500;margin-bottom:12px;color:var(--text);">Specific ETFs to Buy (` + regimeLabel + `)</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.8;">
+          <div style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+            <strong style="color:var(--text);">Defensive Stocks (~` + Math.round(defensiveAlloc) + `% of equity allocation)</strong>
+            <div style="margin-top:6px;margin-left:12px;">
+              <div>• <strong>XLV</strong> (Health Care) — Hospitals, pharma, stable earnings</div>
+              <div>• <strong>XLP</strong> (Consumer Staples) — Food, beverages, essentials</div>
+              <div>• <strong>XLU</strong> (Utilities) — Dividend-heavy, low volatility</div>
+              <div>• <strong>VTV or SCHV</strong> (Value ETF) — Lower P/E, dividend yield</div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+            <strong style="color:var(--text);">Growth Exposure (~` + Math.round(growthAlloc) + `% of equity allocation)</strong>
+            <div style="margin-top:6px;margin-left:12px;">
+              <div>• <strong>VTI</strong> (Total US Market) — Broad diversification, low cost</div>
+              <div>• <strong>QQQ</strong> (Nasdaq-100) — Tech/growth if you want upside</div>
+              <div>• <strong>VWO</strong> (Emerging Markets) — Diversification, cyclical recovery</div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+            <strong style="color:var(--text);">Bonds (~` + bondAlloc + `%)</strong>
+            <div style="margin-top:6px;margin-left:12px;">
+              <div>• <strong>BND</strong> or <strong>VBTLX</strong> — Total bond market (safest)</div>
+              <div>• <strong>TLT</strong> — Long-term treasuries (if rates are falling)</div>
+              <div>• <strong>VGIT</strong> — Intermediate treasuries (balanced)</div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <strong style="color:var(--text);">Cash/Alternatives (~` + cashAlloc + `%)</strong>
+            <div style="margin-top:6px;margin-left:12px;">
+              <div>• <strong>SPAXX, VMFXX</strong> — Money market funds (0.5–1% yield)</div>
+              <div>• <strong>GLD or IAU</strong> — Gold ETF (inflation hedge, 5–10% max)</div>
+              <div>• Keep balance in savings account or short-term CDs</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (regime === 'neutral') {
+    fundRecommendations = `
+      <div style="margin-top:16px;background:var(--surface2);border-radius:8px;padding:14px;">
+        <div style="font-weight:500;margin-bottom:12px;color:var(--text);">Specific ETFs to Buy (` + regimeLabel + `)</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.8;">
+          <div style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+            <strong style="color:var(--text);">Balanced Stock Mix (~` + equityAlloc + `% of portfolio)</strong>
+            <div style="margin-top:6px;margin-left:12px;">
+              <div>• <strong>VTV</strong> (60% of stock allocation) — Value, lower P/E, dividends</div>
+              <div>• <strong>QQQ</strong> (40% of stock allocation) — Growth, tech exposure</div>
+              <div>• <strong>VXUS</strong> (15% of stock allocation) — International diversification</div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+            <strong style="color:var(--text);">Bonds (~` + bondAlloc + `%)</strong>
+            <div style="margin-top:6px;margin-left:12px;">
+              <div>• <strong>BND or VBTLX</strong> — Core bond position (safest)</div>
+              <div>• <strong>VGIT</strong> — Intermediate treasuries (balanced)</div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <strong style="color:var(--text);">Cash/Alternatives (~` + cashAlloc + `%)</strong>
+            <div style="margin-top:6px;margin-left:12px;">
+              <div>• <strong>SPAXX</strong> — Money market (core emergency fund)</div>
+              <div>• <strong>GLD</strong> (5–10% max) — Gold inflation hedge</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    fundRecommendations = `
+      <div style="margin-top:16px;background:var(--surface2);border-radius:8px;padding:14px;">
+        <div style="font-weight:500;margin-bottom:12px;color:var(--text);">Specific ETFs to Buy (` + regimeLabel + `)</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.8;">
+          <div style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+            <strong style="color:var(--text);">Growth Stocks (~` + Math.round(equityAlloc * 0.6) + `% of portfolio)</strong>
+            <div style="margin-top:6px;margin-left:12px;">
+              <div>• <strong>QQQ</strong> — Tech/growth (largest allocation in bullish)</div>
+              <div>• <strong>VUG or SCHG</strong> — Quality growth stocks</div>
+              <div>• <strong>VB</strong> — Small-cap growth opportunity</div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+            <strong style="color:var(--text);">Core / Diversification (~` + Math.round(equityAlloc * 0.4) + `% of equity)</strong>
+            <div style="margin-top:6px;margin-left:12px;">
+              <div>• <strong>VTI</strong> — Total market exposure (stability)</div>
+              <div>• <strong>VWO or EEM</strong> — Emerging markets (cyclical recovery)</div>
+              <div>• <strong>VXUS</strong> — International developed (diversification)</div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+            <strong style="color:var(--text);">Bonds (~` + bondAlloc + `%)</strong>
+            <div style="margin-top:6px;margin-left:12px;">
+              <div>• <strong>BND</strong> — Core bond position (ballast)</div>
+              <div>• <strong>VGIT</strong> — Intermediate treasuries</div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <strong style="color:var(--text);">Minimal Cash (~` + cashAlloc + `%)</strong>
+            <div style="margin-top:6px;margin-left:12px;">
+              <div>• <strong>SPAXX</strong> — Small cash buffer for opportunities</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const html = `<div class="chart-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><div><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Market Environment</div><div style="font-size:20px;font-family:'Fraunces',serif;color:` + regimeColor + `;font-weight:300;">` + regimeLabel + `</div></div><div style="text-align:right;"><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Health Score</div><div style="font-size:28px;font-family:'Fraunces',serif;color:` + regimeColor + `;font-weight:300;">` + score + `</div></div></div><div style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;background:var(--surface2);"><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Recommended Allocation</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;"><div style="text-align:center;"><div style="font-size:24px;font-family:'Fraunces',serif;color:#60a5fa;font-weight:300;">` + equityAlloc + `%</div><div style="font-size:10px;color:var(--muted);margin-top:4px;">Stocks</div></div><div style="text-align:center;"><div style="font-size:24px;font-family:'Fraunces',serif;color:#fbbf24;font-weight:300;">` + bondAlloc + `%</div><div style="font-size:10px;color:var(--muted);margin-top:4px;">Bonds</div></div><div style="text-align:center;"><div style="font-size:24px;font-family:'Fraunces',serif;color:#9ca3af;font-weight:300;">` + cashAlloc + `%</div><div style="font-size:10px;color:var(--muted);margin-top:4px;">Cash</div></div></div><div style="font-size:10px;color:var(--muted);line-height:1.6;"><strong>Why:</strong> In ` + regimeLabel + ` with ` + risk + ` risk tolerance, this balances opportunity with protection.</div></div>` + fundRecommendations + `<div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:8px;border-left:3px solid ` + regimeColor + `;"><div style="font-size:10px;color:var(--muted);line-height:1.6;"><strong style="color:var(--text);">How to Execute:</strong><br>• <strong>Dollar-cost average (DCA)</strong> over 2–3 months to reduce timing risk<br>• Buy through a brokerage (Vanguard, Fidelity, Charles Schwab)<br>• <strong>Rebalance quarterly</strong> based on new macro outlook<br>• If health score moves ≥10 points, reassess allocation<br>• <strong>Tax consideration:</strong> Use tax-advantaged accounts first (401k, IRA, HSA)</div></div><div style="margin-top:16px;padding:12px;background:rgba(248,113,113,0.08);border-radius:8px;border-left:3px solid #f87171;"><div style="font-size:10px;color:#f87171;"><strong>⚠ Disclaimer:</strong> Not financial advice. Consult a financial advisor. Past performance ≠ future results. These are educational examples only.</div></div></div>`;
+
+  return html;
+}
 </script>
 </body>
 </html>
