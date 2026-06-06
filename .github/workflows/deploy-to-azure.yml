@@ -1,0 +1,98 @@
+name: Deploy to Azure Container Instances
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  REGISTRY_LOGIN_SERVER: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
+  REGISTRY_USERNAME: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+  REGISTRY_PASSWORD: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+  RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+  REGISTRY_NAME: ${{ secrets.AZURE_REGISTRY_NAME }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_LOGIN_SERVER }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-backend:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-backend:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-backend:buildcache,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-frontend:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-frontend:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-frontend:buildcache,mode=max
+
+      - name: Deploy to Azure Container Instances
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy containers to ACI
+        run: |
+          # Deploy backend
+          az container create \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name portfolio-backend \
+            --image ${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-backend:latest \
+            --registry-login-server ${{ env.REGISTRY_LOGIN_SERVER }} \
+            --registry-username ${{ env.REGISTRY_USERNAME }} \
+            --registry-password "${{ env.REGISTRY_PASSWORD }}" \
+            --cpu 1 \
+            --memory 1 \
+            --port 5000 \
+            --environment-variables \
+              ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
+            --no-wait \
+            --overwrite
+
+          # Deploy frontend
+          az container create \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name portfolio-frontend \
+            --image ${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-frontend:latest \
+            --registry-login-server ${{ env.REGISTRY_LOGIN_SERVER }} \
+            --registry-username ${{ env.REGISTRY_USERNAME }} \
+            --registry-password "${{ env.REGISTRY_PASSWORD }}" \
+            --cpu 0.5 \
+            --memory 0.5 \
+            --ports 80 \
+            --no-wait \
+            --overwrite
+
+          # Show deployment status
+          az container list \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --output table
+
+      - name: Get access URLs
+        run: |
+          echo "🎉 Deployment complete!"
+          echo ""
+          echo "Frontend URL:"
+          az container show \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name portfolio-frontend \
+            --query ipAddress.fqdn -o tsv
