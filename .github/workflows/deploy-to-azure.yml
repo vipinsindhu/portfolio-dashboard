@@ -33,8 +33,6 @@ jobs:
           context: ./backend
           push: true
           tags: ${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-backend:latest
-          cache-from: type=registry,ref=${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-backend:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-backend:buildcache,mode=max
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v5
@@ -42,8 +40,6 @@ jobs:
           context: ./frontend
           push: true
           tags: ${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-frontend:latest
-          cache-from: type=registry,ref=${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-frontend:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY_LOGIN_SERVER }}/portfolio-frontend:buildcache,mode=max
 
       - name: Deploy to Azure Container Instances
         uses: azure/login@v1
