@@ -51,6 +51,11 @@ jobs:
           # Login using environment variables
           az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
           az account set --subscription $AZURE_SUBSCRIPTION_ID
+          # Delete existing containers if they exist
+          az container delete --resource-group ${{ env.RESOURCE_GROUP }} --name portfolio-backend --yes 2>/dev/null || true
+          az container delete --resource-group ${{ env.RESOURCE_GROUP }} --name portfolio-frontend --yes 2>/dev/null || true
+          sleep 5
+
           # Deploy backend
           az container create \
             --resource-group ${{ env.RESOURCE_GROUP }} \
@@ -64,8 +69,7 @@ jobs:
             --port 5000 \
             --environment-variables \
               ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
-            --no-wait \
-            --overwrite
+            --no-wait
 
           # Deploy frontend
           az container create \
@@ -78,20 +82,32 @@ jobs:
             --cpu 0.5 \
             --memory 0.5 \
             --ports 80 \
-            --no-wait \
-            --overwrite
+            --no-wait
 
           # Show deployment status
+          sleep 10
           az container list \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --output table
 
       - name: Get access URLs
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
+          az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+          az account set --subscription $AZURE_SUBSCRIPTION_ID
+
           echo "🎉 Deployment complete!"
           echo ""
           echo "Frontend URL:"
-          az container show \
+          FRONTEND_URL=$(az container show \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --name portfolio-frontend \
-            --query ipAddress.fqdn -o tsv
+            --query ipAddress.fqdn -o tsv)
+          echo "http://$FRONTEND_URL"
+          echo ""
+          echo "Backend API:"
+          echo "http://$FRONTEND_URL/api/health"
