@@ -1,33 +1,17 @@
 version: '3.8'
 
 services:
-  ollama:
-    image: ollama/ollama:latest
-    container_name: portfolio-ollama
-    volumes:
-      - ollama_data:/root/.ollama
-    ports:
-      - "11434:11434"
-    environment:
-      - OLLAMA_HOST=0.0.0.0:11434
-    restart: unless-stopped
-    mem_limit: 4g
-
   portfolio-backend:
     build: ./backend
     container_name: portfolio-backend
     env_file: .env
     environment:
-      - OLLAMA_HOST=http://portfolio-ollama:11434
-      - REQUEST_TIMEOUT=300
+      - REQUEST_TIMEOUT=60
     volumes:
       - ./backend/macro_config.json:/app/macro_config.json
     ports:
       - "5000:5000"
-    depends_on:
-      - ollama
     restart: unless-stopped
-    mem_limit: 2g
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 60s
@@ -43,6 +27,3 @@ services:
     depends_on:
       - portfolio-backend
     restart: unless-stopped
-
-volumes:
-  ollama_data:
