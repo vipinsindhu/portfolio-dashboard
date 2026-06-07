@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Header from './components/Header'
 import TabBar from './components/TabBar'
+import Research from './components/Research'
 import SignalList from './components/SignalList'
 import SignalArchive from './components/SignalArchive'
 import MacroTab from './components/MacroTab'
@@ -8,7 +9,7 @@ import MacroTab from './components/MacroTab'
 function App() {
   const [signals, setSignals] = useState(null)
   const [macroData, setMacroData] = useState(null)
-  const [activeTab, setActiveTab] = useState('signals')
+  const [activeTab, setActiveTab] = useState('research')
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(null)
 
@@ -67,6 +68,11 @@ function App() {
       />
       <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
       <div className="content">
+        {activeTab === 'research' && (
+          <div className="panel active" id="tab-research">
+            <Research />
+          </div>
+        )}
         {activeTab === 'signals' && (
           <div className="panel active" id="tab-signals">
             <SignalList signals={signals.data} />

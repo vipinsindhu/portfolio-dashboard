@@ -2,6 +2,12 @@ function TabBar({ activeTab, onTabChange }) {
   return (
     <div className="tabs">
       <button
+        className={`tab ${activeTab === 'research' ? 'active' : ''}`}
+        onClick={() => onTabChange('research')}
+      >
+        Research
+      </button>
+      <button
         className={`tab ${activeTab === 'signals' ? 'active' : ''}`}
         onClick={() => onTabChange('signals')}
       >

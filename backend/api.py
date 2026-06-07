@@ -20,6 +20,7 @@ from signals import (
     load_signals,
     save_signals,
     update_signal_accuracy,
+    fetch_fundamentals,
 )
 
 def create_app():
@@ -170,6 +171,23 @@ def create_app():
             }), 200
         except Exception as e:
             print(f"Error updating accuracy: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    # ============= STOCK RESEARCH ENDPOINTS =============
+
+    @app.route("/api/stock/<ticker>", methods=["GET"])
+    def get_stock_data(ticker):
+        """Get stock fundamentals and research data"""
+        try:
+            ticker = ticker.upper()
+            data = fetch_fundamentals(ticker)
+
+            if not data or not data.get("current_price"):
+                return jsonify({"error": f"No data found for {ticker}"}), 404
+
+            return jsonify(data), 200
+        except Exception as e:
+            print(f"Error fetching stock data for {ticker}: {e}")
             return jsonify({"error": str(e)}), 500
 
     return app
