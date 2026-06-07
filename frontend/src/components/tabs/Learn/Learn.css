@@ -22,54 +22,6 @@
   margin: 0;
 }
 
-/* Filters */
-.learn-filters {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 32px;
-  padding: 20px;
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  flex-wrap: wrap;
-  align-items: flex-end;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.filter-group label {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-secondary);
-}
-
-.filter-group select {
-  padding: 10px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 14px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  cursor: pointer;
-  min-width: 180px;
-}
-
-.filter-group select:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(85, 104, 211, 0.1);
-}
-
-.filter-reset {
-  display: flex;
-  gap: 8px;
-}
-
 /* Lessons Grid */
 .lessons-grid {
   display: grid;
@@ -78,31 +30,6 @@
   margin-bottom: 32px;
 }
 
-.no-lessons {
-  grid-column: 1 / -1;
-  padding: 60px 20px;
-  text-align: center;
-  color: var(--text-secondary);
-}
-
-.no-lessons p {
-  font-size: 16px;
-  margin: 0;
-}
-
-/* Summary */
-.lessons-summary {
-  text-align: center;
-  padding: 16px;
-  background: var(--bg-secondary);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.lessons-summary p {
-  margin: 0;
-}
 
 /* Loading State */
 .learn-container.loading {
@@ -133,24 +60,6 @@
 
   .learn-header h2 {
     font-size: 22px;
-  }
-
-  .learn-filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .filter-group {
-    width: 100%;
-  }
-
-  .filter-group select {
-    min-width: unset;
-    width: 100%;
-  }
-
-  .filter-reset {
-    width: 100%;
   }
 
   .lessons-grid {
