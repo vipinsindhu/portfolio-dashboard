@@ -26,14 +26,7 @@ COPY --from=builder /build/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf.template
 
 # Create entrypoint script for environment variable substitution
-RUN echo '#!/bin/sh\n\
-if [ -z "$BACKEND_URL" ]; then\n\
-  BACKEND_URL="http://portfolio-backend:5000"\n\
-fi\n\
-export BACKEND_URL\n\
-envsubst '\''${BACKEND_URL}'\'' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf\n\
-exec nginx -g "daemon off;"\n' > /docker-entrypoint.sh && \
-chmod +x /docker-entrypoint.sh
+RUN printf '#!/bin/sh\nBACKEND_URL="${BACKEND_URL:-http://portfolio-backend:5000}"\nsed "s|BACKEND_URL_PLACEHOLDER|${BACKEND_URL}|g" /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf\nexec nginx -g "daemon off;"\n' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

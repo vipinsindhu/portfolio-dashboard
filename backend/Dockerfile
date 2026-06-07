@@ -11,14 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
-COPY api.py .
-COPY config.py .
-COPY models.py .
-COPY signals.py .
-COPY signals_db.py .
-COPY fetch_macro.py .
-COPY macro_config.json .
+# Copy application files (only essential files without sqlalchemy dependencies)
+COPY api.py signals.py ./
 
 # Expose port
 EXPOSE 5000
@@ -34,4 +28,4 @@ CMD exec gunicorn \
     --timeout ${REQUEST_TIMEOUT:-120} \
     --access-logfile - \
     --error-logfile - \
-    api:create_app
+    api:app

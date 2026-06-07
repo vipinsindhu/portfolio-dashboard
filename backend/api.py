@@ -13,16 +13,32 @@ from datetime import datetime, timedelta
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(__file__))
 
-from config import get_config
-from models import init_db, get_session
-from signals_db import SignalStore, MacroConfigStore
 from signals import (
     generate_signals,
     update_signal_accuracy,
     fetch_fundamentals,
-    fetch_macro_context,
-    get_macro_sentiment,
+    load_signals,
+    save_signals,
 )
+
+# Optional database imports
+try:
+    from config import get_config
+    from models import init_db, get_session
+    from signals_db import SignalStore, MacroConfigStore
+    HAS_DATABASE = True
+except ImportError:
+    HAS_DATABASE = False
+
+    class DummyConfig:
+        def __init__(self):
+            self.DATABASE_URL = "sqlite:///portfolio.db"
+            self.CORS_ORIGINS = "*"
+            self.SIGNALS_FILE = "signals.json"
+            self.MACRO_CONFIG_FILE = "macro_config.json"
+
+    def get_config():
+        return DummyConfig()
 
 
 def create_app():
@@ -35,17 +51,45 @@ def create_app():
     # Initialize CORS
     CORS(app, origins=app.config.get("CORS_ORIGINS", "*").split(","))
 
-    # Initialize database
-    try:
-        engine = init_db(app.config["DATABASE_URL"])
-        session = get_session(engine)
-        signal_store = SignalStore(session=session, file_path=app.config["SIGNALS_FILE"])
-        macro_store = MacroConfigStore(session=session, file_path=app.config["MACRO_CONFIG_FILE"])
-        app.logger.info(f"Database initialized: {app.config['DATABASE_URL']}")
-    except Exception as e:
-        app.logger.warning(f"Database initialization failed, falling back to file storage: {e}")
-        signal_store = SignalStore(session=None, file_path=app.config["SIGNALS_FILE"])
-        macro_store = MacroConfigStore(session=None, file_path=app.config["MACRO_CONFIG_FILE"])
+    # Initialize storage (database optional, file storage fallback)
+    if HAS_DATABASE:
+        try:
+            engine = init_db(app.config["DATABASE_URL"])
+            session = get_session(engine)
+            signal_store = SignalStore(session=session, file_path=app.config["SIGNALS_FILE"])
+            macro_store = MacroConfigStore(session=session, file_path=app.config["MACRO_CONFIG_FILE"])
+            app.logger.info(f"Database initialized: {app.config['DATABASE_URL']}")
+        except Exception as e:
+            app.logger.warning(f"Database initialization failed, falling back to file storage: {e}")
+            signal_store = SignalStore(session=None, file_path=app.config["SIGNALS_FILE"])
+            macro_store = MacroConfigStore(session=None, file_path=app.config["MACRO_CONFIG_FILE"])
+    else:
+        # Fallback to simple file-based storage
+        class SimpleSignalStore:
+            def __init__(self):
+                self.use_database = False
+            def get_latest_signals(self, limit=5):
+                signals = load_signals()
+                return {"data": signals.get("signals", [])[:limit], "generated_at": signals.get("generated_at"), "total": len(signals.get("signals", []))}
+            def get_signal_archive(self, limit=100):
+                signals = load_signals()
+                return {"signals": signals.get("signals", [])[:limit], "total": len(signals.get("signals", []))}
+            def get_signal_by_id(self, signal_id):
+                signals = load_signals()
+                for s in signals.get("signals", []):
+                    if s.get("id") == signal_id:
+                        return s
+                return None
+            def save_signals(self, signals):
+                data = load_signals()
+                data["signals"] = signals + data.get("signals", [])
+                data["generated_at"] = datetime.utcnow().isoformat()
+                save_signals(data)
+                return True
+
+        signal_store = SimpleSignalStore()
+        macro_store = None
+        app.logger.info("Using file-based storage (database not available)")
 
     # ============= HEALTH & STATUS =============
 
@@ -68,7 +112,10 @@ def create_app():
     @app.route("/api/macro", methods=["GET"])
     def get_macro():
         """Return current macro configuration"""
-        config = macro_store.get_config()
+        if macro_store:
+            config = macro_store.get_config()
+        else:
+            config = {"macro_signals": {}, "last_updated": None}
         return jsonify(config), 200
 
     @app.route("/api/macro-signals", methods=["GET"])
@@ -196,7 +243,10 @@ def create_app():
     return app
 
 
+# Module-level app for gunicorn
+app = create_app()
+
+
 if __name__ == "__main__":
-    app = create_app()
     port = int(os.getenv("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=os.getenv("DEBUG", "false").lower() == "true")
