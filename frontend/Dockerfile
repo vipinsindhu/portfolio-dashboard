@@ -3,7 +3,7 @@ FROM node:20-slim AS builder
 WORKDIR /build
 
 COPY package*.json ./
-RUN npm install
+RUN npm install && chmod +x /build/node_modules/.bin/*
 
 COPY . .
 RUN npm run build
