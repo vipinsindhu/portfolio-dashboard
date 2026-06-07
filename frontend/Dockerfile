@@ -3,10 +3,10 @@ FROM node:20-slim AS builder
 WORKDIR /build
 
 COPY package*.json ./
-RUN npm install && chmod +x /build/node_modules/.bin/*
+RUN npm install
 
 COPY . .
-RUN npm run build
+RUN node_modules/.bin/vite build
 
 FROM nginx:alpine
 
