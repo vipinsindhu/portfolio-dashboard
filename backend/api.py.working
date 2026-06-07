@@ -1,6 +1,6 @@
 """
-Portfolio Dashboard API
-Flask backend serving macro data, analysis, and fund metrics
+Portfolio Builder API
+Flask backend serving macro data and refresh endpoint
 """
 
 from flask import Flask, jsonify
@@ -26,10 +26,6 @@ def create_app():
                 return {"macro_signals": {}, "last_updated": None}
         return {"macro_signals": {}, "last_updated": None}
 
-    @app.route("/test")
-    def test():
-        return jsonify({"message": "test route works"}), 200
-
     @app.route("/api/health", methods=["GET"])
     def health():
         """Health check endpoint"""
@@ -43,24 +39,6 @@ def create_app():
         """Return current macro configuration"""
         config = load_macro_config()
         return jsonify(config), 200
-
-    @app.route("/api/macro-signals", methods=["GET"])
-    def get_macro_signals():
-        """Return macro signals (new endpoint)"""
-        config = load_macro_config()
-        return jsonify({
-            "signals": config.get("macro_signals", {}),
-            "last_updated": config.get("last_updated")
-        }), 200
-
-    @app.route("/api/macro-analysis", methods=["GET"])
-    def get_macro_analysis():
-        """Return complete macro analysis dashboard"""
-        config = load_macro_config()
-        return jsonify({
-            "macro_signals": config.get("macro_signals", {}),
-            "metadata": {"last_updated": config.get("last_updated"), "status": "ready"}
-        }), 200
 
     @app.route("/api/refresh", methods=["POST"])
     def refresh():
@@ -76,22 +54,6 @@ def create_app():
         except Exception as e:
             print(f"Error refreshing macro data: {e}")
             return jsonify({"error": str(e)}), 500
-
-    @app.route("/api/refresh-analysis", methods=["POST"])
-    def refresh_analysis():
-        """Trigger analysis refresh (alias for /api/refresh)"""
-        try:
-            import fetch_macro
-            fetch_macro.main()
-            config = load_macro_config()
-            return jsonify({
-                "status": "success",
-                "message": "Analysis updated",
-                "metadata": {"last_updated": config.get("last_updated")}
-            }), 200
-        except Exception as e:
-            print(f"Error refreshing analysis: {e}")
-            return jsonify({"status": "error", "message": str(e)}), 500
 
     return app
 
