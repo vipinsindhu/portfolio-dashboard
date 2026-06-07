@@ -54,7 +54,8 @@ def create_app():
         """Health check endpoint"""
         return jsonify({
             "status": "ok",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
+            "db_available": DB_AVAILABLE
         }), 200
 
     @app.route("/api/macro-signals", methods=["GET"])
