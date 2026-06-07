@@ -21,6 +21,29 @@ from signals import (
     save_signals,
     refresh_macro_data,
     auto_generate_signals,
+    fetch_macro_context,
+    fetch_fundamentals,
+)
+from educational import (
+    get_all_lessons,
+    get_lesson_by_id,
+    get_lessons_by_category,
+    get_lesson_categories,
+)
+from portfolio import (
+    Portfolio,
+    Holding,
+    parse_csv,
+    create_portfolio,
+    validate_portfolio,
+    save_portfolio,
+    load_portfolio,
+)
+from analysis import analyze_portfolio
+from signals_filter import (
+    filter_signals_by_timeframe,
+    filter_signals_with_portfolio,
+    TimeHorizon,
 )
 
 # Optional database imports
@@ -229,6 +252,364 @@ def create_app():
             return jsonify(data), 200
         except Exception as e:
             app.logger.error(f"Error fetching stock data for {ticker}: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    # ============= LEARN TAB ENDPOINTS =============
+
+    @app.route("/api/learn/lessons", methods=["GET"])
+    def get_lessons():
+        """Get all educational lessons"""
+        try:
+            category = request.args.get("category")
+            difficulty = request.args.get("difficulty")
+
+            lessons = get_all_lessons()
+
+            if category:
+                lessons = [l for l in lessons if l["category"] == category]
+
+            if difficulty:
+                lessons = [l for l in lessons if l["difficulty"] == difficulty]
+
+            return jsonify({
+                "lessons": lessons,
+                "total": len(lessons)
+            }), 200
+        except Exception as e:
+            app.logger.error(f"Error fetching lessons: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/learn/lessons/<lesson_id>", methods=["GET"])
+    def get_lesson(lesson_id):
+        """Get single lesson by ID"""
+        try:
+            lesson = get_lesson_by_id(lesson_id)
+
+            if not lesson:
+                return jsonify({"error": "Lesson not found"}), 404
+
+            return jsonify(lesson), 200
+        except Exception as e:
+            app.logger.error(f"Error fetching lesson: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/learn/categories", methods=["GET"])
+    def get_categories():
+        """Get lesson categories"""
+        try:
+            categories = get_lesson_categories()
+            return jsonify({"categories": categories}), 200
+        except Exception as e:
+            app.logger.error(f"Error fetching categories: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    # ============= PORTFOLIO ENDPOINTS =============
+
+    @app.route("/api/portfolio", methods=["GET"])
+    def get_portfolio():
+        """Get current portfolio"""
+        try:
+            portfolio = load_portfolio()
+
+            if not portfolio:
+                return jsonify({
+                    "message": "No portfolio loaded",
+                    "portfolio": None
+                }), 200
+
+            return jsonify({
+                "portfolio": {
+                    "holdings": [
+                        {
+                            "symbol": h.symbol,
+                            "quantity": h.quantity,
+                            "purchase_price": h.purchase_price,
+                            "current_price": h.current_price,
+                            "current_value": h.current_value,
+                            "gain_loss": h.gain_loss,
+                            "gain_loss_pct": h.gain_loss_pct
+                        }
+                        for h in portfolio.holdings
+                    ],
+                    "total_value": portfolio.total_current_value,
+                    "total_cost_basis": portfolio.total_cost_basis,
+                    "total_gain_loss": portfolio.total_gain_loss,
+                    "total_gain_loss_pct": portfolio.total_gain_loss_pct,
+                    "holding_count": portfolio.holding_count,
+                    "created_at": portfolio.created_at,
+                    "updated_at": portfolio.updated_at
+                }
+            }), 200
+        except Exception as e:
+            app.logger.error(f"Error fetching portfolio: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/portfolio/upload", methods=["POST"])
+    def upload_portfolio():
+        """Upload portfolio via CSV"""
+        try:
+            if "file" not in request.files:
+                return jsonify({"error": "No file provided"}), 400
+
+            file = request.files["file"]
+            csv_content = file.read().decode("utf-8")
+
+            # Parse CSV
+            holdings = parse_csv(csv_content)
+
+            # Create portfolio
+            portfolio = create_portfolio(holdings)
+
+            # Validate
+            validation = validate_portfolio(portfolio)
+
+            if not validation["valid"]:
+                return jsonify({
+                    "error": "Invalid portfolio",
+                    "errors": validation["errors"]
+                }), 400
+
+            # Save
+            save_portfolio(portfolio)
+
+            return jsonify({
+                "status": "success",
+                "message": f"Loaded {len(holdings)} holdings",
+                "holdings": len(holdings)
+            }), 201
+        except Exception as e:
+            app.logger.error(f"Error uploading portfolio: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/portfolio/add-holding", methods=["POST"])
+    def add_holding():
+        """Add single holding to portfolio"""
+        try:
+            data = request.json
+
+            # Validate input
+            if not all(k in data for k in ["symbol", "quantity", "purchase_price"]):
+                return jsonify({"error": "Missing required fields"}), 400
+
+            # Load or create portfolio
+            portfolio = load_portfolio()
+            if not portfolio:
+                portfolio = create_portfolio([])
+
+            # Add holding
+            holding = Holding(
+                symbol=data["symbol"].upper(),
+                quantity=float(data["quantity"]),
+                purchase_price=float(data["purchase_price"]),
+                current_price=float(data.get("current_price", data["purchase_price"]))
+            )
+
+            portfolio.add_holding(holding)
+
+            # Save
+            save_portfolio(portfolio)
+
+            return jsonify({
+                "status": "success",
+                "message": f"Added {holding.symbol}",
+                "holding": {
+                    "symbol": holding.symbol,
+                    "quantity": holding.quantity,
+                    "purchase_price": holding.purchase_price,
+                    "current_value": holding.current_value
+                }
+            }), 201
+        except Exception as e:
+            app.logger.error(f"Error adding holding: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    # ============= ANALYSIS ENDPOINTS =============
+
+    @app.route("/api/portfolio/analysis", methods=["GET"])
+    def analyze_portfolio_route():
+        """Analyze current portfolio for pitfalls"""
+        try:
+            portfolio = load_portfolio()
+
+            if not portfolio:
+                return jsonify({
+                    "error": "No portfolio loaded",
+                    "message": "Upload a portfolio first"
+                }), 400
+
+            # Run analysis
+            analysis = analyze_portfolio(portfolio)
+
+            return jsonify({
+                "status": "success",
+                "pitfalls": [
+                    {
+                        "lesson_id": p.lesson_id,
+                        "lesson_title": p.lesson_title,
+                        "severity": p.severity,
+                        "message": p.message,
+                        "recommendation": p.recommendation,
+                        "affected_holdings": p.affected_holdings
+                    }
+                    for p in analysis.pitfalls
+                ],
+                "risk_metrics": analysis.risk_metrics,
+                "sector_allocation": analysis.sector_allocation,
+                "concentration_metrics": analysis.concentration_metrics,
+                "recommendations": analysis.recommendations,
+                "summary": analysis.summary,
+                "holding_count": portfolio.holding_count,
+                "portfolio_value": portfolio.total_current_value
+            }), 200
+        except Exception as e:
+            app.logger.error(f"Error analyzing portfolio: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    # ============= SIGNALS FILTERING ENDPOINTS =============
+
+    @app.route("/api/signals/short-term", methods=["GET"])
+    def get_short_term_signals():
+        """Get short-term investment signals (1-3 months)"""
+        try:
+            # Load current signals
+            signals_data = load_signals()
+            signals = signals_data.get("signals", [])
+
+            # Load macro context for market conditions
+            macro_data = fetch_macro_context(use_cache=True)
+
+            # Filter for short-term
+            filtered = filter_signals_by_timeframe(
+                signals,
+                TimeHorizon.SHORT_TERM,
+                macro_data
+            )
+
+            return jsonify({
+                "status": "success",
+                "timeframe": "short_term",
+                "signals": [
+                    {
+                        "ticker": s.ticker,
+                        "direction": s.direction,
+                        "confidence": s.confidence,
+                        "rationale": s.rationale,
+                        "portfolio_context": s.portfolio_context,
+                        "recommendation_type": s.recommendation_type
+                    }
+                    for s in filtered
+                ],
+                "count": len(filtered),
+                "market_conditions": {
+                    "vix": macro_data.get("vix"),
+                    "fed_rate": macro_data.get("fed_rate"),
+                    "inflation": macro_data.get("inflation")
+                }
+            }), 200
+        except Exception as e:
+            app.logger.error(f"Error getting short-term signals: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/signals/long-term", methods=["GET"])
+    def get_long_term_signals():
+        """Get long-term investment signals (1+ years)"""
+        try:
+            # Load current signals
+            signals_data = load_signals()
+            signals = signals_data.get("signals", [])
+
+            # Load macro context
+            macro_data = fetch_macro_context(use_cache=True)
+
+            # Filter for long-term
+            filtered = filter_signals_by_timeframe(
+                signals,
+                TimeHorizon.LONG_TERM,
+                macro_data
+            )
+
+            return jsonify({
+                "status": "success",
+                "timeframe": "long_term",
+                "signals": [
+                    {
+                        "ticker": s.ticker,
+                        "direction": s.direction,
+                        "confidence": s.confidence,
+                        "rationale": s.rationale,
+                        "portfolio_context": s.portfolio_context,
+                        "recommendation_type": s.recommendation_type
+                    }
+                    for s in filtered
+                ],
+                "count": len(filtered)
+            }), 200
+        except Exception as e:
+            app.logger.error(f"Error getting long-term signals: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/portfolio/recommendations", methods=["GET"])
+    def get_portfolio_recommendations():
+        """Get signals tailored to user's portfolio"""
+        try:
+            timeframe = request.args.get("timeframe", "short_term")
+            portfolio = load_portfolio()
+
+            # Load signals
+            signals_data = load_signals()
+            signals = signals_data.get("signals", [])
+
+            # Load macro
+            macro_data = fetch_macro_context(use_cache=True)
+
+            # Filter with portfolio context
+            horizon = TimeHorizon.SHORT_TERM if timeframe == "short_term" else TimeHorizon.LONG_TERM
+            recommendations = filter_signals_with_portfolio(
+                signals,
+                portfolio,
+                horizon,
+                macro_data
+            )
+
+            return jsonify({
+                "status": "success",
+                "timeframe": timeframe,
+                "portfolio_holdings": recommendations.get("portfolio_holdings", 0),
+                "portfolio_value": recommendations.get("portfolio_value", 0),
+                "sell_reduce": [
+                    {
+                        "ticker": s.ticker,
+                        "direction": s.direction,
+                        "confidence": s.confidence,
+                        "rationale": s.rationale,
+                        "portfolio_context": s.portfolio_context,
+                        "weight_in_portfolio": f"{s.weight_in_portfolio:.1%}"
+                    }
+                    for s in recommendations.get("sell_reduce", [])
+                ],
+                "hold": [
+                    {
+                        "ticker": s.ticker,
+                        "direction": s.direction,
+                        "confidence": s.confidence,
+                        "rationale": s.rationale,
+                        "weight_in_portfolio": f"{s.weight_in_portfolio:.1%}"
+                    }
+                    for s in recommendations.get("hold", [])
+                ],
+                "add": [
+                    {
+                        "ticker": s.ticker,
+                        "direction": s.direction,
+                        "confidence": s.confidence,
+                        "rationale": s.rationale,
+                        "portfolio_context": s.portfolio_context
+                    }
+                    for s in recommendations.get("add", [])
+                ]
+            }), 200
+        except Exception as e:
+            app.logger.error(f"Error getting recommendations: {e}")
             return jsonify({"error": str(e)}), 500
 
     # ============= ERROR HANDLERS =============
