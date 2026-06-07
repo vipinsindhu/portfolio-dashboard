@@ -1,0 +1,234 @@
+.portfolio-input-container {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 28px;
+  margin-bottom: 32px;
+}
+
+.input-header {
+  margin-bottom: 24px;
+}
+
+.input-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.input-header p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Error/Success Messages */
+.input-error {
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 6px;
+  color: #c33;
+  font-size: 14px;
+}
+
+.input-success {
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: rgba(13, 125, 59, 0.1);
+  border: 1px solid rgba(13, 125, 59, 0.3);
+  border-radius: 6px;
+  color: #0d7d3b;
+  font-size: 14px;
+}
+
+/* Method Tabs */
+.input-method-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.method-tab {
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-secondary);
+  position: relative;
+  transition: color 0.2s;
+}
+
+.method-tab:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+.method-tab.active {
+  color: var(--primary-color);
+}
+
+.method-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary-color);
+}
+
+.method-tab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Input Method Container */
+.input-method {
+  padding: 20px;
+  background: var(--bg-primary);
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+/* CSV Upload */
+.csv-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.upload-zone {
+  position: relative;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-label:hover {
+  border-color: var(--primary-color);
+  background: rgba(85, 104, 211, 0.05);
+}
+
+.upload-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.upload-text {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: var(--text-primary);
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Manual Entry Form */
+.manual-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.form-group input {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(85, 104, 211, 0.1);
+}
+
+.form-group input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--bg-primary);
+}
+
+/* Footer */
+.input-footer {
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.footer-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .portfolio-input-container {
+    padding: 20px;
+  }
+
+  .input-method-tabs {
+    gap: 8px;
+  }
+
+  .method-tab {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .upload-label {
+    padding: 30px 15px;
+  }
+
+  .upload-icon {
+    font-size: 24px;
+  }
+
+  .upload-text {
+    font-size: 14px;
+  }
+
+  .upload-hint {
+    font-size: 11px;
+  }
+
+  .input-method {
+    padding: 16px;
+  }
+}
