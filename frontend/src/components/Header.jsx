@@ -15,14 +15,14 @@ function Header({ lastUpdated, onRefresh, refreshing }) {
   return (
     <div className="header">
       <h1>Portfolio Builder</h1>
-      <p>Macro Indicators · Market Outlook · Updated {formatDate(lastUpdated)}</p>
+      <p>Macro Indicators · Market Outlook · Signals auto-generated hourly · Last Updated {formatDate(lastUpdated)}</p>
       <div className="header-right">
         <button
           className="refresh-btn"
           onClick={onRefresh}
           disabled={refreshing}
         >
-          {refreshing ? 'Refreshing...' : 'Refresh Macro Data'}
+          {refreshing ? 'Refreshing...' : 'Refresh Now'}
         </button>
       </div>
     </div>

@@ -20,6 +20,7 @@ from signals import (
     load_signals,
     save_signals,
     refresh_macro_data,
+    auto_generate_signals,
 )
 
 # Optional database imports
@@ -241,7 +242,7 @@ def create_app():
         app.logger.error(f"Internal error: {error}")
         return jsonify({"error": "Internal server error"}), 500
 
-    # Initialize APScheduler for hourly macro data refresh
+    # Initialize APScheduler for periodic data refresh
     scheduler = BackgroundScheduler()
     scheduler.add_job(
         refresh_macro_data,
@@ -251,13 +252,21 @@ def create_app():
         name="Refresh macro data every hour",
         replace_existing=True
     )
+    scheduler.add_job(
+        auto_generate_signals,
+        trigger="interval",
+        hours=1,
+        id="signal_generation",
+        name="Auto-generate signals every hour",
+        replace_existing=True
+    )
 
     @app.before_request
     def start_scheduler():
         """Start scheduler on first request if not already running"""
         if not scheduler.running:
             scheduler.start()
-            app.logger.info("✅ Macro data scheduler started (refresh every 1 hour)")
+            app.logger.info("✅ Schedulers started: macro refresh + signal generation (every 1 hour)")
 
     return app
 
