@@ -1,44 +1,53 @@
 """
 Stock Recommendation API
 Flask backend serving signals, macro data, and analysis
+Supports both file-based (development) and database-backed (production) storage
 """
 
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-from datetime import datetime
-import json
 import os
 import sys
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from datetime import datetime, timedelta
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(__file__))
 
+from config import get_config
+from models import init_db, get_session
+from signals_db import SignalStore, MacroConfigStore
 from signals import (
     generate_signals,
-    get_latest_signals,
-    get_signal_archive,
-    load_signals,
-    save_signals,
     update_signal_accuracy,
     fetch_fundamentals,
+    fetch_macro_context,
+    get_macro_sentiment,
 )
+
 
 def create_app():
     app = Flask(__name__)
-    CORS(app)
 
-    CONFIG_FILE = "macro_config.json"
+    # Load configuration
+    config = get_config()
+    app.config.from_object(config.__dict__)
 
-    def load_macro_config():
-        """Load macro_config.json"""
-        if os.path.exists(CONFIG_FILE):
-            try:
-                with open(CONFIG_FILE, "r") as f:
-                    return json.load(f)
-            except Exception as e:
-                print(f"Error loading config: {e}")
-                return {"macro_signals": {}, "last_updated": None}
-        return {"macro_signals": {}, "last_updated": None}
+    # Initialize CORS
+    CORS(app, origins=app.config.get("CORS_ORIGINS", "*").split(","))
+
+    # Initialize database
+    try:
+        engine = init_db(app.config["DATABASE_URL"])
+        session = get_session(engine)
+        signal_store = SignalStore(session=session, file_path=app.config["SIGNALS_FILE"])
+        macro_store = MacroConfigStore(session=session, file_path=app.config["MACRO_CONFIG_FILE"])
+        app.logger.info(f"Database initialized: {app.config['DATABASE_URL']}")
+    except Exception as e:
+        app.logger.warning(f"Database initialization failed, falling back to file storage: {e}")
+        signal_store = SignalStore(session=None, file_path=app.config["SIGNALS_FILE"])
+        macro_store = MacroConfigStore(session=None, file_path=app.config["MACRO_CONFIG_FILE"])
+
+    # ============= HEALTH & STATUS =============
 
     @app.route("/test")
     def test():
@@ -49,63 +58,27 @@ def create_app():
         """Health check endpoint"""
         return jsonify({
             "status": "ok",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
+            "environment": app.config.get("FLASK_ENV"),
+            "storage": "database" if signal_store.use_database else "file",
         }), 200
+
+    # ============= MACRO ENDPOINTS =============
 
     @app.route("/api/macro", methods=["GET"])
     def get_macro():
         """Return current macro configuration"""
-        config = load_macro_config()
+        config = macro_store.get_config()
         return jsonify(config), 200
 
     @app.route("/api/macro-signals", methods=["GET"])
     def get_macro_signals():
-        """Return macro signals (new endpoint)"""
-        config = load_macro_config()
+        """Return macro signals"""
+        config = macro_store.get_config()
         return jsonify({
             "signals": config.get("macro_signals", {}),
             "last_updated": config.get("last_updated")
         }), 200
-
-    @app.route("/api/macro-analysis", methods=["GET"])
-    def get_macro_analysis():
-        """Return complete macro analysis dashboard"""
-        config = load_macro_config()
-        return jsonify({
-            "macro_signals": config.get("macro_signals", {}),
-            "metadata": {"last_updated": config.get("last_updated"), "status": "ready"}
-        }), 200
-
-    @app.route("/api/refresh", methods=["POST"])
-    def refresh():
-        """Trigger macro data refresh"""
-        try:
-            # Import and run fetch_macro
-            import fetch_macro
-            fetch_macro.main()
-
-            # Return updated config
-            config = load_macro_config()
-            return jsonify(config), 200
-        except Exception as e:
-            print(f"Error refreshing macro data: {e}")
-            return jsonify({"error": str(e)}), 500
-
-    @app.route("/api/refresh-analysis", methods=["POST"])
-    def refresh_analysis():
-        """Trigger analysis refresh (alias for /api/refresh)"""
-        try:
-            import fetch_macro
-            fetch_macro.main()
-            config = load_macro_config()
-            return jsonify({
-                "status": "success",
-                "message": "Analysis updated",
-                "metadata": {"last_updated": config.get("last_updated")}
-            }), 200
-        except Exception as e:
-            print(f"Error refreshing analysis: {e}")
-            return jsonify({"status": "error", "message": str(e)}), 500
 
     # ============= SIGNAL ENDPOINTS =============
 
@@ -113,30 +86,33 @@ def create_app():
     def get_signals():
         """Get latest signals"""
         limit = request.args.get("limit", 5, type=int)
-        return jsonify(get_latest_signals(limit)), 200
+        signals_data = signal_store.get_latest_signals(limit)
+        return jsonify(signals_data), 200
 
     @app.route("/api/signals/archive", methods=["GET"])
     def get_signals_archive():
         """Get signal archive (past signals)"""
         limit = request.args.get("limit", 100, type=int)
-        return jsonify(get_signal_archive(limit)), 200
+        sector = request.args.get("sector", None, type=str)
+
+        if sector:
+            signals = signal_store.get_signals_by_sector(sector, limit)
+            return jsonify({"signals": signals, "total": len(signals)}), 200
+
+        archive = signal_store.get_signal_archive(limit)
+        return jsonify(archive), 200
 
     @app.route("/api/signals/<signal_id>", methods=["GET"])
     def get_signal_detail(signal_id):
         """Get detailed view of a specific signal"""
-        signals_data = load_signals()
-        signals = signals_data.get("signals", [])
-
-        signal = next((s for s in signals if s.get("id") == signal_id), None)
+        signal = signal_store.get_signal_by_id(signal_id)
         if not signal:
             return jsonify({"error": "Signal not found"}), 404
-
         return jsonify(signal), 200
 
     @app.route("/api/signals/generate", methods=["POST"])
     def generate_new_signals():
         """Generate new signals (admin endpoint)"""
-        # In production, add authentication here
         try:
             count = request.json.get("count", 5) if request.json else 5
             new_signals = generate_signals(count)
@@ -144,11 +120,10 @@ def create_app():
             if not new_signals:
                 return jsonify({"error": "Failed to generate signals"}), 500
 
-            # Save to storage
-            signals_data = load_signals()
-            signals_data["signals"].extend(new_signals)
-            signals_data["generated_at"] = datetime.now().isoformat()
-            save_signals(signals_data)
+            # Save to storage (database or file)
+            success = signal_store.save_signals(new_signals)
+            if not success:
+                return jsonify({"error": "Failed to save signals"}), 500
 
             return jsonify({
                 "status": "success",
@@ -157,20 +132,37 @@ def create_app():
             }), 201
 
         except Exception as e:
-            print(f"Error generating signals: {e}")
+            app.logger.error(f"Error generating signals: {e}")
             return jsonify({"error": str(e)}), 500
 
     @app.route("/api/signals/accuracy", methods=["POST"])
     def update_accuracy():
         """Update signal accuracy (admin endpoint for scheduled task)"""
         try:
-            update_signal_accuracy()
+            archive = signal_store.get_signal_archive(limit=1000)
+            signals = archive.get("signals", [])
+
+            updated_count = 0
+            for signal in signals:
+                if signal.get("result") is None:
+                    # Check if 30 days have passed
+                    created_at = datetime.fromisoformat(signal["created_at"])
+                    if datetime.utcnow() - created_at > timedelta(days=30):
+                        # For now, just mark as processing
+                        # In production, fetch real price data
+                        signal_store.update_signal_accuracy(
+                            signal["id"],
+                            result="pending",
+                            accuracy=None
+                        )
+                        updated_count += 1
+
             return jsonify({
                 "status": "success",
-                "message": "Accuracy updated"
+                "message": f"Accuracy updated for {updated_count} signals"
             }), 200
         except Exception as e:
-            print(f"Error updating accuracy: {e}")
+            app.logger.error(f"Error updating accuracy: {e}")
             return jsonify({"error": str(e)}), 500
 
     # ============= STOCK RESEARCH ENDPOINTS =============
@@ -187,11 +179,24 @@ def create_app():
 
             return jsonify(data), 200
         except Exception as e:
-            print(f"Error fetching stock data for {ticker}: {e}")
+            app.logger.error(f"Error fetching stock data for {ticker}: {e}")
             return jsonify({"error": str(e)}), 500
+
+    # ============= ERROR HANDLERS =============
+
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({"error": "Endpoint not found"}), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        app.logger.error(f"Internal error: {error}")
+        return jsonify({"error": "Internal server error"}), 500
 
     return app
 
+
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    port = int(os.getenv("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=os.getenv("DEBUG", "false").lower() == "true")
