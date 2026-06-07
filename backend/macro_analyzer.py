@@ -95,8 +95,12 @@ FUND_FORECAST = {
 }
 
 def load_holdings():
-    """Load main holdings from CSV"""
+    """Load main holdings from CSV (optional - returns empty if not found)"""
     holdings = []
+    if not os.path.exists(HOLDINGS_FILE):
+        print(f"Info: {HOLDINGS_FILE} not found - proceeding with empty holdings")
+        return holdings
+
     try:
         with open(HOLDINGS_FILE) as f:
             for row in csv.DictReader(f):
@@ -106,8 +110,8 @@ def load_holdings():
                     "asset_class": row["asset_class"].strip(),
                     "name": row["name"].strip(),
                 })
-    except FileNotFoundError:
-        print(f"Warning: {HOLDINGS_FILE} not found")
+    except Exception as e:
+        print(f"Warning: Error loading {HOLDINGS_FILE}: {e}")
     return holdings
 
 def fetch_prices(holdings):
