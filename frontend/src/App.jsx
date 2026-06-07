@@ -4,7 +4,7 @@ import Learn from './components/tabs/Learn/Learn'
 import Analyse from './components/tabs/Analyse/Analyse'
 import ShortTerm from './components/tabs/ShortTerm/ShortTerm'
 import LongTerm from './components/tabs/LongTerm/LongTerm'
-import './App.css'
+import './app.css'
 
 function App() {
   const [activeTab, setActiveTab] = useState('learn')
