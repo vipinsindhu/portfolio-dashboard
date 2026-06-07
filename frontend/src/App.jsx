@@ -1,18 +1,29 @@
 import { useState, useEffect } from 'react'
 import Header from './components/Header'
 import TabBar from './components/TabBar'
+import SignalList from './components/SignalList'
+import SignalArchive from './components/SignalArchive'
 import MacroTab from './components/MacroTab'
-import MacroAnalysis from './components/MacroAnalysis'
-import OutlookTab from './components/OutlookTab'
-import PortfolioTab from './components/PortfolioTab'
-import InvestmentPlanTab from './components/InvestmentPlanTab'
 
 function App() {
+  const [signals, setSignals] = useState(null)
   const [macroData, setMacroData] = useState(null)
-  const [activeTab, setActiveTab] = useState('macro')
+  const [activeTab, setActiveTab] = useState('signals')
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(null)
-  const [holdings, setHoldings] = useState([])
+
+  const fetchSignals = async () => {
+    try {
+      const response = await fetch('/api/signals')
+      if (!response.ok) throw new Error('Failed to fetch signals')
+      const data = await response.json()
+      setSignals(data)
+      setError(null)
+    } catch (err) {
+      console.error('Error fetching signals:', err)
+      setError(err.message)
+    }
+  }
 
   const fetchMacro = async () => {
     try {
@@ -20,20 +31,15 @@ function App() {
       if (!response.ok) throw new Error('Failed to fetch macro data')
       const data = await response.json()
       setMacroData(data)
-      setError(null)
     } catch (err) {
       console.error('Error fetching macro:', err)
-      setError(err.message)
     }
   }
 
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      const response = await fetch('/api/refresh', { method: 'POST' })
-      if (!response.ok) throw new Error('Failed to refresh')
-      const data = await response.json()
-      setMacroData(data)
+      await Promise.all([fetchSignals(), fetchMacro()])
       setError(null)
     } catch (err) {
       console.error('Error refreshing:', err)
@@ -44,45 +50,36 @@ function App() {
   }
 
   useEffect(() => {
+    fetchSignals()
     fetchMacro()
   }, [])
 
-  if (!macroData) {
-    return <div className="content">Loading...</div>
+  if (!signals) {
+    return <div className="content">Loading signals...</div>
   }
 
   return (
     <>
       <Header
-        lastUpdated={macroData.last_updated}
+        lastUpdated={signals.generated_at}
         onRefresh={handleRefresh}
         refreshing={refreshing}
       />
       <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
       <div className="content">
-        {activeTab === 'macro' && (
+        {activeTab === 'signals' && (
+          <div className="panel active" id="tab-signals">
+            <SignalList signals={signals.data} />
+          </div>
+        )}
+        {activeTab === 'archive' && (
+          <div className="panel active" id="tab-archive">
+            <SignalArchive />
+          </div>
+        )}
+        {activeTab === 'macro' && macroData && (
           <div className="panel active" id="tab-macro">
             <MacroTab signals={macroData.macro_signals} />
-          </div>
-        )}
-        {activeTab === 'analysis' && (
-          <div className="panel active" id="tab-analysis">
-            <MacroAnalysis />
-          </div>
-        )}
-        {activeTab === 'outlook' && (
-          <div className="panel active" id="tab-outlook">
-            <OutlookTab signals={macroData.macro_signals} />
-          </div>
-        )}
-        {activeTab === 'portfolio' && (
-          <div className="panel active" id="tab-portfolio">
-            <PortfolioTab holdings={holdings} onHoldingsChange={setHoldings} />
-          </div>
-        )}
-        {activeTab === 'invest' && (
-          <div className="panel active" id="tab-invest">
-            <InvestmentPlanTab signals={macroData.macro_signals} holdings={holdings} />
           </div>
         )}
       </div>

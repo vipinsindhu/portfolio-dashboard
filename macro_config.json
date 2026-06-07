@@ -8,7 +8,7 @@
       "manual": true
     },
     "treasury": {
-      "value": "~4.45%",
+      "value": "~4.54%",
       "signal": -1,
       "label": "10-yr Treasury",
       "context": "Elevated \u2014 pressure on equity multiples"
@@ -21,7 +21,7 @@
       "manual": true
     },
     "pe_ratio": {
-      "value": "~28.4x",
+      "value": "~26.7x",
       "signal": -1,
       "label": "S&P 500 P/E",
       "context": "Stretched vs 17x historical avg"
@@ -33,8 +33,8 @@
       "context": "Dollar strength/weakness. Watch for 101 or 105 inflection points."
     },
     "vix": {
-      "value": "~15.3",
-      "signal": 1,
+      "value": "~21.5",
+      "signal": 0,
       "label": "VIX",
       "context": "Below 20 = calm markets, risk appetite intact"
     },
@@ -57,5 +57,5 @@
       "context": "Emerging markets. Cyclical recovery play. Watch China, commodities."
     }
   },
-  "last_updated": "2026-06-01T02:02:02.885590"
+  "last_updated": "2026-06-06T23:34:21.318567"
 }

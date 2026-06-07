@@ -1,13 +1,26 @@
 """
-Portfolio Dashboard API
-Flask backend serving macro data, analysis, and fund metrics
+Stock Recommendation API
+Flask backend serving signals, macro data, and analysis
 """
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from datetime import datetime
 import json
 import os
+import sys
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(__file__))
+
+from signals import (
+    generate_signals,
+    get_latest_signals,
+    get_signal_archive,
+    load_signals,
+    save_signals,
+    update_signal_accuracy,
+)
 
 def create_app():
     app = Flask(__name__)
@@ -92,6 +105,72 @@ def create_app():
         except Exception as e:
             print(f"Error refreshing analysis: {e}")
             return jsonify({"status": "error", "message": str(e)}), 500
+
+    # ============= SIGNAL ENDPOINTS =============
+
+    @app.route("/api/signals", methods=["GET"])
+    def get_signals():
+        """Get latest signals"""
+        limit = request.args.get("limit", 5, type=int)
+        return jsonify(get_latest_signals(limit)), 200
+
+    @app.route("/api/signals/archive", methods=["GET"])
+    def get_signals_archive():
+        """Get signal archive (past signals)"""
+        limit = request.args.get("limit", 100, type=int)
+        return jsonify(get_signal_archive(limit)), 200
+
+    @app.route("/api/signals/<signal_id>", methods=["GET"])
+    def get_signal_detail(signal_id):
+        """Get detailed view of a specific signal"""
+        signals_data = load_signals()
+        signals = signals_data.get("signals", [])
+
+        signal = next((s for s in signals if s.get("id") == signal_id), None)
+        if not signal:
+            return jsonify({"error": "Signal not found"}), 404
+
+        return jsonify(signal), 200
+
+    @app.route("/api/signals/generate", methods=["POST"])
+    def generate_new_signals():
+        """Generate new signals (admin endpoint)"""
+        # In production, add authentication here
+        try:
+            count = request.json.get("count", 5) if request.json else 5
+            new_signals = generate_signals(count)
+
+            if not new_signals:
+                return jsonify({"error": "Failed to generate signals"}), 500
+
+            # Save to storage
+            signals_data = load_signals()
+            signals_data["signals"].extend(new_signals)
+            signals_data["generated_at"] = datetime.now().isoformat()
+            save_signals(signals_data)
+
+            return jsonify({
+                "status": "success",
+                "signals_generated": len(new_signals),
+                "signals": new_signals
+            }), 201
+
+        except Exception as e:
+            print(f"Error generating signals: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/signals/accuracy", methods=["POST"])
+    def update_accuracy():
+        """Update signal accuracy (admin endpoint for scheduled task)"""
+        try:
+            update_signal_accuracy()
+            return jsonify({
+                "status": "success",
+                "message": "Accuracy updated"
+            }), 200
+        except Exception as e:
+            print(f"Error updating accuracy: {e}")
+            return jsonify({"error": str(e)}), 500
 
     return app
 
