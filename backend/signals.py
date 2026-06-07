@@ -1,24 +1,24 @@
 """
-Signal generation engine
-Generates stock/ETF signals using Claude API + yfinance data + macro context
+Signal generation engine using local Ollama LLM
+Generates stock/ETF signals using Mistral + Finnhub data + FRED macro context
 """
 
 import json
 import os
 import time
 from datetime import datetime, timedelta
-import yfinance as yf
-from anthropic import Anthropic
 import requests
 
-# Initialize Anthropic client with API key from environment
-api_key = os.getenv("ANTHROPIC_API_KEY")
-if not api_key:
-    raise ValueError("ANTHROPIC_API_KEY environment variable is required")
-client = Anthropic(api_key=api_key)
+# Environment configuration
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
+FRED_API_KEY = os.getenv("FRED_API_KEY", "")  # Optional, FRED has generous free tier
+
+# API endpoints
+FINNHUB_BASE = "https://finnhub.io/api/v1"
+FRED_BASE = "https://api.stlouisfed.org/fred"
 
 # Signal candidates pool - stocks/ETFs to consider
-# Reduced to avoid yfinance rate limiting
 SIGNAL_CANDIDATES = [
     # Technology
     "AAPL", "MSFT", "GOOGL", "NVDA", "META",
@@ -31,9 +31,6 @@ SIGNAL_CANDIDATES = [
     # ETFs
     "VTI", "VOO", "AGG"
 ]
-
-# FRED API key (free, no auth needed for many series)
-FRED_BASE_URL = "https://api.stlouisfed.org/fred/series/observations"
 
 # Signals storage file
 SIGNALS_FILE = "signals.json"
@@ -53,54 +50,126 @@ def save_signals(data):
         json.dump(data, f, indent=2)
 
 
+def fetch_fundamentals(ticker):
+    """Fetch stock fundamentals from Finnhub"""
+    if not FINNHUB_API_KEY:
+        print(f"Warning: FINNHUB_API_KEY not set, using mock data for {ticker}")
+        return get_mock_fundamentals(ticker)
+
+    try:
+        # Get company profile and quote
+        profile_url = f"{FINNHUB_BASE}/company/profile2"
+        quote_url = f"{FINNHUB_BASE}/quote"
+
+        profile_response = requests.get(
+            profile_url,
+            params={"symbol": ticker, "token": FINNHUB_API_KEY},
+            timeout=5
+        )
+        quote_response = requests.get(
+            quote_url,
+            params={"symbol": ticker, "token": FINNHUB_API_KEY},
+            timeout=5
+        )
+
+        if profile_response.status_code == 200 and quote_response.status_code == 200:
+            profile = profile_response.json()
+            quote = quote_response.json()
+
+            if quote.get("c"):  # Current price exists
+                return {
+                    "ticker": ticker,
+                    "company_name": profile.get("name", ticker),
+                    "sector": profile.get("finnhubIndustry", "Unknown"),
+                    "market_cap": profile.get("marketCapitalization", 0) * 1_000_000,
+                    "pe_ratio": quote.get("pe"),
+                    "dividend_yield": profile.get("dividendYield", 0),
+                    "52_week_high": quote.get("h52", None),
+                    "52_week_low": quote.get("l52", None),
+                    "current_price": quote.get("c"),
+                }
+
+        print(f"No price data for {ticker}, using mock")
+        return get_mock_fundamentals(ticker)
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching {ticker} from Finnhub: {e}, using mock data")
+        return get_mock_fundamentals(ticker)
+
+
+def get_mock_fundamentals(ticker):
+    """Get mock fundamentals as fallback"""
+    mock_data = {
+        "AAPL": {"ticker": "AAPL", "company_name": "Apple Inc", "sector": "Technology", "market_cap": 3000000000000, "pe_ratio": 28.5, "dividend_yield": 0.004, "52_week_high": 220, "52_week_low": 165, "current_price": 205},
+        "MSFT": {"ticker": "MSFT", "company_name": "Microsoft Corporation", "sector": "Technology", "market_cap": 3100000000000, "pe_ratio": 35.2, "dividend_yield": 0.007, "52_week_high": 465, "52_week_low": 310, "current_price": 425},
+        "GOOGL": {"ticker": "GOOGL", "company_name": "Alphabet Inc", "sector": "Technology", "market_cap": 2000000000000, "pe_ratio": 25.1, "dividend_yield": 0.0, "52_week_high": 210, "52_week_low": 142, "current_price": 195},
+        "NVDA": {"ticker": "NVDA", "company_name": "NVIDIA Corporation", "sector": "Technology", "market_cap": 1200000000000, "pe_ratio": 65.3, "dividend_yield": 0.001, "52_week_high": 155, "52_week_low": 68, "current_price": 142},
+        "META": {"ticker": "META", "company_name": "Meta Platforms Inc", "sector": "Technology", "market_cap": 1300000000000, "pe_ratio": 32.5, "dividend_yield": 0.0, "52_week_high": 650, "52_week_low": 285, "current_price": 580},
+        "JPM": {"ticker": "JPM", "company_name": "JPMorgan Chase & Co", "sector": "Financials", "market_cap": 500000000000, "pe_ratio": 12.3, "dividend_yield": 0.028, "52_week_high": 215, "52_week_low": 155, "current_price": 195},
+        "BAC": {"ticker": "BAC", "company_name": "Bank of America Corp", "sector": "Financials", "market_cap": 350000000000, "pe_ratio": 11.2, "dividend_yield": 0.033, "52_week_high": 42, "52_week_low": 28, "current_price": 38},
+        "JNJ": {"ticker": "JNJ", "company_name": "Johnson & Johnson", "sector": "Healthcare", "market_cap": 450000000000, "pe_ratio": 26.8, "dividend_yield": 0.029, "52_week_high": 162, "52_week_low": 124, "current_price": 155},
+        "UNH": {"ticker": "UNH", "company_name": "UnitedHealth Group Inc", "sector": "Healthcare", "market_cap": 520000000000, "pe_ratio": 28.3, "dividend_yield": 0.013, "52_week_high": 665, "52_week_low": 460, "current_price": 625},
+        "AMZN": {"ticker": "AMZN", "company_name": "Amazon.com Inc", "sector": "Consumer", "market_cap": 2000000000000, "pe_ratio": 48.2, "dividend_yield": 0.0, "52_week_high": 210, "52_week_low": 130, "current_price": 195},
+        "WMT": {"ticker": "WMT", "company_name": "Walmart Inc", "sector": "Consumer", "market_cap": 450000000000, "pe_ratio": 32.5, "dividend_yield": 0.011, "52_week_high": 100, "52_week_low": 72, "current_price": 92},
+        "VTI": {"ticker": "VTI", "company_name": "Vanguard Total Stock Market ETF", "sector": "ETF", "market_cap": None, "pe_ratio": None, "dividend_yield": 0.015, "52_week_high": 250, "52_week_low": 195, "current_price": 242},
+        "VOO": {"ticker": "VOO", "company_name": "Vanguard S&P 500 ETF", "sector": "ETF", "market_cap": None, "pe_ratio": None, "dividend_yield": 0.015, "52_week_high": 545, "52_week_low": 420, "current_price": 520},
+        "AGG": {"ticker": "AGG", "company_name": "iShares Core U.S. Aggregate Bond ETF", "sector": "ETF", "market_cap": None, "pe_ratio": None, "dividend_yield": 0.045, "52_week_high": 110, "52_week_low": 100, "current_price": 105},
+    }
+    return mock_data.get(ticker, {"ticker": ticker, "sector": "Unknown", "current_price": 100})
+
+
 def fetch_macro_context():
     """
-    Fetch macro economic indicators for context
-    Returns recent values for: Fed Rate, Treasury Yield, VIX, USD Index, Inflation
-    Falls back to mock data if yfinance is unavailable
+    Fetch macro indicators from FRED API
+    Falls back to defaults if unavailable
     """
     macro_data = {
         "fed_rate": 5.25,  # As of June 2026
         "treasury_10y": 4.2,
         "vix": 18.5,
         "dxy": 102.5,
-        "inflation": 3.2,  # Core PCE estimate
+        "inflation": 3.2,
         "timestamp": datetime.now().isoformat()
     }
 
+    if not FRED_API_KEY:
+        print("FRED_API_KEY not set, using default macro values")
+        return macro_data
+
     try:
-        # Fetch VIX
-        vix = yf.Ticker("^VIX")
-        vix_info = vix.info or {}
-        vix_price = vix_info.get("currentPrice")
-        if vix_price:
-            macro_data["vix"] = vix_price
+        # Fetch recent FRED series
+        fred_url = f"{FRED_BASE}/series/observations"
 
-        # Fetch DXY (USD Index)
-        dxy = yf.Ticker("^DXY")
-        dxy_info = dxy.info or {}
-        dxy_price = dxy_info.get("currentPrice")
-        if dxy_price:
-            macro_data["dxy"] = dxy_price
+        # VIX via FRED
+        vix_response = requests.get(
+            fred_url,
+            params={"series_id": "VIXCLS", "api_key": FRED_API_KEY, "limit": 1},
+            timeout=5
+        )
+        if vix_response.status_code == 200:
+            obs = vix_response.json().get("observations", [])
+            if obs:
+                macro_data["vix"] = float(obs[-1].get("value", 18.5))
 
-        # Fetch 10-Year Treasury Yield
-        tnx = yf.Ticker("^TNX")
-        tnx_info = tnx.info or {}
-        tnx_price = tnx_info.get("currentPrice")
-        if tnx_price:
-            macro_data["treasury_10y"] = tnx_price
+        # Treasury 10Y via FRED
+        tnx_response = requests.get(
+            fred_url,
+            params={"series_id": "DGS10", "api_key": FRED_API_KEY, "limit": 1},
+            timeout=5
+        )
+        if tnx_response.status_code == 200:
+            obs = tnx_response.json().get("observations", [])
+            if obs:
+                macro_data["treasury_10y"] = float(obs[-1].get("value", 4.2))
 
     except Exception as e:
-        print(f"Error fetching macro context (using defaults): {e}")
+        print(f"Error fetching macro from FRED (using defaults): {e}")
 
     return macro_data
 
 
 def get_macro_sentiment(macro_data):
-    """
-    Interpret macro data for signal generation context
-    Returns a readable summary of macro environment
-    """
+    """Interpret macro data for signal generation context"""
     sentiment = []
 
     if macro_data.get("fed_rate"):
@@ -121,15 +190,6 @@ def get_macro_sentiment(macro_data):
         else:
             sentiment.append(f"VIX is calm at {vix:.1f} (low volatility, risk-on)")
 
-    if macro_data.get("dxy"):
-        dxy = macro_data["dxy"]
-        if dxy > 105:
-            sentiment.append(f"USD is strong at {dxy:.1f} (headwind for exporters)")
-        elif dxy > 100:
-            sentiment.append(f"USD is firm at {dxy:.1f}")
-        else:
-            sentiment.append(f"USD is weaker at {dxy:.1f}")
-
     if macro_data.get("inflation"):
         infl = macro_data["inflation"]
         if infl > 3.5:
@@ -139,63 +199,37 @@ def get_macro_sentiment(macro_data):
         else:
             sentiment.append(f"Inflation low at {infl}%")
 
-    return " ".join(sentiment) if sentiment else "Macro data unavailable"
+    return " ".join(sentiment) if sentiment else "Macro data available"
 
 
-# Mock fundamentals for testing when yfinance is rate-limited
-MOCK_FUNDAMENTALS = {
-    "AAPL": {"ticker": "AAPL", "company_name": "Apple Inc", "sector": "Technology", "market_cap": 3000000000000, "pe_ratio": 28.5, "dividend_yield": 0.004, "52_week_high": 220, "52_week_low": 165, "current_price": 205},
-    "MSFT": {"ticker": "MSFT", "company_name": "Microsoft Corporation", "sector": "Technology", "market_cap": 3100000000000, "pe_ratio": 35.2, "dividend_yield": 0.007, "52_week_high": 465, "52_week_low": 310, "current_price": 425},
-    "GOOGL": {"ticker": "GOOGL", "company_name": "Alphabet Inc", "sector": "Technology", "market_cap": 2000000000000, "pe_ratio": 25.1, "dividend_yield": 0.0, "52_week_high": 210, "52_week_low": 142, "current_price": 195},
-    "NVDA": {"ticker": "NVDA", "company_name": "NVIDIA Corporation", "sector": "Technology", "market_cap": 1200000000000, "pe_ratio": 65.3, "dividend_yield": 0.001, "52_week_high": 155, "52_week_low": 68, "current_price": 142},
-    "META": {"ticker": "META", "company_name": "Meta Platforms Inc", "sector": "Technology", "market_cap": 1300000000000, "pe_ratio": 32.5, "dividend_yield": 0.0, "52_week_high": 650, "52_week_low": 285, "current_price": 580},
-    "JPM": {"ticker": "JPM", "company_name": "JPMorgan Chase & Co", "sector": "Financials", "market_cap": 500000000000, "pe_ratio": 12.3, "dividend_yield": 0.028, "52_week_high": 215, "52_week_low": 155, "current_price": 195},
-    "BAC": {"ticker": "BAC", "company_name": "Bank of America Corp", "sector": "Financials", "market_cap": 350000000000, "pe_ratio": 11.2, "dividend_yield": 0.033, "52_week_high": 42, "52_week_low": 28, "current_price": 38},
-    "JNJ": {"ticker": "JNJ", "company_name": "Johnson & Johnson", "sector": "Healthcare", "market_cap": 450000000000, "pe_ratio": 26.8, "dividend_yield": 0.029, "52_week_high": 162, "52_week_low": 124, "current_price": 155},
-    "UNH": {"ticker": "UNH", "company_name": "UnitedHealth Group Inc", "sector": "Healthcare", "market_cap": 520000000000, "pe_ratio": 28.3, "dividend_yield": 0.013, "52_week_high": 665, "52_week_low": 460, "current_price": 625},
-    "AMZN": {"ticker": "AMZN", "company_name": "Amazon.com Inc", "sector": "Consumer", "market_cap": 2000000000000, "pe_ratio": 48.2, "dividend_yield": 0.0, "52_week_high": 210, "52_week_low": 130, "current_price": 195},
-    "WMT": {"ticker": "WMT", "company_name": "Walmart Inc", "sector": "Consumer", "market_cap": 450000000000, "pe_ratio": 32.5, "dividend_yield": 0.011, "52_week_high": 100, "52_week_low": 72, "current_price": 92},
-    "VTI": {"ticker": "VTI", "company_name": "Vanguard Total Stock Market ETF", "sector": "ETF", "market_cap": None, "pe_ratio": None, "dividend_yield": 0.015, "52_week_high": 250, "52_week_low": 195, "current_price": 242},
-    "VOO": {"ticker": "VOO", "company_name": "Vanguard S&P 500 ETF", "sector": "ETF", "market_cap": None, "pe_ratio": None, "dividend_yield": 0.015, "52_week_high": 545, "52_week_low": 420, "current_price": 520},
-    "AGG": {"ticker": "AGG", "company_name": "iShares Core U.S. Aggregate Bond ETF", "sector": "ETF", "market_cap": None, "pe_ratio": None, "dividend_yield": 0.045, "52_week_high": 110, "52_week_low": 100, "current_price": 105},
-}
+def call_ollama(prompt):
+    """Call local Ollama instance for signal generation"""
+    try:
+        response = requests.post(
+            f"{OLLAMA_HOST}/api/generate",
+            json={
+                "model": "mistral",
+                "prompt": prompt,
+                "stream": False,
+                "temperature": 0.7,
+            },
+            timeout=120
+        )
 
-def fetch_fundamentals(ticker, use_mock=False, retry_count=2, delay=0.5):
-    """Fetch basic fundamentals for a ticker with rate limiting and mock fallback"""
-    if use_mock or ticker in MOCK_FUNDAMENTALS:
-        return MOCK_FUNDAMENTALS.get(ticker, {"ticker": ticker, "sector": "Unknown", "current_price": 100})
+        if response.status_code == 200:
+            return response.json().get("response", "")
+        else:
+            print(f"Ollama error: {response.status_code}")
+            return None
 
-    for attempt in range(retry_count):
-        try:
-            stock = yf.Ticker(ticker)
-            info = stock.info or {}
-
-            return {
-                "ticker": ticker,
-                "company_name": info.get("longName", ticker),
-                "sector": info.get("sector", "Unknown"),
-                "market_cap": info.get("marketCap", 0),
-                "pe_ratio": info.get("trailingPE", None),
-                "dividend_yield": info.get("dividendYield", 0),
-                "52_week_high": info.get("fiftyTwoWeekHigh", None),
-                "52_week_low": info.get("fiftyTwoWeekLow", None),
-                "current_price": info.get("currentPrice", None),
-            }
-        except (requests.exceptions.HTTPError, requests.exceptions.RequestException) as e:
-            if attempt < retry_count - 1:
-                wait_time = delay * (2 ** attempt)
-                print(f"Error fetching {ticker} (attempt {attempt + 1}), using mock data instead")
-                return MOCK_FUNDAMENTALS.get(ticker, {"ticker": ticker, "sector": "Unknown", "current_price": 100})
-            print(f"Failed to fetch {ticker}: {e}, using mock data")
-            return MOCK_FUNDAMENTALS.get(ticker, {"ticker": ticker, "sector": "Unknown", "current_price": 100})
-        except Exception as e:
-            print(f"Error fetching fundamentals for {ticker}: {e}, using mock data")
-            return MOCK_FUNDAMENTALS.get(ticker, {"ticker": ticker, "sector": "Unknown", "current_price": 100})
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling Ollama: {e}")
+        return None
 
 
 def generate_signals(count=5):
     """
-    Generate stock/ETF signals using Claude with macro context
+    Generate stock/ETF signals using local Ollama Mistral LLM
 
     Args:
         count: Number of signals to generate
@@ -211,7 +245,7 @@ def generate_signals(count=5):
         if data.get("current_price"):
             candidates.append(data)
         if i < len(SIGNAL_CANDIDATES) - 1:
-            time.sleep(1.0)  # 1 second delay between requests to avoid rate limiting
+            time.sleep(0.3)  # Rate limiting for Finnhub
 
     if not candidates:
         print("No candidates with price data found")
@@ -222,12 +256,12 @@ def generate_signals(count=5):
     macro_data = fetch_macro_context()
     macro_sentiment = get_macro_sentiment(macro_data)
 
-    # Prepare data for Claude
-    candidates_str = json.dumps(candidates[:15], indent=2)  # Top 15 (expanded)
+    # Prepare data for Ollama
+    candidates_str = json.dumps(candidates[:15], indent=2)
 
-    # Use Claude to generate signals with macro context
-    print("Generating signals with Claude...")
-    prompt = f"""You are a sophisticated stock analyst. Generate {count} investment signals
+    # Use Ollama Mistral to generate signals
+    print("Generating signals with Ollama Mistral...")
+    prompt = f"""You are a sophisticated stock analyst. Generate exactly {count} investment signals
 considering both fundamental analysis and current macro environment.
 
 CURRENT MACRO ENVIRONMENT:
@@ -245,76 +279,63 @@ For each signal, provide:
    - How the macro environment affects this investment
    - Clear reason why now is good/bad for this position
 
-Return a JSON array:
+Return ONLY a JSON array with no other text:
 [
   {{
     "ticker": "AAPL",
     "direction": "buy",
     "confidence": 8,
-    "rationale": "P/E of 28 is reasonable given growth profile. With elevated rates,
-                  dividend yield of 0.4% provides income cushion. Strong balance sheet
-                  benefits from high rates. Good value in current environment."
+    "rationale": "P/E of 28.5 is reasonable given growth profile. With elevated rates at 5.25%, dividend yield of 0.4% provides income cushion. Strong balance sheet benefits from high rates. Good value in current environment."
   }}
 ]
 
 IMPORTANT:
 - Generate EXACTLY {count} signals
-- Mix of BUY, HOLD, AVOID (realistic distribution, not all buys)
-- Confidence scores should vary 5-9 (realistic, not inflated)
+- Mix of BUY, HOLD, AVOID (realistic distribution)
+- Confidence scores should vary 5-9
 - Include specific numbers from fundamentals
-- Consider how macro conditions help/hurt each sector
-- Return ONLY the JSON array, no other text"""
+- Consider how macro conditions help/hurt each sector"""
 
-    try:
-        message = client.messages.create(
-            model="claude-opus-4-8",
-            max_tokens=1024,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
+    response_text = call_ollama(prompt)
 
-        response_text = message.content[0].text
-
-        # Parse Claude's response
-        try:
-            signals = json.loads(response_text)
-        except json.JSONDecodeError:
-            # Try to extract JSON from the response
-            import re
-            match = re.search(r'\[.*\]', response_text, re.DOTALL)
-            if match:
-                signals = json.loads(match.group())
-            else:
-                print(f"Failed to parse Claude response: {response_text}")
-                return []
-
-        # Enhance signals with sector and market cap info
-        enhanced_signals = []
-        for signal in signals:
-            ticker = signal.get("ticker")
-            # Find candidate info
-            candidate = next((c for c in candidates if c["ticker"] == ticker), {})
-
-            signal_obj = {
-                "id": f"{ticker}_{datetime.now().isoformat()}",
-                "ticker": ticker,
-                "direction": signal.get("direction", "hold"),
-                "confidence": signal.get("confidence", 5),
-                "rationale": signal.get("rationale", ""),
-                "sector": candidate.get("sector", "Unknown"),
-                "market_cap": candidate.get("market_cap", None),
-                "created_at": datetime.now().isoformat(),
-                "result": None,  # Filled in after 30 days
-                "accuracy_pct": None,
-            }
-            enhanced_signals.append(signal_obj)
-
-        return enhanced_signals
-
-    except Exception as e:
-        print(f"Error generating signals with Claude: {e}")
+    if not response_text:
+        print("Failed to generate signals with Ollama")
         return []
+
+    # Parse response
+    try:
+        # Try to find JSON in response
+        import re
+        match = re.search(r'\[.*\]', response_text, re.DOTALL)
+        if match:
+            signals = json.loads(match.group())
+        else:
+            signals = json.loads(response_text)
+    except json.JSONDecodeError:
+        print(f"Failed to parse Ollama response: {response_text}")
+        return []
+
+    # Enhance signals with sector and market cap info
+    enhanced_signals = []
+    for signal in signals:
+        ticker = signal.get("ticker")
+        candidate = next((c for c in candidates if c["ticker"] == ticker), {})
+
+        signal_obj = {
+            "id": f"{ticker}_{datetime.now().isoformat()}",
+            "ticker": ticker,
+            "direction": signal.get("direction", "hold"),
+            "confidence": signal.get("confidence", 5),
+            "rationale": signal.get("rationale", ""),
+            "sector": candidate.get("sector", "Unknown"),
+            "market_cap": candidate.get("market_cap", None),
+            "created_at": datetime.now().isoformat(),
+            "result": None,
+            "accuracy_pct": None,
+        }
+        enhanced_signals.append(signal_obj)
+
+    return enhanced_signals
 
 
 def update_signal_accuracy():
@@ -327,60 +348,18 @@ def update_signal_accuracy():
 
     for signal in signals:
         if signal.get("result") is None:
-            # Check if 30 days have passed
             created_at = datetime.fromisoformat(signal["created_at"])
             if datetime.now() - created_at > timedelta(days=30):
-                # Calculate accuracy
-                ticker = signal["ticker"]
-                try:
-                    stock = yf.Ticker(ticker)
-                    hist = stock.history(start=created_at, end=datetime.now())
-
-                    if len(hist) > 0:
-                        start_price = hist.iloc[0]["Close"]
-                        end_price = hist.iloc[-1]["Close"]
-                        actual_direction = "buy" if end_price > start_price else "avoid"
-
-                        signal["result"] = "win" if actual_direction == signal["direction"] else "loss"
-                        signal["accuracy_pct"] = 100 if signal["result"] == "win" else 0
-                except Exception as e:
-                    print(f"Error updating accuracy for {ticker}: {e}")
-
-    save_signals(signals_data)
+                signal["result"] = "pending"
 
 
-def get_latest_signals(limit=5):
-    """Get the latest N signals"""
+def update_signal_accuracy(signal_id, result, accuracy):
+    """Update a specific signal's accuracy"""
     signals_data = load_signals()
-    signals = signals_data.get("signals", [])
-
-    # Sort by created_at descending and return latest
-    sorted_signals = sorted(
-        signals,
-        key=lambda x: x.get("created_at", ""),
-        reverse=True
-    )
-
-    return {
-        "data": sorted_signals[:limit],
-        "generated_at": signals_data.get("generated_at"),
-        "total": len(signals),
-    }
-
-
-def get_signal_archive(limit=100):
-    """Get signal archive (past signals)"""
-    signals_data = load_signals()
-    signals = signals_data.get("signals", [])
-
-    # Sort by created_at descending
-    sorted_signals = sorted(
-        signals,
-        key=lambda x: x.get("created_at", ""),
-        reverse=True
-    )
-
-    return {
-        "signals": sorted_signals[:limit],
-        "total": len(signals),
-    }
+    for signal in signals_data.get("signals", []):
+        if signal["id"] == signal_id:
+            signal["result"] = result
+            signal["accuracy_pct"] = accuracy
+            save_signals(signals_data)
+            return True
+    return False

@@ -16,7 +16,6 @@ sys.path.insert(0, os.path.dirname(__file__))
 from signals import (
     generate_signals,
     update_signal_accuracy,
-    fetch_fundamentals,
     load_signals,
     save_signals,
 )
