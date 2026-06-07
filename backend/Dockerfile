@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
-COPY api.py signals.py educational.py portfolio.py analysis.py signals_filter.py ./
+# Copy application files and data
+COPY api.py signals.py educational.py portfolio.py analysis.py signals_filter.py lessons.json ./
 
 # Expose port
 EXPOSE 5000
