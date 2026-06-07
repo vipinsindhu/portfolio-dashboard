@@ -15,4 +15,4 @@ COPY macro_config.json .
 EXPOSE 5000
 
 # Run with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "60", "api:create_app()"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "60", "api:create_app"]
