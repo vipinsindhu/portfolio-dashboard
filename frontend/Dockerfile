@@ -6,7 +6,7 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
-RUN node_modules/.bin/vite build
+RUN node ./node_modules/vite/bin/vite.js build
 
 FROM nginx:alpine
 
