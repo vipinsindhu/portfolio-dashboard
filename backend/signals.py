@@ -40,6 +40,7 @@ SIGNAL_CANDIDATES = [
 
 # Signals storage file
 SIGNALS_FILE = "signals.json"
+MACRO_CACHE_FILE = "macro_cache.json"
 
 
 def load_signals():
@@ -54,6 +55,33 @@ def save_signals(data):
     """Save signals to JSON file"""
     with open(SIGNALS_FILE, 'w') as f:
         json.dump(data, f, indent=2)
+
+
+def save_macro_cache(macro_data):
+    """Save macro data to cache file with timestamp"""
+    cache = {
+        "data": macro_data,
+        "cached_at": datetime.now().isoformat()
+    }
+    try:
+        with open(MACRO_CACHE_FILE, 'w') as f:
+            json.dump(cache, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"Error saving macro cache: {e}")
+        return False
+
+
+def load_macro_cache():
+    """Load macro data from cache file"""
+    try:
+        if os.path.exists(MACRO_CACHE_FILE):
+            with open(MACRO_CACHE_FILE, 'r') as f:
+                cache = json.load(f)
+                return cache.get("data"), cache.get("cached_at")
+    except Exception as e:
+        print(f"Error loading macro cache: {e}")
+    return None, None
 
 
 def fetch_fundamentals(ticker):
@@ -124,11 +152,19 @@ def get_mock_fundamentals(ticker):
     return mock_data.get(ticker, {"ticker": ticker, "sector": "Unknown", "current_price": 100})
 
 
-def fetch_macro_context():
+def fetch_macro_context(use_cache=True):
     """
-    Fetch macro indicators from FRED API
-    Falls back to defaults if unavailable
+    Fetch macro indicators from FRED API with caching
+    Falls back to cache or defaults if API unavailable
     """
+    # Try to use cached data if available
+    if use_cache:
+        cached_data, cached_at = load_macro_cache()
+        if cached_data:
+            print(f"Using cached macro data from {cached_at}")
+            return cached_data
+
+    # Default values
     macro_data = {
         "fed_rate": 5.25,  # As of June 2026
         "treasury_10y": 4.2,
@@ -168,10 +204,25 @@ def fetch_macro_context():
             if obs:
                 macro_data["treasury_10y"] = float(obs[-1].get("value", 4.2))
 
+        # Cache the freshly fetched data
+        save_macro_cache(macro_data)
+
     except Exception as e:
-        print(f"Error fetching macro from FRED (using defaults): {e}")
+        print(f"Error fetching macro from FRED (using cache/defaults): {e}")
 
     return macro_data
+
+
+def refresh_macro_data():
+    """Scheduled job to refresh macro data every hour"""
+    print(f"[{datetime.now().isoformat()}] Starting macro data refresh...")
+    try:
+        macro_data = fetch_macro_context(use_cache=False)
+        print(f"✅ Macro data refreshed: VIX={macro_data.get('vix')}, 10Y Treasury={macro_data.get('treasury_10y')}%")
+        return True
+    except Exception as e:
+        print(f"❌ Macro data refresh failed: {e}")
+        return False
 
 
 def get_macro_sentiment(macro_data):

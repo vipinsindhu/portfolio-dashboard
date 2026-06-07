@@ -9,6 +9,7 @@ import sys
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from datetime import datetime, timedelta
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(__file__))
@@ -18,6 +19,7 @@ from signals import (
     update_signal_accuracy,
     load_signals,
     save_signals,
+    refresh_macro_data,
 )
 
 # Optional database imports
@@ -238,6 +240,24 @@ def create_app():
     def internal_error(error):
         app.logger.error(f"Internal error: {error}")
         return jsonify({"error": "Internal server error"}), 500
+
+    # Initialize APScheduler for hourly macro data refresh
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(
+        refresh_macro_data,
+        trigger="interval",
+        hours=1,
+        id="macro_refresh",
+        name="Refresh macro data every hour",
+        replace_existing=True
+    )
+
+    @app.before_request
+    def start_scheduler():
+        """Start scheduler on first request if not already running"""
+        if not scheduler.running:
+            scheduler.start()
+            app.logger.info("✅ Macro data scheduler started (refresh every 1 hour)")
 
     return app
 
