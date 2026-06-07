@@ -154,8 +154,15 @@ def parse_csv(csv_content: str) -> List[Holding]:
         try:
             # Get values using original header names
             symbol_val = row[normalized_headers['symbol']].strip().upper()
-            qty_val = float(row[normalized_headers['quantity']].strip())
-            price_val = float(row[normalized_headers['purchaseprice']].strip())
+            qty_str = row[normalized_headers['quantity']].strip()
+            price_str = row[normalized_headers['purchaseprice']].strip()
+
+            # Remove currency symbols and commas from numbers
+            qty_str = qty_str.replace('$', '').replace(',', '')
+            price_str = price_str.replace('$', '').replace(',', '')
+
+            qty_val = float(qty_str)
+            price_val = float(price_str)
 
             holding = Holding(
                 symbol=symbol_val,
