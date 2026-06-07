@@ -8,6 +8,12 @@ function TabBar({ activeTab, onTabChange }) {
         Macro
       </button>
       <button
+        className={`tab ${activeTab === 'analysis' ? 'active' : ''}`}
+        onClick={() => onTabChange('analysis')}
+      >
+        Analysis
+      </button>
+      <button
         className={`tab ${activeTab === 'outlook' ? 'active' : ''}`}
         onClick={() => onTabChange('outlook')}
       >

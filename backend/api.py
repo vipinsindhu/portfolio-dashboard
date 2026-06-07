@@ -1,59 +1,120 @@
 """
-Portfolio Builder API
-Flask backend serving macro data and refresh endpoint
+Portfolio Dashboard API - Database-backed macro analysis
+Flask backend serving macro data, fund impact, and forecasts
 """
 
 from flask import Flask, jsonify
 from flask_cors import CORS
 from datetime import datetime
-import json
-import os
+from apscheduler.schedulers.background import BackgroundScheduler
+from models import db, MacroSignal, FundImpact, FundForecast, AnalysisMetadata
+from macro_analyzer import run_analysis
+import atexit
 
 def create_app():
     app = Flask(__name__)
     CORS(app)
 
-    CONFIG_FILE = "macro_config.json"
+    # Database config - use SQLite for simplicity, upgrade to PostgreSQL in production
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///portfolio.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    def load_macro_config():
-        """Load macro_config.json"""
-        if os.path.exists(CONFIG_FILE):
-            try:
-                with open(CONFIG_FILE, "r") as f:
-                    return json.load(f)
-            except Exception as e:
-                print(f"Error loading config: {e}")
-                return {"macro_signals": {}, "last_updated": None}
-        return {"macro_signals": {}, "last_updated": None}
+    # Initialize database
+    db.init_app(app)
+
+    with app.app_context():
+        db.create_all()
+
+    # Setup background scheduler for daily analysis
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(
+        func=lambda: run_analysis(),
+        trigger="cron",
+        hour=9,  # Run at 9 AM daily
+        minute=0,
+        id='macro_analysis_job',
+        name='Daily macro analysis',
+        replace_existing=True
+    )
+    scheduler.start()
+    atexit.register(lambda: scheduler.shutdown())
 
     @app.route("/api/health", methods=["GET"])
     def health():
         """Health check endpoint"""
         return jsonify({
             "status": "ok",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.utcnow().isoformat()
         }), 200
 
-    @app.route("/api/macro", methods=["GET"])
-    def get_macro():
-        """Return current macro configuration"""
-        config = load_macro_config()
-        return jsonify(config), 200
+    @app.route("/api/macro-signals", methods=["GET"])
+    def get_macro_signals():
+        """Return current macro signals"""
+        signals = MacroSignal.query.all()
+        metadata = AnalysisMetadata.query.first()
 
-    @app.route("/api/refresh", methods=["POST"])
-    def refresh():
-        """Trigger macro data refresh"""
+        return jsonify({
+            "signals": {s.signal_key: s.to_dict() for s in signals},
+            "metadata": metadata.to_dict() if metadata else None
+        }), 200
+
+    @app.route("/api/fund-impact", methods=["GET"])
+    def get_fund_impact():
+        """Return fund macro impact scores"""
+        impacts = FundImpact.query.all()
+        metadata = AnalysisMetadata.query.first()
+
+        return jsonify({
+            "funds": [i.to_dict() for i in impacts],
+            "metadata": metadata.to_dict() if metadata else None
+        }), 200
+
+    @app.route("/api/forecasts", methods=["GET"])
+    def get_forecasts():
+        """Return fund forecasts with current prices"""
+        forecasts = FundForecast.query.all()
+        metadata = AnalysisMetadata.query.first()
+
+        return jsonify({
+            "forecasts": [f.to_dict() for f in forecasts],
+            "metadata": metadata.to_dict() if metadata else None
+        }), 200
+
+    @app.route("/api/macro-analysis", methods=["GET"])
+    def get_full_analysis():
+        """Return complete macro analysis dashboard"""
+        signals = {s.signal_key: s.to_dict() for s in MacroSignal.query.all()}
+        impacts = {i.ticker: i.to_dict() for i in FundImpact.query.all()}
+        forecasts = {f.ticker: f.to_dict() for f in FundForecast.query.all()}
+        metadata = AnalysisMetadata.query.first()
+
+        return jsonify({
+            "macro_signals": signals,
+            "fund_impact": impacts,
+            "forecasts": forecasts,
+            "metadata": metadata.to_dict() if metadata else None
+        }), 200
+
+    @app.route("/api/refresh-analysis", methods=["POST"])
+    def refresh_analysis():
+        """Trigger immediate macro data refresh"""
         try:
-            # Import and run fetch_macro
-            import fetch_macro
-            fetch_macro.main()
-
-            # Return updated config
-            config = load_macro_config()
-            return jsonify(config), 200
+            success, message = run_analysis()
+            if success:
+                metadata = AnalysisMetadata.query.first()
+                return jsonify({
+                    "status": "success",
+                    "message": message,
+                    "metadata": metadata.to_dict() if metadata else None
+                }), 200
+            else:
+                return jsonify({
+                    "status": "error",
+                    "message": message
+                }), 500
         except Exception as e:
-            print(f"Error refreshing macro data: {e}")
-            return jsonify({"error": str(e)}), 500
+            print(f"Error refreshing analysis: {e}")
+            return jsonify({"status": "error", "message": str(e)}), 500
 
     return app
 
