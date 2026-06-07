@@ -10,8 +10,10 @@ import yfinance as yf
 from models import db, MacroSignal, FundImpact, FundForecast, AnalysisMetadata
 
 # ── Config ────────────────────────────────────────────────────────────────────
-HOLDINGS_FILE   = "../holdings.csv"
-RETIREMENT_FILE = "../retirement_holdings.csv"
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HOLDINGS_FILE   = os.path.join(BASE_DIR, "holdings.csv")
+RETIREMENT_FILE = os.path.join(BASE_DIR, "retirement_holdings.csv")
 
 COST_BASIS = {
     "MSFT":  35788.51,
