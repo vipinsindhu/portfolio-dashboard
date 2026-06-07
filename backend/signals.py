@@ -213,7 +213,7 @@ def call_ollama(prompt):
                 "stream": False,
                 "temperature": 0.7,
             },
-            timeout=120
+            timeout=300
         )
 
         if response.status_code == 200:

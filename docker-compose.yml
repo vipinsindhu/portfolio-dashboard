@@ -11,13 +11,15 @@ services:
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
     restart: unless-stopped
+    mem_limit: 4g
 
   portfolio-backend:
     build: ./backend
     container_name: portfolio-backend
+    env_file: .env
     environment:
       - OLLAMA_HOST=http://portfolio-ollama:11434
-      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      - REQUEST_TIMEOUT=300
     volumes:
       - ./backend/macro_config.json:/app/macro_config.json
     ports:
@@ -25,6 +27,7 @@ services:
     depends_on:
       - ollama
     restart: unless-stopped
+    mem_limit: 2g
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 60s
