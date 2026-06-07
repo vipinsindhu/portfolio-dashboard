@@ -212,7 +212,7 @@ def call_groq(prompt):
     """Call Groq cloud LLM for signal generation"""
     try:
         message = groq_client.chat.completions.create(
-            model="gemma-2-9b-it",
+            model="llama-3.3-70b-versatile",
             max_tokens=1024,
             temperature=0.7,
             messages=[
