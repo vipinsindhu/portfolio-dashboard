@@ -124,7 +124,7 @@ class Portfolio:
 def parse_csv(csv_content: str) -> List[Holding]:
     """
     Parse CSV content into holdings
-    Expected format: Symbol,Quantity,PurchasePrice
+    Expected format: Symbol,Quantity,PurchasePrice (case-insensitive)
     Example:
     AAPL,10,150
     MSFT,5,350
@@ -132,12 +132,28 @@ def parse_csv(csv_content: str) -> List[Holding]:
     holdings = []
     reader = csv.DictReader(StringIO(csv_content))
 
+    if not reader.fieldnames:
+        raise ValueError("CSV is empty")
+
+    # Normalize header names to lowercase
+    normalized_headers = {field.lower().strip(): field for field in reader.fieldnames}
+
+    # Check required fields exist
+    required = {'symbol', 'quantity', 'purchaseprice'}
+    if not required.issubset(set(normalized_headers.keys())):
+        raise ValueError(f"CSV must have Symbol, Quantity, PurchasePrice columns. Found: {', '.join(reader.fieldnames)}")
+
     for row in reader:
         try:
+            # Get values using original header names
+            symbol_val = row[normalized_headers['symbol']].strip().upper()
+            qty_val = float(row[normalized_headers['quantity']].strip())
+            price_val = float(row[normalized_headers['purchaseprice']].strip())
+
             holding = Holding(
-                symbol=row["Symbol"].strip().upper(),
-                quantity=float(row["Quantity"]),
-                purchase_price=float(row["PurchasePrice"])
+                symbol=symbol_val,
+                quantity=qty_val,
+                purchase_price=price_val
             )
             holdings.append(holding)
         except (KeyError, ValueError) as e:
