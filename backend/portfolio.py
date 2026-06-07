@@ -129,14 +129,21 @@ def parse_csv(csv_content: str) -> List[Holding]:
     AAPL,10,150
     MSFT,5,350
     """
+    # Remove UTF-8 BOM if present (common in Excel-exported CSVs)
+    if csv_content.startswith('﻿'):
+        csv_content = csv_content[1:]
+
     holdings = []
     reader = csv.DictReader(StringIO(csv_content))
 
     if not reader.fieldnames:
         raise ValueError("CSV is empty")
 
-    # Normalize header names to lowercase
-    normalized_headers = {field.lower().strip(): field for field in reader.fieldnames}
+    # Normalize header names to lowercase and strip BOM/whitespace
+    normalized_headers = {
+        field.strip().lstrip('﻿').lower(): field
+        for field in reader.fieldnames
+    }
 
     # Check required fields exist
     required = {'symbol', 'quantity', 'purchaseprice'}
