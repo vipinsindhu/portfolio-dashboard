@@ -277,7 +277,7 @@ def call_groq(prompt):
 
 
 def generate_realistic_mock_signals(candidates, count=5):
-    """Generate realistic mock signals when Groq is unavailable"""
+    """Generate realistic mock signals when Groq LLM is unavailable"""
     import random
     signals = []
     directions = ["buy", "hold", "avoid"]
@@ -318,7 +318,7 @@ def generate_realistic_mock_signals(candidates, count=5):
 
 def generate_signals(count=5):
     """
-    Generate stock/ETF signals using local Ollama Mistral LLM
+    Generate stock/ETF signals using Groq cloud LLM
 
     Args:
         count: Number of signals to generate
@@ -345,7 +345,7 @@ def generate_signals(count=5):
     macro_data = fetch_macro_context()
     macro_sentiment = get_macro_sentiment(macro_data)
 
-    # Prepare data for Ollama
+    # Prepare data for Groq LLM
     candidates_str = json.dumps(candidates[:15], indent=2)
 
     # Use Groq to generate signals
