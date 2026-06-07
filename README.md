@@ -1,247 +1,219 @@
-# Portfolio Builder 📊
+# Stock Recommendation MVP
 
-Macro-aware investment planning with real-time economic indicators and portfolio management.
+AI-powered stock and ETF recommendations with macro context. Claude Opus analyzes fundamentals and economic indicators to deliver buy/hold/avoid signals weekly.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/vipinsindhu/portfolio-dashboard)
+## Current Status
+
+**Phase 1:** Signal generation ✅  
+**Phase 2:** Email + Stripe subscription (next)
 
 ## Quick Start
 
-### 🚀 Easiest: GitHub Codespaces (no install needed)
-Click the badge above or [open in Codespaces](https://codespaces.new/vipinsindhu/portfolio-dashboard), then:
-```bash
-docker-compose up --build
-```
-Visit `http://localhost:5001` in the browser preview.
+### Prerequisites
+- Python 3.10+
+- Node.js 18+
+- ANTHROPIC_API_KEY environment variable
 
-### 💻 Local Docker
+### Local Development
+
 ```bash
-docker-compose up --build
-# Open http://localhost:5001
+# Install dependencies
+pip install -r requirements.txt
+cd frontend && npm install && cd ..
+
+# Set API key (required for signal generation)
+export ANTHROPIC_API_KEY='sk-ant-...'
+
+# Terminal 1: Start backend (port 5000)
+python -m flask --app backend.api run --port 5000
+
+# Terminal 2: Start frontend (port 5173)
+cd frontend && npm run dev
+
+# Open http://localhost:5173
 ```
 
-### 🏃 Mac/Linux
-```bash
-chmod +x start.sh
-./start.sh
-```
+### Generate Fresh Signals
 
-### 🏃 Windows
 ```bash
-.\start.bat
+cd backend
+export ANTHROPIC_API_KEY='sk-ant-...'
+python -c "from signals import generate_signals; import json; signals = generate_signals(5); print(json.dumps(signals, indent=2))"
 ```
 
 ## What It Does
 
-- **📈 Macro Dashboard** — 9 key indicators (Fed rate, inflation, VIX, gold, Treasury yield, P/E ratio, GDP, dollar index, EM trend)
-- **💪 Market Health Score** — 0–100 gauge based on macro signals (Bullish / Constructive / Neutral / Cautious / Bearish)
-- **📁 Portfolio Management** — Add holdings via form or CSV upload, track cost basis and allocation %
-- **🎯 Investment Plan Generator** — Fill a form with your situation and get macro-aligned ETF recommendations
-- **🔄 Real-time Updates** — Fetch live macro data via API button
+- **AI Signal Generation** — Claude Opus analyzes 30+ stocks/ETFs combining fundamentals + macro context
+- **Macro Integration** — Fed rates, inflation, VIX, USD strength incorporated into reasoning
+- **Confidence Scoring** — 1-10 scale reflecting conviction (realistic 6-9 range, not inflated)
+- **Signal Archive** — Browse past signals, filter by sector, track outcomes
+- **Macro Context** — Real-time economic snapshot displayed with each signal
 
 ## Features
 
-### Macro Indicators Tab
-- 9 economic signals with gauges
-- Live data from yfinance (VIX, gold, treasury, P/E)
-- Manual quarterly updates (Fed rate, inflation, GDP)
+### This Week's Signals Tab
+- Grid view of 5 latest signals
+- Visual confidence bars (color-coded)
+- Sector badge and market cap
+- 2-3 sentence rationale referencing:
+  - Specific P/E, dividend yield, price action
+  - How macro conditions affect the thesis
+  - Clear risk/reward view
+- "View Details" link for full signal data
 
-### Outlook Tab
-- Market health score (0–100) with doughnut gauge
-- Signal breakdown (tailwinds / neutral / headwinds)
-- Macro table with all signals and context
-- 5-regime guide (Bullish to Bearish strategies)
+### Signal Archive Tab
+- Table view of past 12 weeks
+- Filter by sector (Tech, Finance, Healthcare, etc.)
+- Columns: Ticker | Signal | Confidence | Sector | Date | Outcome | Accuracy
+- Outcomes populated 30 days after signal (win/loss tracking)
 
-### Portfolio Tab ⭐ NEW
-**Two ways to add holdings:**
-1. **CSV Upload** — Format: `Ticker,Shares,CostBasis`
-   ```
-   AAPL,100,150.50
-   MSFT,50,350.00
-   BND,200,80.00
-   ```
-2. **Manual Form** — Add holdings one-by-one via form
+### Macro Context Tab
+- 9 economic indicators with current values
+- Fed rate, inflation, VIX, DXY, Treasury yield, P/E, gold, GDP, EM trend
+- Real-time fetch from yfinance
 
-**Portfolio summary shows:**
-- Individual holding allocation %
-- Total portfolio value
-- Remove button for each holding
+## API Endpoints
 
-### Investment Plan Tab
-**Answer 4 questions:**
-1. Investment amount ($)
-2. Timeline (short / medium / long)
-3. Current portfolio size
-4. Risk tolerance (conservative / moderate / aggressive)
-
-**Get:**
-- Recommended allocation (stocks / bonds / cash %)
-- Specific ETF recommendations grouped by type
-- Macro regime-aware strategy
-- Legal disclaimer
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Health check |
+| `/api/signals` | GET | Latest 5 signals |
+| `/api/signals/archive` | GET | All past signals + filtering |
+| `/api/signals/{id}` | GET | Single signal detail |
+| `/api/signals/generate` | POST | Generate new signals (admin) |
+| `/api/signals/accuracy` | POST | Update outcomes (scheduled) |
+| `/api/macro` | GET | Macro indicators snapshot |
 
 ## Project Structure
 
 ```
 portfolio-dashboard/
-├── .devcontainer/
-│   └── devcontainer.json        # GitHub Codespaces config
-├── backend/
-│   ├── api.py                   # Flask API (3 routes)
-│   ├── fetch_macro.py           # yfinance data fetching
-│   ├── macro_config.json        # Macro signals storage
-│   ├── requirements.txt
-│   └── Dockerfile
 ├── frontend/
 │   ├── src/
+│   │   ├── components/
+│   │   │   ├── SignalList.jsx (+ .css)      # This week's signals
+│   │   │   ├── SignalArchive.jsx (+ .css)   # Past signals table
+│   │   │   ├── MacroTab.jsx                 # Macro indicators
+│   │   │   ├── TabBar.jsx                   # Navigation
+│   │   │   ├── Header.jsx                   # App header
+│   │   │   └── *.jsx                        # Utility components
+│   │   ├── App.jsx
 │   │   ├── main.jsx
-│   │   ├── App.jsx              # Root state management
-│   │   ├── app.css              # Dark theme styling
-│   │   ├── lib/
-│   │   │   ├── macroUtils.js    # Health score logic
-│   │   │   └── recommendation.js # Investment plan logic
-│   │   └── components/          # 14 React components
-│   │       ├── Header.jsx
-│   │       ├── TabBar.jsx
-│   │       ├── MacroTab.jsx
-│   │       ├── OutlookTab.jsx
-│   │       ├── PortfolioTab.jsx     # NEW
-│   │       ├── InvestmentPlanTab.jsx
-│   │       └── ... (10 more)
+│   │   └── app.css
 │   ├── package.json
 │   ├── vite.config.js
-│   ├── index.html
-│   ├── nginx.conf
-│   └── Dockerfile
-├── docker-compose.yml           # Frontend (5001) + Backend (5000)
-├── README.md (this file)
-└── start.sh / start.bat
+│   └── index.html
+│
+├── backend/
+│   ├── api.py                 # Flask app + signal endpoints
+│   ├── signals.py             # Signal generation engine
+│   └── __pycache__/
+│
+├── .github/workflows/
+│   └── deploy-to-azure.yml    # CI/CD pipeline
+│
+├── requirements.txt
+├── macro_config.json
+├── signals.json               # Generated signals (weekly)
+├── FEATURE_ALIGNMENT.md       # Architecture docs
+├── SIGNAL_ENGINE_ENHANCEMENTS.md  # Roadmap
+├── ARCHITECTURE.md            # Technical design
+└── README.md
 ```
 
-## How It Works
+## Signal Generation
 
-### Backend (Flask API)
+### Process
+
+1. **Fetch Fundamentals** — yfinance retrieves P/E, dividend, market cap for 30+ assets
+2. **Get Macro Context** — Fetch Fed rate, inflation, VIX, USD strength
+3. **Claude Analysis** — Opus analyzes fundamentals + macro environment together
+4. **Output** — Structured JSON with direction (buy/hold/avoid), confidence (1-10), rationale
+5. **Storage** — Signals saved to signals.json with timestamp for archiving
+
+### Example Signal
+
+```json
+{
+  "ticker": "JPM",
+  "direction": "buy",
+  "confidence": 8,
+  "sector": "Financial Services",
+  "rationale": "P/E 14.9 with 1.92% dividend. High Fed rate (5.25%) boosts net interest margins for this well-capitalized bank. Inflation at 3.2% supports manageable credit conditions.",
+  "created_at": "2026-06-07T00:02:24",
+  "result": null,
+  "accuracy_pct": null
+}
 ```
-GET  /api/health   → {"status":"ok","timestamp":"..."}
-GET  /api/macro    → Full macro_config.json with all signals
-POST /api/refresh  → Trigger data fetch, return updated config
-```
 
-### Frontend (React 18 + Vite)
-- Fetches macro data on mount
-- Tabs: Macro → Outlook → Portfolio → Investment Plan
-- Chart.js doughnut gauge for health score
-- Form state management for portfolio and investment plan
+## Development Notes
 
-## API Endpoints
+### Key Decisions
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Health check |
-| GET | `/api/macro` | Current macro data |
-| POST | `/api/refresh` | Refresh macro data |
+- **Claude Opus** — Most capable model for nuanced financial reasoning combining fundamentals + macro
+- **30+ Candidates** — Diversified across Tech, Finance, Healthcare, Energy, Consumer, Real Estate, ETFs
+- **Macro Integration** — High rates = compress tech multiples, boost bank NIMs; key for sector rotation
+- **Realistic Confidence** — 6-9 range (not 7-10); reflects actual uncertainty
+- **JSON Storage** — Simple, transparent, git-friendly (no database complexity)
+- **Weekly Cadence** — Matches market rhythm; prevents signal fatigue
 
-## Testing with Users
+### Testing Signals
 
-### Option 1: GitHub Codespaces (Share a link)
-```
-https://codespaces.new/vipinsindhu/portfolio-dashboard
-```
-Users click, run `docker-compose up --build`, test immediately.
+Before going live, verify generated signals:
+- ✓ Confidence distribution (mix of 6/7/8, not all 8s)
+- ✓ Sector diversity (not 4/5 tech stocks)
+- ✓ BUY/HOLD/AVOID balance (realistic ratios)
+- ✓ Macro reasoning (rates/inflation clearly connected)
+- ✓ Risk awareness (mentions downside scenarios)
 
-### Option 2: ngrok Tunnel
+## Deployment
+
+### Local Testing
 ```bash
-ngrok http 5001
-```
-Share the public URL (e.g., `https://abc123.ngrok.io`).
+# Two terminals:
+# Terminal 1
+python -m flask --app backend.api run --port 5000
 
-### Option 3: Clone & Local
+# Terminal 2
+cd frontend && npm run dev
+```
+
+### Production (Railway.app)
 ```bash
-git clone https://github.com/vipinsindhu/portfolio-dashboard.git
-cd portfolio-dashboard
-docker-compose up --build
-# Share localhost:5001 or use ngrok tunnel
+# Push to GitHub
+git push origin main
+
+# Railway auto-deploys on push
+# Frontend: https://portfolio-dashboard-production-xxxx.up.railway.app
+# Backend: Same URL, /api/* routes
 ```
 
-## Configuration
+## Roadmap
 
-### Change Macro Refresh Time
-Edit `backend/api.py` to modify the schedule.
+### Phase 1: MVP ✅
+- Signal generation with Claude
+- Macro context integration
+- React UI (Signal List + Archive)
+- Expanded candidate pool (30+ assets)
 
-### Edit Macro Signals
-Edit `backend/macro_config.json` directly (bind-mounted in container).
+### Phase 2: Monetization (Next 4 weeks)
+- Email delivery (Resend)
+- Stripe subscription paywall ($29/month)
+- User authentication
+- Account management
 
-### Add More Indicators
-Update `macro_config.json` structure and add React components.
-
-## Macro Signals Reference
-
-| Signal | Source | Type | Notes |
-|--------|--------|------|-------|
-| Fed Funds Rate | Manual | Quarterly | Affects borrowing costs, valuation |
-| Core PCE | Manual | Quarterly | Inflation measure |
-| 10-yr Treasury | yfinance | Daily | Risk-free rate, equity multiple pressure |
-| S&P 500 P/E | yfinance | Daily | Valuation metric (vs 17x avg) |
-| VIX | yfinance | Daily | Market volatility (below 20 = calm) |
-| Gold Spot | yfinance | Daily | Inflation hedge, risk-off indicator |
-| Dollar Index | yfinance | Daily | USD strength (watch 101, 105 inflection) |
-| GDP Growth | Manual | Quarterly | Above 2% = earnings support |
-| EM Trend | Manual | Quarterly | Cyclical recovery play |
-
-## Health Score Calculation
-
-```
-score = ((signal_sum + indicator_count) / (2 * indicator_count)) * 100
-```
-
-Where each signal ∈ {-1, 0, +1}
-
-**Regimes:**
-- **Bullish** (70+) — Add equity, increase risk
-- **Constructive** (55–69) — Balanced allocation
-- **Neutral** (45–54) — Hedge with bonds/gold
-- **Cautious** (30–44) — Reduce risk, raise cash
-- **Bearish** (<30) — Deleveraging, prepare for corrections
-
-## Development
-
-### Run Frontend Dev Server
-```bash
-cd frontend
-npm install
-npm run dev
-# Visit http://localhost:5173
-```
-
-### Backend API Testing
-```bash
-curl http://localhost:5001/api/macro
-curl -X POST http://localhost:5001/api/refresh
-```
-
-## Troubleshooting
-
-**Port 5001 already in use?**
-```bash
-docker-compose down  # Stop all containers
-# Or change port in docker-compose.yml
-```
-
-**Containers won't start?**
-```bash
-docker-compose logs  # Check logs
-docker-compose down && docker-compose up --build --force-recreate
-```
-
-**API returning errors?**
-```bash
-docker-compose logs portfolio-backend  # Check Flask logs
-curl http://localhost:5001/api/health  # Verify connection
-```
-
-## Disclaimers
-
-⚠️ **Not financial advice.** This is an educational tool for macro analysis and portfolio planning. Consult a licensed financial advisor before making investment decisions. Past performance does not guarantee future results. All investing carries risk, including potential loss of principal.
+### Phase 3: Sophistication (Future)
+- 30-day accuracy tracking
+- B2B API tier with webhooks
+- Advanced filtering (sector, confidence, market cap)
+- Portfolio integration
+- Signal performance leaderboard
 
 ## License
 
 MIT
+
+## Author
+
+Built with Claude Code and Anthropic's Claude Opus API.
+Recovering lost code from dangling git commits and rebuilding for the stock recommendation market.
