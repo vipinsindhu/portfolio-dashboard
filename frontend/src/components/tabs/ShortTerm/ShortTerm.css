@@ -39,23 +39,27 @@
 }
 
 .signals-section.sell-reduce {
-  border-top: 4px solid rgba(220, 53, 69, 0.4);
+  border-top: 4px solid var(--signal-sell);
   padding-top: 20px;
+  opacity: 0.8;
 }
 
 .signals-section.hold {
-  border-top: 4px solid rgba(255, 193, 7, 0.4);
+  border-top: 4px solid var(--signal-hold);
   padding-top: 20px;
+  opacity: 0.8;
 }
 
 .signals-section.add {
-  border-top: 4px solid rgba(13, 125, 59, 0.4);
+  border-top: 4px solid var(--signal-buy);
   padding-top: 20px;
+  opacity: 0.8;
 }
 
 .signals-section.general {
-  border-top: 4px solid rgba(85, 104, 211, 0.4);
+  border-top: 4px solid var(--signal-opportunity);
   padding-top: 20px;
+  opacity: 0.8;
 }
 
 .section-title {
@@ -121,7 +125,29 @@
   color: var(--text-secondary);
 }
 
-/* Responsive */
+/* Desktop XL */
+@media (min-width: 1400px) {
+  .short-term-container {
+    padding: 40px 48px;
+  }
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .short-term-container {
+    padding: 28px 20px;
+  }
+
+  .signals-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+
+  .cta-section {
+    padding: 32px 24px;
+  }
+}
+
+/* Mobile */
 @media (max-width: 768px) {
   .short-term-container {
     padding: 24px 16px;

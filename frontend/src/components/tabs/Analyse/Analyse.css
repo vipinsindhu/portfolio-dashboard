@@ -23,7 +23,7 @@
 }
 
 /* Error Message */
-.analyse-error {
+.error-message {
   padding: 16px;
   margin-bottom: 24px;
   background: rgba(220, 53, 69, 0.1);
@@ -105,7 +105,35 @@
   max-width: 400px;
 }
 
-/* Responsive */
+/* Desktop XL */
+@media (min-width: 1400px) {
+  .analyse-container {
+    padding: 40px 48px;
+  }
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .analyse-container {
+    padding: 28px 20px;
+  }
+
+  .empty-state {
+    padding: 50px 20px;
+  }
+
+  .manual-analyze-section {
+    padding: 20px;
+  }
+
+  .btn-large {
+    min-width: 100%;
+    padding: 12px 24px;
+    font-size: 15px;
+  }
+}
+
+/* Mobile */
 @media (max-width: 768px) {
   .analyse-container {
     padding: 24px 16px;

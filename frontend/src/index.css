@@ -24,6 +24,13 @@
   --error-color: #dc3545;
   --info-color: #0066cc;
 
+  /* Signal section colors */
+  --signal-buy: #0d7d3b;
+  --signal-hold: #ffc107;
+  --signal-sell: #dc3545;
+  --signal-opportunity: #5568d3;
+  --signal-defensive: #997404;
+
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);

@@ -44,7 +44,7 @@ function Analyse() {
         <p>Upload your portfolio to get a detailed analysis of potential risks and pitfalls</p>
       </div>
 
-      {error && <div className="analyse-error">{error}</div>}
+      {error && <div className="error-message">{error}</div>}
 
       {/* Portfolio Input */}
       <PortfolioInput onPortfolioLoaded={handlePortfolioLoaded} onAnalyze={handleAnalyze} />

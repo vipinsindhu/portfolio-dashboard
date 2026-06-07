@@ -52,7 +52,25 @@
   font-size: 14px;
 }
 
-/* Responsive */
+/* Desktop XL */
+@media (min-width: 1400px) {
+  .learn-container {
+    padding: 40px 48px;
+  }
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .learn-container {
+    padding: 28px 20px;
+  }
+
+  .lessons-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+/* Mobile */
 @media (max-width: 768px) {
   .learn-container {
     padding: 24px 16px;
