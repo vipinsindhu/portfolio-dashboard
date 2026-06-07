@@ -9,6 +9,7 @@ function Analyse() {
   const [error, setError] = useState(null)
   const [portfolioLoaded, setPortfolioLoaded] = useState(false)
   const analyzeButtonRef = useRef(null)
+  const analysisResultsRef = useRef(null)
 
   const handleAnalyze = useCallback(async () => {
     setLoading(true)
@@ -52,6 +53,15 @@ function Analyse() {
     }
   }, [portfolioLoaded])
 
+  useEffect(() => {
+    if (analysis && analysisResultsRef.current) {
+      // Scroll to analysis results with smooth behavior
+      setTimeout(() => {
+        analysisResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 300)
+    }
+  }, [analysis])
+
   return (
     <div className="analyse-container">
       <div className="analyse-header">
@@ -86,7 +96,11 @@ function Analyse() {
       )}
 
       {/* Analysis Results */}
-      {analysis && <PitfallDetector analysis={analysis} />}
+      {analysis && (
+        <div ref={analysisResultsRef}>
+          <PitfallDetector analysis={analysis} />
+        </div>
+      )}
 
       {/* Empty State */}
       {!portfolioLoaded && !analysis && (
