@@ -12,6 +12,9 @@ COPY . .
 # Build with environment-specific API URL if provided
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
+
+# Force fresh build by busting cache
+ARG BUILD_TIMESTAMP
 RUN npm run build
 
 FROM nginx:alpine
