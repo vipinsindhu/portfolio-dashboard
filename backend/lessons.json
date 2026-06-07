@@ -2,209 +2,213 @@
   "lessons": [
     {
       "id": "overconcentration",
-      "title": "Overconcentration Risk",
-      "category": "Portfolio Construction",
+      "title": "Don't Put All Your Eggs in One Basket",
+      "category": "Getting Started",
       "difficulty": "beginner",
-      "pitfall": "Holding more than 20% of your portfolio in a single stock",
+      "pitfall": "Putting more than 20% of your money into a single company",
       "why_risky": [
-        "Magnifies losses: If TSLA is 40% of your $10k portfolio and drops 20%, you lose $800 (8% of total)",
-        "Reduces diversification benefits: One company's problems become your problems",
-        "Increases volatility: Your portfolio swings wildly with one stock",
-        "Single-company risk: Company-specific news hits harder"
+        "Big losses from one company: If one stock you own drops 20%, your whole investment drops 8% - that's too much",
+        "No backup plan: When one company has problems, you feel it deeply",
+        "Risky rides: Your money bounces around too much",
+        "Bad news hits hard: One company's bad news wipes out a big chunk of your money"
       ],
       "real_example": {
-        "scenario": "Tech enthusiast portfolio",
-        "holding": "TSLA 40% ($4,000)",
-        "others": "AAPL 30%, MSFT 20%, Cash 10%",
-        "problem": "When TSLA dropped 30% in 2022, this portfolio fell 12% (vs market 10%)",
-        "lesson": "Diversification cushioned some pain, but TSLA overweight amplified losses"
+        "scenario": "A Tesla fan invests too much in one company",
+        "holding": "Tesla stock: 40% of $10,000 = $4,000",
+        "others": "Apple 30%, Microsoft 20%, Cash 10%",
+        "problem": "When Tesla stock fell 30%, the whole investment dropped 12%",
+        "lesson": "Having other investments helped reduce the damage. But Tesla being too big made it worse"
       },
       "solution": {
-        "rule": "No single holding should exceed 10-15% of your portfolio",
-        "why_it_works": "Even if one stock drops 50%, your portfolio drops only 5-7.5%",
+        "rule": "Never put more than 10-15% into any single company",
+        "why_it_works": "If one company's stock drops 50%, your total investment only drops 5-7.5%",
         "implementation": [
-          "Calculate: Max position = Portfolio value × 15%",
-          "Example: $10k portfolio → Max $1,500 per stock",
-          "Rebalance quarterly: Trim winners that grow beyond 15%"
+          "Rule: Don't spend more than 15% of your money on one company",
+          "Example: If you have $10,000, put no more than $1,500 in any one stock",
+          "Every 3 months: Check if one stock grew too big, and sell some to balance"
         ]
       },
       "metric": "position_weight",
       "red_flag_threshold": 0.20,
       "warning_threshold": 0.15,
-      "tags": ["risk-management", "diversification", "position-sizing"]
+      "tags": ["safety", "spread-your-risk"]
     },
     {
       "id": "sector-clustering",
-      "title": "Sector Clustering",
-      "category": "Diversification",
+      "title": "Spread Across Different Industries",
+      "category": "Getting Started",
       "difficulty": "beginner",
-      "pitfall": "Having too much exposure to a single sector (40%+ in one sector)",
+      "pitfall": "Having too much money in one industry (40%+ in the same sector)",
       "why_risky": [
-        "Sector-wide downturns hit you hard: Tech crash = your portfolio crashes",
-        "Missing opportunities: If healthcare surges, you're underweight",
-        "Loses correlation benefits: Different sectors move differently - that's your protection",
-        "Concentration risk compounded: Often happens with tech stocks (easy to overweight)"
+        "One bad year for an industry = your money drops: If tech stocks crash, your whole portfolio crashes",
+        "Missing winners: If healthcare does great, you miss out because you're mostly in tech",
+        "No protection: Different industries move at different times - that's what saves you",
+        "Double trouble: Tech stocks are easy to like, so you accidentally own too many"
       ],
       "real_example": {
-        "scenario": "Growth investor in 2022",
-        "holdings": "AAPL (25%), MSFT (20%), GOOGL (15%), NVDA (10%), META (8%)",
-        "sector_exposure": "Tech: 78%",
-        "problem": "Tech sector fell 33% in 2022. This portfolio fell 25% (vs S&P 500: 18%)",
-        "lesson": "Defensive sectors (healthcare, utilities, staples) would have cushioned the blow"
+        "scenario": "An investor loved tech companies in 2022",
+        "holdings": "Apple 25%, Microsoft 20%, Google 15%, Nvidia 10%, Meta 8%",
+        "industry": "All tech: 78% of their money",
+        "problem": "When tech crashed 33% that year, their money dropped 25% (market only dropped 18%)",
+        "lesson": "Adding healthcare or utility stocks would have softened the blow"
       },
       "solution": {
-        "rule": "Allocate no more than 30-35% to any single sector",
+        "rule": "Don't put more than 30-35% into any one industry",
         "target_allocation": {
           "Technology": "25-30%",
-          "Finance": "15-20%",
+          "Finance (Banks, Insurance)": "15-20%",
           "Healthcare": "15-20%",
-          "Consumer": "10-15%",
-          "Industrial": "5-10%",
-          "Other": "5-10%",
-          "Bonds/Cash": "10-20%"
+          "Everyday items (Retail, Food)": "10-15%",
+          "Manufacturing": "5-10%",
+          "Other industries": "5-10%",
+          "Bonds and Cash": "10-20%"
         },
         "implementation": [
-          "Audit current holdings: Group by sector",
-          "Identify overweight sectors (>30%)",
-          "Add holdings from underweight sectors",
-          "Use diversified ETFs (VTI) to fill gaps"
+          "List all your companies and group them by industry",
+          "Find industries where you have more than 30%",
+          "Buy stocks from industries you're weak in",
+          "Use funds (like VTI) to automatically spread across all industries"
         ]
       },
       "metric": "sector_concentration",
       "red_flag_threshold": 0.40,
       "warning_threshold": 0.35,
-      "tags": ["diversification", "sector-allocation"]
+      "tags": ["safety", "spread-your-risk", "industries"]
     },
     {
       "id": "concentration-risk",
-      "title": "Concentration Risk",
-      "category": "Risk Management",
+      "title": "Don't Bet Everything on Your Top 3",
+      "category": "Getting Started",
       "difficulty": "beginner",
-      "pitfall": "Top 3 holdings represent more than 50% of portfolio",
+      "pitfall": "Your top 3 companies make up more than 50% of your total investment",
       "why_risky": [
-        "Violates diversification principle: Your portfolio depends on 3 bets",
-        "Amplifies mistakes: If your top 3 ideas are wrong, portfolio is in trouble",
-        "Reduces expected return: Concentrated portfolios have higher risk for similar returns",
-        "Harder to sleep at night: Volatility spikes with concentration"
+        "Too much riding on 3 bets: If your top 3 don't work out, everything falls apart",
+        "One bad guess ruins you: If you picked wrong for those 3 companies, you lose big",
+        "High risk, same reward: Taking more risk doesn't mean you make more money",
+        "Can't sleep at night: Your money swings wildly, causing stress"
       ],
       "real_example": {
-        "scenario": "High-conviction investor",
-        "holdings": "AAPL (35%), MSFT (20%), GOOGL (15%), 10 other stocks (30%)",
-        "problem": "Top 3 are 70% of portfolio. When Apple had chip shortage fears, portfolio fell 8% in one day",
-        "lesson": "That 30% in other holdings would have stabilized portfolio if AAPL had fallen 25%"
+        "scenario": "An investor believed strongly in 3 tech companies",
+        "holdings": "Apple 35%, Microsoft 20%, Google 15%, 10 other stocks 30%",
+        "problem": "Top 3 = 70% of their money. When Apple had supply problems, the portfolio dropped 8% in one day",
+        "lesson": "The 30% in other companies wasn't enough to cushion the blow"
       },
       "solution": {
-        "rule": "Top 3 holdings should be <50% of portfolio (ideally <40%)",
-        "formula": "If Top3 > 50%, rebalance by trimming largest and buying others",
-        "diversification_ratio": "Aim for 15-30 holdings to reduce company-specific risk",
+        "rule": "Your top 3 stocks should be less than 50% (better if less than 40%)",
+        "why_it_works": "This way, if you're wrong about one company, the others can help",
         "implementation": [
-          "Calculate concentration: (Top1 + Top2 + Top3) / Total",
-          "If >50%, sell 20% of each top position",
-          "Reinvest in underweight sectors or broad ETFs"
+          "Add up your 3 biggest companies",
+          "If it's more than 50%, sell some of the biggest ones",
+          "Buy more different stocks to spread the risk",
+          "Aim for 15-30 different companies total"
         ]
       },
       "metric": "top3_concentration",
       "red_flag_threshold": 0.60,
       "warning_threshold": 0.50,
-      "tags": ["risk-management", "position-sizing", "diversification"]
+      "tags": ["safety", "spread-your-risk"]
     },
     {
       "id": "insufficient-diversification",
-      "title": "Insufficient Diversification",
-      "category": "Portfolio Construction",
+      "title": "Own Enough Different Companies",
+      "category": "Getting Started",
       "difficulty": "beginner",
-      "pitfall": "Portfolio has fewer than 10 holdings",
+      "pitfall": "You only own fewer than 10 different stocks",
       "why_risky": [
-        "Company-specific risk not diversified: 1 bad earnings report = portfolio drop",
-        "Can't benefit from mean reversion: Small portfolio means less opportunity to catch winners",
-        "Time-intensive: Can't monitor 5 stocks as well as you can 20",
-        "Misses diversification benefit: Research shows 10-15 holdings optimal"
+        "One company's bad news hurts a lot: With only 5 stocks, one bad report drops your money 3-4%",
+        "No room for winners: With 5 stocks, you miss out on finding the next big winner",
+        "Too much work: It's hard to keep track of just 5 companies well",
+        "Science says: Research shows 10-15 stocks is the minimum for safety"
       ],
       "real_example": {
-        "scenario": "Casual investor with 5 picks",
-        "holdings": "AAPL, MSFT, GOOGL, NVDA, AMZN",
-        "problem": "When NVDA missed earnings, portfolio fell 4% in one day (holding was 20%)",
-        "lesson": "Same position in diversified portfolio would have caused <1% drop"
+        "scenario": "A casual investor picks just 5 big companies",
+        "holdings": "Apple, Microsoft, Google, Nvidia, Amazon",
+        "problem": "When Nvidia missed its sales target, the portfolio dropped 4% in one day",
+        "lesson": "With 15 stocks instead of 5, the same news would have only dropped it 1%"
       },
       "solution": {
-        "rule": "Maintain 15-30 holdings for individual stock investors",
-        "alternative": "Use index funds (VTI, VOO) for automatic diversification",
+        "rule": "Own at least 15-30 different companies",
+        "alternative": "Or use a fund (like VTI) that owns 1000s of companies automatically",
         "implementation": [
-          "Start with 10-15 quality companies you understand",
-          "Add 2-3 new positions quarterly from underrepresented sectors",
-          "Use ETFs for sectors you don't want to pick individual stocks"
+          "Start small: Pick 10-15 good companies you understand",
+          "Add gradually: Every 3 months, add 2-3 new companies",
+          "Spread around: Make sure they're from different industries",
+          "Or use a fund: One fund can give you instant ownership of hundreds of companies"
         ]
       },
       "metric": "holding_count",
       "red_flag_threshold": 5,
       "warning_threshold": 10,
-      "tags": ["diversification", "portfolio-construction"]
+      "tags": ["safety", "spread-your-risk"]
     },
     {
       "id": "performance-chasing",
-      "title": "Performance Chasing",
-      "category": "Behavioral Finance",
-      "difficulty": "intermediate",
-      "pitfall": "Buying stocks that had the best returns last year",
+      "title": "Don't Chase Last Year's Winners",
+      "category": "Avoiding Mistakes",
+      "difficulty": "beginner",
+      "pitfall": "Buying stocks that did best last year",
       "why_risky": [
-        "Mean reversion: Best performers often underperform next year",
-        "Buying high: You're buying stocks when they're most expensive (highest P/E)",
-        "Timing mistake: Often buy right before sector correction",
-        "Reduces returns: Research shows chasers underperform buy-and-hold by 2-3% annually"
+        "Winners don't always repeat: The best stock last year often doesn't win next year",
+        "Buying at the peak: You're buying when the price is highest",
+        "Bad timing: You usually buy right before things get worse",
+        "Lose money: Studies show people who chase winners lose 2-3% per year"
       ],
       "real_example": {
-        "scenario": "Chasing 2021 winners into 2022",
-        "holdings": "Bought: NVDA, Tesla, ARK Innovation ETF (2021's best performers)",
-        "result": "NVDA -50%, Tesla -65%, ARKK -66% in 2022",
-        "lesson": "Those 2021 winners became 2022's worst performers"
+        "scenario": "Chasing the hot stocks from 2021",
+        "holdings": "Bought: Nvidia, Tesla, ARK fund (all were huge winners in 2021)",
+        "result": "Nvidia dropped 50%, Tesla dropped 65%, ARK dropped 66% in 2022",
+        "lesson": "Last year's winners became 2022's worst performers"
       },
       "solution": {
-        "rule": "Don't buy stocks in top performers list - buy their fallen competitors",
-        "value_approach": "Buy beaten-down sectors (mean reversion)",
+        "rule": "Ignore last year's best performers. Look for beaten-down stocks instead",
+        "approach": "Buy companies that did poorly but have good fundamentals",
         "implementation": [
-          "Ignore year-to-date performance rankings",
-          "Look for quality companies with depressed valuations",
-          "Buy 5-year low performers that have recovered fundamentals",
-          "Dollar-cost average into positions over 3-6 months"
+          "Ignore top performer lists",
+          "Look for good companies selling cheap",
+          "Buy low performers that have improved their business",
+          "Buy gradually over 3-6 months, don't rush"
         ]
       },
       "metric": "momentum_exposure",
-      "red_flag_threshold": "All holdings YTD return >+25%",
-      "warning_threshold": "Average holding YTD return >+15%",
-      "tags": ["behavioral-finance", "market-timing", "value-investing"]
+      "red_flag_threshold": "All stocks up more than 25% last year",
+      "warning_threshold": "Average stock up more than 15% last year",
+      "tags": ["psychology", "avoid-mistakes"]
     },
     {
       "id": "bond-stock-imbalance",
-      "title": "Bonds vs Stocks Imbalance",
-      "category": "Asset Allocation",
+      "title": "Balance Stocks and Bonds by Age",
+      "category": "Getting Started",
       "difficulty": "beginner",
-      "pitfall": "Portfolio is 100% stocks or too many bonds for long-term",
+      "pitfall": "Holding 100% stocks when you should have some bonds, or too many bonds when you're young",
       "why_risky": [
-        "All stocks: High volatility, difficult to sleep at night, panic selling in crashes",
-        "Too many bonds: Misses long-term stock growth, returns lag inflation",
-        "No hedge: Stocks and bonds move differently - bonds protect in downturns",
-        "Age mismatch: 25-year-old with 80% bonds = misses 40+ years of growth"
+        "All stocks = scary rides: 100% stocks means wild swings, tempting you to panic sell",
+        "Too many bonds = missing growth: Too many safe bonds means you miss out on long-term gains",
+        "No cushion: Stocks and bonds move differently - bonds protect when stocks fall",
+        "Wrong for your age: A 25-year-old shouldn't have the same mix as a 65-year-old"
       ],
       "real_example": {
-        "scenario": "30-year-old with all stocks during 2020 crash",
-        "portfolio_hit": "-34% (S&P 500 correction)",
-        "problem": "Panic sold at bottom, missed 60% recovery rally",
-        "lesson": "20% bonds would have reduced decline to -27%, less likely to panic sell"
+        "scenario": "A 30-year-old with all their money in stocks during the 2020 crash",
+        "situation": "Dropped 34% (like the S&P 500)",
+        "problem": "Got scared and sold at the bottom, missing the recovery",
+        "lesson": "20% bonds would have only dropped it 27%, and wouldn't feel so scary"
       },
       "solution": {
-        "rule": "Bonds = 100 - your_age (approximate)",
-        "for_30yo": "30% bonds, 70% stocks",
-        "for_50yo": "50% bonds, 50% stocks",
+        "rule": "Use this simple rule: Bonds = 100 minus your age",
+        "examples": {
+          "age_30": "30% bonds, 70% stocks",
+          "age_50": "50% bonds, 50% stocks"
+        },
         "implementation": [
-          "Add low-cost bond index (BND, AGG) for stability",
-          "Rebalance annually: Sell winners, buy laggards",
-          "Bonds act as 'dry powder' to buy dips"
+          "Buy a low-cost bond fund (like BND or AGG)",
+          "Set your mix based on your age",
+          "Check once per year and rebalance",
+          "Bonds give you 'dry powder' to buy stocks when they're cheap"
         ]
       },
       "metric": "stock_percentage",
-      "red_flag_threshold": "100% stocks (age 40+) or >70% bonds (age <35)",
-      "warning_threshold": "Imbalance > 20% from target",
-      "tags": ["asset-allocation", "risk-management"]
+      "red_flag_threshold": "100% stocks (if over 40) or 70%+ bonds (if under 35)",
+      "warning_threshold": "Imbalance more than 20% from your age-based target",
+      "tags": ["safety", "balance", "age-appropriate"]
     }
   ]
 }

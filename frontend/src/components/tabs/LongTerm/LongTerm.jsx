@@ -51,8 +51,8 @@ function LongTerm() {
   return (
     <div className="long-term-container">
       <div className="long-term-header">
-        <h2>🎯 Long-term Strategy (1+ years)</h2>
-        <p>Build wealth with fundamentals-focused holdings for buy-and-hold investors</p>
+        <h2>🎯 Build Wealth Over Time (1+ Years)</h2>
+        <p>Find good companies to own forever and watch them grow</p>
       </div>
 
       {error && <div className="error-message">{error}</div>}

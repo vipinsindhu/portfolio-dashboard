@@ -40,8 +40,8 @@ function Analyse() {
   return (
     <div className="analyse-container">
       <div className="analyse-header">
-        <h2>📊 Analyse Your Portfolio</h2>
-        <p>Upload your portfolio to get a detailed analysis of potential risks and pitfalls</p>
+        <h2>📊 Check Your Investments</h2>
+        <p>Upload your stocks to see if they're safely spread out or too risky</p>
       </div>
 
       {error && <div className="error-message">{error}</div>}

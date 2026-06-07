@@ -51,8 +51,8 @@ function ShortTerm() {
   return (
     <div className="short-term-container">
       <div className="short-term-header">
-        <h2>📈 Short-term Opportunities (1-3 months)</h2>
-        <p>Market-driven signals optimized for near-term trades</p>
+        <h2>📈 Quick Ideas (Next 1-3 Months)</h2>
+        <p>Stocks to watch for quick moves based on recent news</p>
       </div>
 
       {error && <div className="error-message">{error}</div>}

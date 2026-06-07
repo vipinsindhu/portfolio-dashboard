@@ -35,8 +35,8 @@ function Learn() {
   return (
     <div className="learn-container">
       <div className="learn-header">
-        <h2>📚 Learn About Investing Pitfalls</h2>
-        <p>Click cards to flip and learn how to avoid common mistakes</p>
+        <h2>📚 Learn Investment Basics</h2>
+        <p>Click any card to flip and learn how to protect your money</p>
       </div>
 
       {error && <div className="error-message">Error: {error}</div>}
