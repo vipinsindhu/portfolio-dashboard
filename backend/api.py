@@ -25,6 +25,8 @@ def create_app():
     app = Flask(__name__)
     CORS(app)
 
+    print("Creating Flask app with routes...", flush=True)
+
     @app.route("/api/health", methods=["GET"])
     def health():
         """Health check endpoint"""
@@ -106,6 +108,7 @@ def create_app():
             print(f"Error refreshing analysis: {e}")
             return jsonify({"status": "error", "message": str(e)}), 500
 
+    print(f"Flask app created with routes: {[rule.rule for rule in app.url_map.iter_rules()]}", flush=True)
     return app
 
 if __name__ == "__main__":
