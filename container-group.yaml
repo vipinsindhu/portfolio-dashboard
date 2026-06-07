@@ -1,0 +1,39 @@
+apiVersion: 2021-09-01
+location: eastus
+name: portfolio-dashboard
+properties:
+  containers:
+  - name: backend
+    properties:
+      image: portfoliodashboard61059.azurecr.io/portfolio-backend:latest
+      resources:
+        requests:
+          cpu: 0.5
+          memoryInGb: 0.5
+      ports:
+      - port: 5000
+        protocol: TCP
+      environmentVariables:
+      - name: ANTHROPIC_API_KEY
+        secureValue: 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
+  - name: frontend
+    properties:
+      image: portfoliodashboard61059.azurecr.io/portfolio-frontend:latest
+      resources:
+        requests:
+          cpu: 0.5
+          memoryInGb: 0.5
+      ports:
+      - port: 80
+        protocol: TCP
+  osType: Linux
+  ipAddress:
+    type: Public
+    dnsNameLabel: portfolio-dash-live
+    ports:
+    - port: 80
+      protocol: TCP
+  imageRegistryCredentials:
+  - server: portfoliodashboard61059.azurecr.io
+    username: portfoliodashboard61059
+    password: 84oNbR3h58zrhMddjgpnr68U5ZmKzsJvy6J7rzazuzG6w7uy9RqjJQQJ99CFACYeBjFEqg7NAAACAZCR3ZHY
