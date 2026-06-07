@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Header from './components/Header'
 import TabBar from './components/TabBar'
 import MacroTab from './components/MacroTab'
+import MacroAnalysis from './components/MacroAnalysis'
 import OutlookTab from './components/OutlookTab'
 import PortfolioTab from './components/PortfolioTab'
 import InvestmentPlanTab from './components/InvestmentPlanTab'
@@ -62,6 +63,11 @@ function App() {
         {activeTab === 'macro' && (
           <div className="panel active" id="tab-macro">
             <MacroTab signals={macroData.macro_signals} />
+          </div>
+        )}
+        {activeTab === 'analysis' && (
+          <div className="panel active" id="tab-analysis">
+            <MacroAnalysis />
           </div>
         )}
         {activeTab === 'outlook' && (
