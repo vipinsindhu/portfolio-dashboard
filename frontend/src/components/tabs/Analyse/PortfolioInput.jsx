@@ -27,6 +27,7 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
     const file = event.target.files?.[0]
     if (!file) return
 
+    console.log('CSV Upload started:', file.name)
     setLoading(true)
     setError(null)
     setSuccess(null)
@@ -46,9 +47,11 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
       }
 
       const data = await response.json()
+      console.log('CSV Upload Response:', data)
 
       // Add CSV holdings to preview table
       if (data.holdings_list && data.holdings_list.length > 0) {
+        console.log('Adding holdings to preview table:', data.holdings_list)
         const newHoldings = [
           ...holdings,
           ...data.holdings_list.map(h => ({
@@ -60,16 +63,23 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
           }))
         ]
         const stats = calculatePortfolioStats(newHoldings)
+        console.log('Updated holdings state:', stats.holdings)
         setHoldings(stats.holdings)
+      } else {
+        console.warn('No holdings_list in response or empty:', data.holdings_list)
       }
 
       setSuccess(`✅ Loaded ${data.holdings} holdings from CSV`)
+
+      // Reset file input
+      event.target.value = ''
 
       // Trigger portfolio loaded callback
       if (onPortfolioLoaded) {
         onPortfolioLoaded()
       }
     } catch (err) {
+      console.error('CSV Upload Error:', err)
       setError(err.message)
     } finally {
       setLoading(false)

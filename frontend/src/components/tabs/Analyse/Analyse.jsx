@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import PortfolioInput from './PortfolioInput'
 import PitfallDetector from './PitfallDetector'
 import './Analyse.css'
@@ -8,6 +8,7 @@ function Analyse() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [portfolioLoaded, setPortfolioLoaded] = useState(false)
+  const analyzeButtonRef = useRef(null)
 
   const handleAnalyze = useCallback(async () => {
     setLoading(true)
@@ -37,6 +38,20 @@ function Analyse() {
     // Analysis will be triggered after upload completes
   }
 
+  useEffect(() => {
+    if (portfolioLoaded && analyzeButtonRef.current) {
+      // Scroll to button with smooth behavior
+      analyzeButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // Add highlight animation class
+      analyzeButtonRef.current.classList.add('highlight-pulse')
+      // Remove highlight after 3 seconds
+      const timeout = setTimeout(() => {
+        analyzeButtonRef.current?.classList.remove('highlight-pulse')
+      }, 3000)
+      return () => clearTimeout(timeout)
+    }
+  }, [portfolioLoaded])
+
   return (
     <div className="analyse-container">
       <div className="analyse-header">
@@ -52,7 +67,12 @@ function Analyse() {
       {/* Manual Analyze Button */}
       {portfolioLoaded && (
         <div className="manual-analyze-section">
-          <button className="btn-primary btn-large" onClick={handleAnalyze} disabled={loading}>
+          <button
+            ref={analyzeButtonRef}
+            className="btn-primary btn-large"
+            onClick={handleAnalyze}
+            disabled={loading}
+          >
             {loading ? '⏳ Analyzing...' : '🔍 Analyze Portfolio'}
           </button>
         </div>
