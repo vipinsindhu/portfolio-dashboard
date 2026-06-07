@@ -4,11 +4,9 @@ import TabBar from './components/TabBar'
 import Research from './components/Research'
 import SignalList from './components/SignalList'
 import SignalArchive from './components/SignalArchive'
-import MacroTab from './components/MacroTab'
 
 function App() {
   const [signals, setSignals] = useState(null)
-  const [macroData, setMacroData] = useState(null)
   const [activeTab, setActiveTab] = useState('research')
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(null)
@@ -26,21 +24,10 @@ function App() {
     }
   }
 
-  const fetchMacro = async () => {
-    try {
-      const response = await fetch('/api/macro')
-      if (!response.ok) throw new Error('Failed to fetch macro data')
-      const data = await response.json()
-      setMacroData(data)
-    } catch (err) {
-      console.error('Error fetching macro:', err)
-    }
-  }
-
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      await Promise.all([fetchSignals(), fetchMacro()])
+      await fetchSignals()
       setError(null)
     } catch (err) {
       console.error('Error refreshing:', err)
@@ -52,7 +39,6 @@ function App() {
 
   useEffect(() => {
     fetchSignals()
-    fetchMacro()
   }, [])
 
   if (!signals) {
@@ -81,11 +67,6 @@ function App() {
         {activeTab === 'archive' && (
           <div className="panel active" id="tab-archive">
             <SignalArchive />
-          </div>
-        )}
-        {activeTab === 'macro' && macroData && (
-          <div className="panel active" id="tab-macro">
-            <MacroTab signals={macroData.macro_signals} />
           </div>
         )}
       </div>

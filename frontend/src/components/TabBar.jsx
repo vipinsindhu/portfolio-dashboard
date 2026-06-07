@@ -19,12 +19,6 @@ function TabBar({ activeTab, onTabChange }) {
       >
         Signal Archive
       </button>
-      <button
-        className={`tab ${activeTab === 'macro' ? 'active' : ''}`}
-        onClick={() => onTabChange('macro')}
-      >
-        Macro Context
-      </button>
     </div>
   )
 }
