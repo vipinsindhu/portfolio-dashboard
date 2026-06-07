@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import './PortfolioInput.css'
 
 function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
-  const [uploadMethod, setUploadMethod] = useState('csv') // 'csv' or 'manual'
-  const [csvFile, setCsvFile] = useState(null)
+  const [holdings, setHoldings] = useState([])
   const [manualInput, setManualInput] = useState({
     symbol: '',
     quantity: '',
@@ -12,6 +11,17 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
+
+  const calculatePortfolioStats = useCallback((holdingsList) => {
+    const totalCost = holdingsList.reduce((sum, h) => sum + h.total_cost, 0)
+    return {
+      totalCost,
+      holdings: holdingsList.map(h => ({
+        ...h,
+        percentage: totalCost > 0 ? ((h.total_cost / totalCost) * 100).toFixed(1) : 0
+      }))
+    }
+  }, [])
 
   const handleCSVUpload = async (event) => {
     const file = event.target.files?.[0]
@@ -36,18 +46,12 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
       }
 
       const data = await response.json()
-      setSuccess(`✅ Loaded ${data.holdings} holdings`)
-      setCsvFile(null)
+      setSuccess(`✅ Loaded ${data.holdings} holdings from CSV`)
 
-      // Trigger analysis
+      // Trigger portfolio loaded callback
       if (onPortfolioLoaded) {
         onPortfolioLoaded()
       }
-
-      // Auto-analyze after short delay
-      setTimeout(() => {
-        if (onAnalyze) onAnalyze()
-      }, 500)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -84,13 +88,24 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
         throw new Error(errorData.error || 'Failed to add holding')
       }
 
-      const data = await response.json()
+      // Add to local holdings
+      const newHolding = {
+        symbol: manualInput.symbol.toUpperCase(),
+        quantity: parseFloat(manualInput.quantity),
+        purchase_price: parseFloat(manualInput.purchase_price),
+        total_cost: parseFloat(manualInput.quantity) * parseFloat(manualInput.purchase_price),
+        percentage: 0
+      }
+
+      const newHoldings = [...holdings, newHolding]
+      const stats = calculatePortfolioStats(newHoldings)
+      setHoldings(stats.holdings)
       setSuccess(`✅ Added ${manualInput.symbol}`)
 
       // Reset form
       setManualInput({ symbol: '', quantity: '', purchase_price: '' })
 
-      // Trigger analysis
+      // Trigger portfolio loaded callback
       if (onPortfolioLoaded) {
         onPortfolioLoaded()
       }
@@ -99,6 +114,13 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRemoveHolding = (index) => {
+    const newHoldings = holdings.filter((_, i) => i !== index)
+    const stats = calculatePortfolioStats(newHoldings)
+    setHoldings(stats.holdings)
+    setSuccess(null)
   }
 
   const downloadCSVTemplate = () => {
@@ -112,37 +134,23 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
     document.body.removeChild(element)
   }
 
+  const totalPortfolioCost = holdings.reduce((sum, h) => sum + h.total_cost, 0)
+
   return (
     <div className="portfolio-input-container">
       <div className="input-header">
-        <h3>Upload Your Portfolio</h3>
-        <p>Add your holdings to get personalized analysis</p>
+        <h3>Add Your Holdings</h3>
+        <p>Use CSV for multiple stocks, or add them one at a time</p>
       </div>
 
       {error && <div className="input-error">{error}</div>}
       {success && <div className="input-success">{success}</div>}
 
-      {/* Method Tabs */}
-      <div className="input-method-tabs">
-        <button
-          className={`method-tab ${uploadMethod === 'csv' ? 'active' : ''}`}
-          onClick={() => setUploadMethod('csv')}
-          disabled={loading}
-        >
-          📤 CSV Upload
-        </button>
-        <button
-          className={`method-tab ${uploadMethod === 'manual' ? 'active' : ''}`}
-          onClick={() => setUploadMethod('manual')}
-          disabled={loading}
-        >
-          ➕ Manual Entry
-        </button>
-      </div>
-
-      {/* CSV Upload */}
-      {uploadMethod === 'csv' && (
+      {/* Input Methods - Side by Side */}
+      <div className="input-methods-grid">
+        {/* CSV Upload */}
         <div className="input-method csv-upload">
+          <h4>📤 Upload CSV</h4>
           <div className="upload-zone">
             <input
               type="file"
@@ -168,11 +176,11 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
             📥 Download Template
           </button>
         </div>
-      )}
 
-      {/* Manual Entry */}
-      {uploadMethod === 'manual' && (
+        {/* Manual Entry */}
         <form className="input-method manual-entry" onSubmit={handleManualAdd}>
+          <h4>➕ Add One Stock</h4>
+
           <div className="form-group">
             <label htmlFor="symbol">Stock Symbol</label>
             <input
@@ -219,16 +227,70 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
           </div>
 
           <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Adding...' : '➕ Add Holding'}
+            {loading ? 'Adding...' : '➕ Add'}
           </button>
         </form>
+      </div>
+
+      {/* Portfolio Summary Table */}
+      {holdings.length > 0 && (
+        <div className="portfolio-table-container">
+          <h4>Manually Added Holdings ({holdings.length})</h4>
+          <div className="portfolio-table-wrapper">
+            <table className="portfolio-table">
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th>Quantity</th>
+                  <th>Price</th>
+                  <th>Total Cost</th>
+                  <th>% of Portfolio</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {holdings.map((holding, idx) => (
+                  <tr key={idx}>
+                    <td className="symbol-cell"><strong>{holding.symbol}</strong></td>
+                    <td>{holding.quantity}</td>
+                    <td>${holding.purchase_price.toFixed(2)}</td>
+                    <td>${holding.total_cost.toFixed(2)}</td>
+                    <td>{holding.percentage}%</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn-remove"
+                        onClick={() => handleRemoveHolding(idx)}
+                        disabled={loading}
+                        title="Remove this holding"
+                      >
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan="3"><strong>Total Portfolio</strong></td>
+                  <td><strong>${totalPortfolioCost.toFixed(2)}</strong></td>
+                  <td><strong>100%</strong></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
       )}
 
-      <div className="input-footer">
-        <p className="footer-hint">
-          💡 Add multiple holdings one at a time, or use CSV for faster upload
-        </p>
-      </div>
+      {/* Empty State */}
+      {holdings.length === 0 && (
+        <div className="input-footer">
+          <p className="footer-hint">
+            💡 Start by uploading a CSV or adding your first stock
+          </p>
+        </div>
+      )}
     </div>
   )
 }

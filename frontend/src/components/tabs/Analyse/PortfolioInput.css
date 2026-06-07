@@ -43,47 +43,12 @@
   font-size: 14px;
 }
 
-/* Method Tabs */
-.input-method-tabs {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-  border-bottom: 2px solid var(--border-color);
-}
-
-.method-tab {
-  padding: 12px 16px;
-  border: none;
-  background: none;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--text-secondary);
-  position: relative;
-  transition: color 0.2s;
-}
-
-.method-tab:hover:not(:disabled) {
-  color: var(--text-primary);
-}
-
-.method-tab.active {
-  color: var(--primary-color);
-}
-
-.method-tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--primary-color);
-}
-
-.method-tab:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+/* Input Methods Grid */
+.input-methods-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 28px;
 }
 
 /* Input Method Container */
@@ -91,14 +56,22 @@
   padding: 20px;
   background: var(--bg-primary);
   border-radius: 6px;
-  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.input-method h4 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
 }
 
 /* CSV Upload */
 .csv-upload {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  /* inherits from .input-method */
 }
 
 .upload-zone {
@@ -132,7 +105,7 @@
 }
 
 .upload-text {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   margin: 0 0 4px 0;
   color: var(--text-primary);
@@ -146,9 +119,7 @@
 
 /* Manual Entry Form */
 .manual-entry {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  /* inherits from .input-method */
 }
 
 .form-group {
@@ -158,7 +129,7 @@
 }
 
 .form-group label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -185,6 +156,102 @@
   background: var(--bg-primary);
 }
 
+/* Portfolio Table */
+.portfolio-table-container {
+  margin-top: 28px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border-color);
+}
+
+.portfolio-table-container h4 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+}
+
+.portfolio-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+}
+
+.portfolio-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.portfolio-table thead {
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.portfolio-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.portfolio-table tbody tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+
+.portfolio-table tbody tr:hover {
+  background: rgba(85, 104, 211, 0.05);
+}
+
+.portfolio-table td {
+  padding: 12px 16px;
+  color: var(--text-primary);
+}
+
+.symbol-cell {
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.portfolio-table tfoot {
+  background: var(--bg-secondary);
+  border-top: 2px solid var(--border-color);
+}
+
+.portfolio-table tfoot td {
+  padding: 12px 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.btn-remove {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remove:hover:not(:disabled) {
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.btn-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Footer */
 .input-footer {
   padding-top: 16px;
@@ -197,38 +264,132 @@
   margin: 0;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Responsive - Tablet (1024px - 768px) */
+@media (max-width: 1024px) {
   .portfolio-input-container {
-    padding: 20px;
+    padding: 24px;
   }
 
-  .input-method-tabs {
-    gap: 8px;
-  }
-
-  .method-tab {
-    padding: 10px 12px;
-    font-size: 13px;
+  .input-methods-grid {
+    gap: 20px;
   }
 
   .upload-label {
-    padding: 30px 15px;
+    padding: 32px 16px;
   }
 
   .upload-icon {
-    font-size: 24px;
+    font-size: 28px;
   }
 
   .upload-text {
-    font-size: 14px;
+    font-size: 13px;
+  }
+
+  .portfolio-table th,
+  .portfolio-table td,
+  .portfolio-table tfoot td {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 
   .upload-hint {
     font-size: 11px;
   }
+}
+
+/* Responsive - Mobile (< 768px) */
+@media (max-width: 768px) {
+  .portfolio-input-container {
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .input-header h3 {
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+
+  .input-header p {
+    font-size: 13px;
+  }
+
+  .input-methods-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
 
   .input-method {
     padding: 16px;
+  }
+
+  .input-method h4 {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .upload-label {
+    padding: 28px 12px;
+  }
+
+  .upload-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+
+  .upload-text {
+    font-size: 12px;
+  }
+
+  .upload-hint {
+    font-size: 10px;
+  }
+
+  .form-group label {
+    font-size: 12px;
+  }
+
+  .form-group input {
+    font-size: 13px;
+    padding: 9px 10px;
+  }
+
+  .portfolio-table-container {
+    margin-top: 20px;
+    padding-top: 20px;
+  }
+
+  .portfolio-table-container h4 {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .portfolio-table {
+    font-size: 12px;
+  }
+
+  .portfolio-table th {
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+
+  .portfolio-table td,
+  .portfolio-table tfoot td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .btn-remove {
+    font-size: 14px;
+    padding: 2px 6px;
+  }
+
+  .input-footer {
+    padding-top: 12px;
+  }
+
+  .footer-hint {
+    font-size: 12px;
   }
 }
