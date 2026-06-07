@@ -10,8 +10,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY api.py .
 COPY fetch_macro.py .
 COPY macro_config.json .
-COPY models.py .
-COPY macro_analyzer.py .
 
 # Expose port
 EXPOSE 5000
