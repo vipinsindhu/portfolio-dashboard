@@ -372,10 +372,22 @@ def create_app():
             # Save
             save_portfolio(portfolio)
 
+            # Convert holdings to dict format for response
+            holdings_list = [
+                {
+                    "symbol": h.symbol,
+                    "quantity": h.quantity,
+                    "purchase_price": h.purchase_price,
+                    "total_cost": h.quantity * h.purchase_price
+                }
+                for h in holdings
+            ]
+
             return jsonify({
                 "status": "success",
                 "message": f"Loaded {len(holdings)} holdings",
-                "holdings": len(holdings)
+                "holdings": len(holdings),
+                "holdings_list": holdings_list
             }), 201
         except Exception as e:
             app.logger.error(f"Error uploading portfolio: {e}")

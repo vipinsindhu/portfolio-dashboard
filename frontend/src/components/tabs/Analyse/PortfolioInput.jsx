@@ -46,6 +46,23 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
       }
 
       const data = await response.json()
+
+      // Add CSV holdings to preview table
+      if (data.holdings_list && data.holdings_list.length > 0) {
+        const newHoldings = [
+          ...holdings,
+          ...data.holdings_list.map(h => ({
+            symbol: h.symbol,
+            quantity: h.quantity,
+            purchase_price: h.purchase_price,
+            total_cost: h.total_cost,
+            percentage: 0
+          }))
+        ]
+        const stats = calculatePortfolioStats(newHoldings)
+        setHoldings(stats.holdings)
+      }
+
       setSuccess(`✅ Loaded ${data.holdings} holdings from CSV`)
 
       // Trigger portfolio loaded callback
@@ -235,7 +252,7 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
       {/* Portfolio Summary Table */}
       {holdings.length > 0 && (
         <div className="portfolio-table-container">
-          <h4>Manually Added Holdings ({holdings.length})</h4>
+          <h4>Your Holdings ({holdings.length})</h4>
           <div className="portfolio-table-wrapper">
             <table className="portfolio-table">
               <thead>
