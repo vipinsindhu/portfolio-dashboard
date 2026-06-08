@@ -57,6 +57,56 @@ SECTOR_MAP = {
     "BND": "Bonds"
 }
 
+# Target sector allocation ranges
+TARGET_ALLOCATION = {
+    "Technology": {"min": 0.20, "max": 0.30, "ideal": 0.25},
+    "Financials": {"min": 0.12, "max": 0.20, "ideal": 0.16},
+    "Healthcare": {"min": 0.12, "max": 0.20, "ideal": 0.16},
+    "Consumer": {"min": 0.08, "max": 0.15, "ideal": 0.12},
+    "Diversified": {"min": 0.00, "max": 0.20, "ideal": 0.10},
+    "Bonds": {"min": 0.10, "max": 0.25, "ideal": 0.18},
+}
+
+
+def get_enhanced_sector_analysis(portfolio: Portfolio, sector_map: Dict) -> Dict:
+    """Get detailed sector allocation analysis with recommendations"""
+    sector_weights = get_sector_weights(portfolio, sector_map)
+    enhanced_data = {}
+
+    for sector, weight in sector_weights.items():
+        target = TARGET_ALLOCATION.get(sector, {"min": 0, "max": 1, "ideal": 0.5})
+        min_target = target["min"]
+        max_target = target["max"]
+        ideal = target["ideal"]
+
+        # Determine health status
+        if weight < min_target * 0.8:  # Significantly underweight
+            status = "underweight"
+            recommendation = f"Consider adding {sector} holdings (current: {weight:.1%}, target: {ideal:.0%})"
+        elif weight > max_target * 1.2:  # Significantly overweight
+            status = "overweight"
+            recommendation = f"Reduce {sector} concentration (current: {weight:.1%}, target: {ideal:.0%})"
+        elif min_target <= weight <= max_target:  # Within range
+            status = "optimal"
+            recommendation = f"{sector} allocation is well-balanced"
+        else:
+            status = "caution"
+            recommendation = f"Monitor {sector} allocation (current: {weight:.1%}, target: {ideal:.0%})"
+
+        gap = ideal - weight
+
+        enhanced_data[sector] = {
+            "current": weight,
+            "target": ideal,
+            "min": min_target,
+            "max": max_target,
+            "gap": gap,
+            "status": status,
+            "recommendation": recommendation
+        }
+
+    return enhanced_data
+
 
 def analyze_portfolio(portfolio: Portfolio) -> PortfolioAnalysis:
     """Run complete portfolio analysis"""
@@ -66,7 +116,7 @@ def analyze_portfolio(portfolio: Portfolio) -> PortfolioAnalysis:
 
     # Calculate metrics
     risk_metrics = calculate_risk_metrics(portfolio)
-    sector_allocation = get_sector_weights(portfolio, SECTOR_MAP)
+    sector_allocation = get_enhanced_sector_analysis(portfolio, SECTOR_MAP)
     concentration_metrics = calculate_concentration_metrics(portfolio)
 
     # Generate recommendations

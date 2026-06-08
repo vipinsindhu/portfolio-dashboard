@@ -62,21 +62,46 @@ function PitfallDetector({ analysis }) {
       {/* Sector Allocation */}
       <div className="sector-section">
         <h4>Sector Allocation</h4>
+        <p className="sector-hint">Compare your allocation to recommended targets</p>
         <div className="sector-list">
           {Object.entries(sector_allocation)
-            .sort((a, b) => b[1] - a[1])
-            .map(([sector, percentage]) => (
-              <div key={sector} className="sector-item">
-                <div className="sector-name">{sector}</div>
+            .sort((a, b) => b[1].current - a[1].current)
+            .map(([sector, data]) => (
+              <div key={sector} className={`sector-item sector-${data.status}`}>
+                <div className="sector-header">
+                  <div className="sector-name">
+                    <span className="sector-status-badge">{data.status.toUpperCase()}</span>
+                    {sector}
+                  </div>
+                  <div className="sector-values">
+                    <span className="current">
+                      <strong>{(data.current * 100).toFixed(1)}%</strong> current
+                    </span>
+                    <span className="target">
+                      {(data.target * 100).toFixed(0)}% target
+                    </span>
+                  </div>
+                </div>
+
                 <div className="sector-bar-container">
-                  <div
-                    className="sector-bar"
-                    style={{ width: `${percentage * 100}%` }}
-                  ></div>
+                  <div className="bar-background">
+                    {/* Target range indicator */}
+                    <div
+                      className="target-range"
+                      style={{
+                        left: `${data.min * 100}%`,
+                        right: `${100 - data.max * 100}%`
+                      }}
+                    ></div>
+                    {/* Current allocation bar */}
+                    <div
+                      className="sector-bar"
+                      style={{ width: `${data.current * 100}%` }}
+                    ></div>
+                  </div>
                 </div>
-                <div className="sector-percentage">
-                  {(percentage * 100).toFixed(1)}%
-                </div>
+
+                <div className="sector-recommendation">{data.recommendation}</div>
               </div>
             ))}
         </div>
