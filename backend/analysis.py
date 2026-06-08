@@ -252,7 +252,7 @@ SECTOR_MAP = {
     "DLR": "Diversified",
     "ARE": "Diversified",
 
-    # Index Funds / Diversified
+    # Index Funds / Diversified / ETFs
     "VTI": "Diversified",
     "VOO": "Diversified",
     "SPY": "Diversified",
@@ -262,6 +262,20 @@ SECTOR_MAP = {
     "SCHB": "Diversified",
     "VFIAX": "Diversified",
     "FSKAX": "Diversified",
+    "FXAIX": "Diversified",
+    "SCHX": "Diversified",
+    "SCHF": "Diversified",
+    "SWTSX": "Diversified",
+    "VTSXF": "Diversified",
+    "IJH": "Diversified",
+    "IJR": "Diversified",
+    "SCHD": "Diversified",
+    "VXUS": "Diversified",
+    "VTIAX": "Diversified",
+    "VWO": "Diversified",
+    "VTIAX": "Diversified",
+    "IEMG": "Diversified",
+    "EEM": "Diversified",
 
     # Bonds / Fixed Income
     "AGG": "Bonds",
@@ -276,6 +290,21 @@ SECTOR_MAP = {
     "TLT": "Bonds",
     "FBNDX": "Bonds",
     "VBTIX": "Bonds",
+    "SBTIX": "Bonds",
+    "VBTX": "Bonds",
+
+    # Commodities / Precious Metals
+    "GLD": "Commodities",
+    "SLV": "Commodities",
+    "DBC": "Commodities",
+    "USO": "Commodities",
+    "DBB": "Commodities",
+
+    # Cryptocurrency / Digital Assets
+    "FBTC": "Cryptocurrencies",
+    "IBIT": "Cryptocurrencies",
+    "GBTC": "Cryptocurrencies",
+    "ETHE": "Cryptocurrencies",
 }
 
 # Target sector allocation ranges
@@ -284,8 +313,15 @@ TARGET_ALLOCATION = {
     "Financials": {"min": 0.12, "max": 0.20, "ideal": 0.16},
     "Healthcare": {"min": 0.12, "max": 0.20, "ideal": 0.16},
     "Consumer": {"min": 0.08, "max": 0.15, "ideal": 0.12},
-    "Diversified": {"min": 0.00, "max": 0.20, "ideal": 0.10},
-    "Bonds": {"min": 0.10, "max": 0.25, "ideal": 0.18},
+    "Industrials": {"min": 0.05, "max": 0.12, "ideal": 0.08},
+    "Energy": {"min": 0.03, "max": 0.10, "ideal": 0.05},
+    "Utilities": {"min": 0.03, "max": 0.10, "ideal": 0.05},
+    "Materials": {"min": 0.02, "max": 0.08, "ideal": 0.04},
+    "Diversified": {"min": 0.05, "max": 0.30, "ideal": 0.15},
+    "Bonds": {"min": 0.10, "max": 0.30, "ideal": 0.20},
+    "Commodities": {"min": 0.00, "max": 0.10, "ideal": 0.05},
+    "Cryptocurrencies": {"min": 0.00, "max": 0.05, "ideal": 0.02},
+    "Other": {"min": 0.00, "max": 0.05, "ideal": 0.00},  # Should minimize unknown stocks
 }
 
 
