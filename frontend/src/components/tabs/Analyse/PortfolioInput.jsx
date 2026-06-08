@@ -11,6 +11,7 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
+  const [expandedSection, setExpandedSection] = useState(null)
 
   const calculatePortfolioStats = useCallback((holdingsList) => {
     const totalCost = holdingsList.reduce((sum, h) => sum + h.total_cost, 0)
@@ -173,90 +174,122 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
       {error && <div className="input-error">{error}</div>}
       {success && <div className="input-success">{success}</div>}
 
-      {/* Input Methods - Side by Side */}
-      <div className="input-methods-grid">
-        {/* CSV Upload */}
-        <div className="input-method csv-upload">
-          <h4>📤 Upload CSV</h4>
-          <div className="upload-zone">
-            <input
-              type="file"
-              id="csv-file"
-              accept=".csv"
-              onChange={handleCSVUpload}
-              disabled={loading}
-              className="file-input"
-            />
-            <label htmlFor="csv-file" className="upload-label">
-              <div className="upload-icon">📁</div>
-              <p className="upload-text">Drag CSV here or click to select</p>
-              <p className="upload-hint">Format: Symbol, Quantity, PurchasePrice</p>
-            </label>
-          </div>
+      {/* Empty State Hint */}
+      {holdings.length === 0 && (
+        <div className="input-intro">
+          <p>💡 Start by uploading a CSV or adding your first stock</p>
+        </div>
+      )}
 
+      {/* Input Methods - Collapsible */}
+      <div className="input-methods-collapsible">
+        {/* CSV Upload Section */}
+        <div className={`collapsible-section ${expandedSection === 'csv' ? 'expanded' : 'collapsed'}`}>
           <button
             type="button"
-            className="btn-secondary"
-            onClick={downloadCSVTemplate}
-            disabled={loading}
+            className="section-header"
+            onClick={() => setExpandedSection(expandedSection === 'csv' ? null : 'csv')}
           >
-            📥 Download Template
+            <span className="arrow">{expandedSection === 'csv' ? '▼' : '▶'}</span>
+            <span className="title">📤 Upload CSV</span>
+            <span className="description">Load multiple holdings at once</span>
           </button>
+
+          {expandedSection === 'csv' && (
+            <div className="section-content">
+              <div className="upload-zone">
+                <input
+                  type="file"
+                  id="csv-file"
+                  accept=".csv"
+                  onChange={handleCSVUpload}
+                  disabled={loading}
+                  className="file-input"
+                />
+                <label htmlFor="csv-file" className="upload-label">
+                  <div className="upload-icon">📁</div>
+                  <p className="upload-text">Drag CSV here or click to select</p>
+                  <p className="upload-hint">Format: Symbol, Quantity, Cost Basis (or PurchasePrice)</p>
+                </label>
+              </div>
+
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={downloadCSVTemplate}
+                disabled={loading}
+              >
+                📥 Download Template
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Manual Entry */}
-        <form className="input-method manual-entry" onSubmit={handleManualAdd}>
-          <h4>➕ Add One Stock</h4>
-
-          <div className="form-group">
-            <label htmlFor="symbol">Stock Symbol</label>
-            <input
-              id="symbol"
-              type="text"
-              placeholder="e.g., AAPL"
-              value={manualInput.symbol}
-              onChange={(e) =>
-                setManualInput({ ...manualInput, symbol: e.target.value.toUpperCase() })
-              }
-              disabled={loading}
-              maxLength="5"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="quantity">Quantity</label>
-            <input
-              id="quantity"
-              type="number"
-              placeholder="e.g., 10"
-              value={manualInput.quantity}
-              onChange={(e) => setManualInput({ ...manualInput, quantity: e.target.value })}
-              disabled={loading}
-              step="0.01"
-              min="0"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="purchase-price">Purchase Price ($)</label>
-            <input
-              id="purchase-price"
-              type="number"
-              placeholder="e.g., 150.00"
-              value={manualInput.purchase_price}
-              onChange={(e) =>
-                setManualInput({ ...manualInput, purchase_price: e.target.value })
-              }
-              disabled={loading}
-              step="0.01"
-              min="0"
-            />
-          </div>
-
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Adding...' : '➕ Add'}
+        {/* Manual Entry Section */}
+        <div className={`collapsible-section ${expandedSection === 'manual' ? 'expanded' : 'collapsed'}`}>
+          <button
+            type="button"
+            className="section-header"
+            onClick={() => setExpandedSection(expandedSection === 'manual' ? null : 'manual')}
+          >
+            <span className="arrow">{expandedSection === 'manual' ? '▼' : '▶'}</span>
+            <span className="title">➕ Add stocks manually</span>
+            <span className="description">Add holdings one at a time</span>
           </button>
-        </form>
+
+          {expandedSection === 'manual' && (
+            <form className="section-content" onSubmit={handleManualAdd}>
+              <div className="form-group">
+                <label htmlFor="symbol">Stock Symbol</label>
+                <input
+                  id="symbol"
+                  type="text"
+                  placeholder="e.g., AAPL"
+                  value={manualInput.symbol}
+                  onChange={(e) =>
+                    setManualInput({ ...manualInput, symbol: e.target.value.toUpperCase() })
+                  }
+                  disabled={loading}
+                  maxLength="5"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="quantity">Quantity</label>
+                <input
+                  id="quantity"
+                  type="number"
+                  placeholder="e.g., 10"
+                  value={manualInput.quantity}
+                  onChange={(e) => setManualInput({ ...manualInput, quantity: e.target.value })}
+                  disabled={loading}
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="purchase-price">Purchase Price ($)</label>
+                <input
+                  id="purchase-price"
+                  type="number"
+                  placeholder="e.g., 150.00"
+                  value={manualInput.purchase_price}
+                  onChange={(e) =>
+                    setManualInput({ ...manualInput, purchase_price: e.target.value })
+                  }
+                  disabled={loading}
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+
+              <button type="submit" className="btn-primary" disabled={loading}>
+                {loading ? 'Adding...' : '➕ Add'}
+              </button>
+            </form>
+          )}
+        </div>
       </div>
 
       {/* Portfolio Summary Table */}
@@ -310,14 +343,6 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
         </div>
       )}
 
-      {/* Empty State */}
-      {holdings.length === 0 && (
-        <div className="input-footer">
-          <p className="footer-hint">
-            💡 Start by uploading a CSV or adding your first stock
-          </p>
-        </div>
-      )}
     </div>
   )
 }

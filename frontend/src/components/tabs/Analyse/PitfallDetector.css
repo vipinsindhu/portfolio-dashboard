@@ -225,6 +225,74 @@
   font-style: italic;
 }
 
+/* Sector Holdings */
+.sector-holdings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.holdings-toggle {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.holdings-toggle:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.toggle-arrow {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  width: 12px;
+}
+
+.toggle-label {
+  flex: 1;
+  text-align: left;
+}
+
+.sector-holdings .holdings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.holding-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.holding-symbol {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.holding-percentage {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 /* Pitfalls Section */
 .pitfalls-section {
   display: flex;

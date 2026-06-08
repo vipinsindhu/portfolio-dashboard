@@ -65,8 +65,8 @@ function Analyse() {
   return (
     <div className="analyse-container">
       <div className="analyse-header">
-        <h2>📊 Check Your Investments</h2>
-        <p>Upload your stocks to see if they're safely spread out or too risky</p>
+        <h2>📊 Check Your Portfolio</h2>
+        <p>Upload your stocks to see if they're balanced. A balanced portfolio has different stocks and industries.</p>
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -83,7 +83,7 @@ function Analyse() {
             onClick={handleAnalyze}
             disabled={loading}
           >
-            {loading ? '⏳ Analyzing...' : '🔍 Analyze Portfolio'}
+            {loading ? '⏳ Checking...' : '🔍 Check My Portfolio'}
           </button>
         </div>
       )}
@@ -91,7 +91,7 @@ function Analyse() {
       {/* Loading State */}
       {loading && (
         <div className="loading-message">
-          <p>Analyzing your portfolio...</p>
+          <p>Checking your portfolio...</p>
         </div>
       )}
 
@@ -107,8 +107,8 @@ function Analyse() {
         <div className="empty-state">
           <div className="empty-state-content">
             <div className="empty-icon">📁</div>
-            <h3>No Portfolio Yet</h3>
-            <p>Upload a CSV file or add holdings manually to get started</p>
+            <h3>Get Started</h3>
+            <p>Upload your stocks using a CSV file or add them one by one</p>
           </div>
         </div>
       )}

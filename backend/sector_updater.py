@@ -9,10 +9,13 @@ import requests
 from datetime import datetime
 from typing import Dict, List, Tuple
 
+from index_decomposer import decompose_all_indices
+
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 FINNHUB_BASE = "https://finnhub.io/api/v1"
 SECTOR_MAP_FILE = "sector_map.json"
 SECTOR_UPDATE_LOG_FILE = "sector_update_history.json"
+SECTOR_CACHE_FILE = "sector_cache.json"
 
 
 def load_sector_map() -> Dict[str, str]:
@@ -34,6 +37,26 @@ def save_sector_map(sector_map: Dict[str, str]):
         print(f"[Sector Updater] Saved {len(sector_map)} sector mappings")
     except Exception as e:
         print(f"[Sector Updater] Error saving sector map: {e}")
+
+
+def load_sector_cache() -> Dict[str, str]:
+    """Load cached sector mappings from dynamic lookups"""
+    if os.path.exists(SECTOR_CACHE_FILE):
+        try:
+            with open(SECTOR_CACHE_FILE, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[Sector Updater] Error loading cache: {e}")
+    return {}
+
+
+def save_sector_cache(cache: Dict[str, str]):
+    """Save updated sector cache"""
+    try:
+        with open(SECTOR_CACHE_FILE, "w") as f:
+            json.dump(cache, f, indent=2, sort_keys=True)
+    except Exception as e:
+        print(f"[Sector Updater] Error saving cache: {e}")
 
 
 def load_update_history() -> List[Dict]:
@@ -138,8 +161,37 @@ def update_sector_mappings():
         else:
             update_record["failed"] += 1
 
+    # Promote stocks from cache to sector_map if they exist in portfolio
+    # This gradually expands sector_map with new stocks users add
+    print("\n[Sector Updater] Checking cache for new stocks to promote...")
+    cache = load_sector_cache()
+    cache_promotions = 0
+
+    if cache:
+        for symbol, cached_sector in cache.items():
+            if symbol not in sector_map:
+                # Verify the cached sector is still current from Finnhub
+                sector, success = fetch_sector_from_finnhub(symbol)
+
+                if success and sector:
+                    # Add to sector_map
+                    sector_map[symbol] = sector
+                    cache_promotions += 1
+
+                    promotion_record = {
+                        "symbol": symbol,
+                        "sector": sector,
+                        "source": "cache_promotion",
+                        "timestamp": datetime.now().isoformat()
+                    }
+                    update_record["changes"].append(promotion_record)
+                    print(f"  ✓ Promoted {symbol} to {sector}")
+
+        if cache_promotions > 0:
+            update_record["promoted"] = cache_promotions
+
     # Save updated mappings
-    if update_record["updated"] > 0:
+    if update_record["updated"] > 0 or cache_promotions > 0:
         save_sector_map(sector_map)
 
     # Save update history
@@ -149,18 +201,36 @@ def update_sector_mappings():
     # Print summary
     print("\n" + "-"*60)
     print("[Sector Updater] Update Summary:")
-    print(f"  Checked: {update_record['checked']} stocks")
-    print(f"  Updated: {update_record['updated']} stocks")
+    print(f"  Checked: {update_record['checked']} stocks (existing)")
+    print(f"  Updated: {update_record['updated']} stocks (sector changes)")
     print(f"  Failed:  {update_record['failed']} stocks")
+    if cache_promotions > 0:
+        print(f"  Promoted: {cache_promotions} new stocks from cache")
 
     if update_record["changes"]:
-        print("\n  Sector Changes:")
-        for change in update_record["changes"]:
-            print(f"    • {change['symbol']}: {change['old_sector']} → {change['new_sector']}")
-    else:
-        print("  No sector changes detected")
+        print("\n  Changes:")
+        sector_changes = [c for c in update_record["changes"] if "old_sector" in c]
+        promotions = [c for c in update_record["changes"] if "source" in c and c["source"] == "cache_promotion"]
 
+        if sector_changes:
+            print("    Sector Updates:")
+            for change in sector_changes:
+                print(f"      • {change['symbol']}: {change['old_sector']} → {change['new_sector']}")
+
+        if promotions:
+            print("    New Stocks Promoted:")
+            for promo in promotions:
+                print(f"      • {promo['symbol']}: {promo['sector']}")
+    else:
+        print("  No changes detected")
+
+    print(f"\n  Sector map size: {len(sector_map)} stocks")
     print("-"*60 + "\n")
+
+    # Decompose index funds into constituent sectors
+    print("[Sector Updater] Starting index fund decomposition...\n")
+    decompose_all_indices()
+    print("[Sector Updater] Index decomposition complete.\n")
 
 
 if __name__ == "__main__":

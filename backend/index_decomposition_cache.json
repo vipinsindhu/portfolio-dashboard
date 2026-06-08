@@ -1,0 +1,446 @@
+{
+  "VTI": {
+    "sectors": {
+      "Technology": 0.27,
+      "Financials": 0.14,
+      "Healthcare": 0.12,
+      "Industrials": 0.08,
+      "Consumer": 0.08,
+      "Energy": 0.04,
+      "Utilities": 0.04,
+      "Materials": 0.02,
+      "Real Estate": 0.03
+    },
+    "timestamp": "2026-06-07T20:05:30.065914",
+    "source": "static_allocation"
+  },
+  "VTSAX": {
+    "sectors": {
+      "Technology": 0.27,
+      "Financials": 0.14,
+      "Healthcare": 0.12,
+      "Industrials": 0.08,
+      "Consumer": 0.08,
+      "Energy": 0.04,
+      "Utilities": 0.04,
+      "Materials": 0.02,
+      "Real Estate": 0.03
+    },
+    "timestamp": "2026-06-07T20:05:30.066014",
+    "source": "static_allocation"
+  },
+  "VTSXF": {
+    "sectors": {
+      "Technology": 0.27,
+      "Financials": 0.14,
+      "Healthcare": 0.12,
+      "Industrials": 0.08,
+      "Consumer": 0.08,
+      "Energy": 0.04,
+      "Utilities": 0.04,
+      "Materials": 0.02,
+      "Real Estate": 0.03
+    },
+    "timestamp": "2026-06-07T20:05:30.066065",
+    "source": "static_allocation"
+  },
+  "FSKAX": {
+    "sectors": {
+      "Technology": 0.27,
+      "Financials": 0.14,
+      "Healthcare": 0.12,
+      "Industrials": 0.08,
+      "Consumer": 0.08,
+      "Energy": 0.04,
+      "Utilities": 0.04,
+      "Materials": 0.02,
+      "Real Estate": 0.03
+    },
+    "timestamp": "2026-06-07T20:05:30.066117",
+    "source": "static_allocation"
+  },
+  "VOO": {
+    "sectors": {
+      "Technology": 0.3,
+      "Financials": 0.13,
+      "Healthcare": 0.11,
+      "Industrials": 0.08,
+      "Consumer": 0.08,
+      "Energy": 0.04,
+      "Utilities": 0.03,
+      "Materials": 0.02,
+      "Real Estate": 0.02
+    },
+    "timestamp": "2026-06-07T20:05:30.066159",
+    "source": "static_allocation"
+  },
+  "SPY": {
+    "sectors": {
+      "Technology": 0.3,
+      "Financials": 0.13,
+      "Healthcare": 0.11,
+      "Industrials": 0.08,
+      "Consumer": 0.08,
+      "Energy": 0.04,
+      "Utilities": 0.03,
+      "Materials": 0.02,
+      "Real Estate": 0.02
+    },
+    "timestamp": "2026-06-07T20:05:30.066199",
+    "source": "static_allocation"
+  },
+  "FXAIX": {
+    "sectors": {
+      "Technology": 0.3,
+      "Financials": 0.13,
+      "Healthcare": 0.11,
+      "Industrials": 0.08,
+      "Consumer": 0.08,
+      "Energy": 0.04,
+      "Utilities": 0.03,
+      "Materials": 0.02,
+      "Real Estate": 0.02
+    },
+    "timestamp": "2026-06-07T20:05:30.066239",
+    "source": "static_allocation"
+  },
+  "VFIAX": {
+    "sectors": {
+      "Technology": 0.3,
+      "Financials": 0.13,
+      "Healthcare": 0.11,
+      "Industrials": 0.08,
+      "Consumer": 0.08,
+      "Energy": 0.04,
+      "Utilities": 0.03,
+      "Materials": 0.02,
+      "Real Estate": 0.02
+    },
+    "timestamp": "2026-06-07T20:05:30.066278",
+    "source": "static_allocation"
+  },
+  "IVV": {
+    "sectors": {
+      "Technology": 0.3,
+      "Financials": 0.13,
+      "Healthcare": 0.11,
+      "Industrials": 0.08,
+      "Consumer": 0.08,
+      "Energy": 0.04,
+      "Utilities": 0.03,
+      "Materials": 0.02,
+      "Real Estate": 0.02
+    },
+    "timestamp": "2026-06-07T20:05:30.066314",
+    "source": "static_allocation"
+  },
+  "SPLG": {
+    "sectors": {
+      "Technology": 0.3,
+      "Financials": 0.13,
+      "Healthcare": 0.11,
+      "Industrials": 0.08,
+      "Consumer": 0.08,
+      "Energy": 0.04,
+      "Utilities": 0.03,
+      "Materials": 0.02,
+      "Real Estate": 0.02
+    },
+    "timestamp": "2026-06-07T20:05:30.066360",
+    "source": "static_allocation"
+  },
+  "IJH": {
+    "sectors": {
+      "Technology": 0.2,
+      "Financials": 0.16,
+      "Industrials": 0.12,
+      "Healthcare": 0.12,
+      "Consumer": 0.1,
+      "Energy": 0.06,
+      "Materials": 0.05,
+      "Utilities": 0.05,
+      "Real Estate": 0.04
+    },
+    "timestamp": "2026-06-07T20:05:30.066399",
+    "source": "static_allocation"
+  },
+  "IJR": {
+    "sectors": {
+      "Financials": 0.18,
+      "Industrials": 0.14,
+      "Technology": 0.14,
+      "Healthcare": 0.12,
+      "Consumer": 0.1,
+      "Energy": 0.08,
+      "Materials": 0.06,
+      "Real Estate": 0.05,
+      "Utilities": 0.04,
+      "Commodities": 0.01
+    },
+    "timestamp": "2026-06-07T20:05:30.066439",
+    "source": "static_allocation"
+  },
+  "SCHX": {
+    "sectors": {
+      "Technology": 0.25,
+      "Financials": 0.14,
+      "Healthcare": 0.11,
+      "Industrials": 0.09,
+      "Consumer": 0.08,
+      "Energy": 0.05,
+      "Utilities": 0.04,
+      "Materials": 0.02,
+      "Real Estate": 0.02
+    },
+    "timestamp": "2026-06-07T20:05:30.066479",
+    "source": "static_allocation"
+  },
+  "SCHB": {
+    "sectors": {
+      "Technology": 0.27,
+      "Financials": 0.14,
+      "Healthcare": 0.12,
+      "Industrials": 0.08,
+      "Consumer": 0.08,
+      "Energy": 0.04,
+      "Utilities": 0.04,
+      "Materials": 0.02,
+      "Real Estate": 0.03
+    },
+    "timestamp": "2026-06-07T20:05:30.066517",
+    "source": "static_allocation"
+  },
+  "SWTSX": {
+    "sectors": {
+      "Technology": 0.27,
+      "Financials": 0.14,
+      "Healthcare": 0.12,
+      "Industrials": 0.08,
+      "Consumer": 0.08,
+      "Energy": 0.04,
+      "Utilities": 0.04,
+      "Materials": 0.02,
+      "Real Estate": 0.03
+    },
+    "timestamp": "2026-06-07T20:05:30.066556",
+    "source": "static_allocation"
+  },
+  "SCHD": {
+    "sectors": {
+      "Financials": 0.2,
+      "Utilities": 0.18,
+      "Healthcare": 0.16,
+      "Consumer": 0.14,
+      "Energy": 0.1,
+      "Industrials": 0.08,
+      "Materials": 0.04,
+      "Technology": 0.04,
+      "Real Estate": 0.03,
+      "Commodities": 0.03
+    },
+    "timestamp": "2026-06-07T20:05:30.066592",
+    "source": "static_allocation"
+  },
+  "VXUS": {
+    "sectors": {
+      "Financials": 0.2,
+      "Technology": 0.16,
+      "Healthcare": 0.1,
+      "Industrials": 0.1,
+      "Consumer": 0.1,
+      "Energy": 0.08,
+      "Utilities": 0.05,
+      "Materials": 0.05,
+      "Real Estate": 0.04,
+      "Commodities": 0.01
+    },
+    "timestamp": "2026-06-07T20:05:30.066632",
+    "source": "static_allocation"
+  },
+  "VTIAX": {
+    "sectors": {
+      "Financials": 0.2,
+      "Technology": 0.16,
+      "Healthcare": 0.1,
+      "Industrials": 0.1,
+      "Consumer": 0.1,
+      "Energy": 0.08,
+      "Utilities": 0.05,
+      "Materials": 0.05,
+      "Real Estate": 0.04,
+      "Commodities": 0.01
+    },
+    "timestamp": "2026-06-07T20:05:30.066702",
+    "source": "static_allocation"
+  },
+  "SCHF": {
+    "sectors": {
+      "Financials": 0.2,
+      "Technology": 0.16,
+      "Healthcare": 0.1,
+      "Industrials": 0.1,
+      "Consumer": 0.1,
+      "Energy": 0.08,
+      "Utilities": 0.05,
+      "Materials": 0.05,
+      "Real Estate": 0.04,
+      "Commodities": 0.01
+    },
+    "timestamp": "2026-06-07T20:05:30.066742",
+    "source": "static_allocation"
+  },
+  "EEM": {
+    "sectors": {
+      "Financials": 0.22,
+      "Technology": 0.2,
+      "Consumer": 0.14,
+      "Industrials": 0.1,
+      "Healthcare": 0.08,
+      "Energy": 0.08,
+      "Materials": 0.06,
+      "Utilities": 0.04,
+      "Real Estate": 0.04
+    },
+    "timestamp": "2026-06-07T20:05:30.066781",
+    "source": "static_allocation"
+  },
+  "IEMG": {
+    "sectors": {
+      "Financials": 0.22,
+      "Technology": 0.2,
+      "Consumer": 0.14,
+      "Industrials": 0.1,
+      "Healthcare": 0.08,
+      "Energy": 0.08,
+      "Materials": 0.06,
+      "Utilities": 0.04,
+      "Real Estate": 0.04
+    },
+    "timestamp": "2026-06-07T20:05:30.066819",
+    "source": "static_allocation"
+  },
+  "VWO": {
+    "sectors": {
+      "Financials": 0.22,
+      "Technology": 0.2,
+      "Consumer": 0.14,
+      "Industrials": 0.1,
+      "Healthcare": 0.08,
+      "Energy": 0.08,
+      "Materials": 0.06,
+      "Utilities": 0.04,
+      "Real Estate": 0.04
+    },
+    "timestamp": "2026-06-07T20:05:30.066868",
+    "source": "static_allocation"
+  },
+  "NON40OJPF": {
+    "sectors": {
+      "Technology": 0.33,
+      "Financials": 0.16,
+      "Healthcare": 0.14,
+      "Industrials": 0.1,
+      "Consumer": 0.1,
+      "Energy": 0.05,
+      "Utilities": 0.05,
+      "Materials": 0.03,
+      "Real Estate": 0.04
+    },
+    "timestamp": "2026-06-07T20:05:30.066911",
+    "source": "static_allocation"
+  },
+  "NON40OJJ4": {
+    "sectors": {
+      "Technology": 0.33,
+      "Financials": 0.17,
+      "Healthcare": 0.15,
+      "Industrials": 0.1,
+      "Consumer": 0.1,
+      "Energy": 0.05,
+      "Utilities": 0.05,
+      "Materials": 0.03,
+      "Real Estate": 0.02
+    },
+    "timestamp": "2026-06-07T20:05:30.066949",
+    "source": "static_allocation"
+  },
+  "NON40OJPG": {
+    "sectors": {
+      "Financials": 0.18,
+      "Industrials": 0.16,
+      "Technology": 0.16,
+      "Healthcare": 0.14,
+      "Consumer": 0.11,
+      "Energy": 0.09,
+      "Materials": 0.07,
+      "Real Estate": 0.06,
+      "Utilities": 0.05,
+      "Commodities": 0.02
+    },
+    "timestamp": "2026-06-07T20:05:30.066987",
+    "source": "static_allocation"
+  },
+  "NON40OJJ8": {
+    "sectors": {
+      "Financials": 0.23,
+      "Technology": 0.18,
+      "Healthcare": 0.12,
+      "Industrials": 0.11,
+      "Consumer": 0.11,
+      "Energy": 0.09,
+      "Utilities": 0.06,
+      "Materials": 0.06,
+      "Real Estate": 0.04
+    },
+    "timestamp": "2026-06-07T20:05:30.067027",
+    "source": "static_allocation"
+  },
+  "NON40OJJ6": {
+    "sectors": {
+      "Financials": 0.23,
+      "Technology": 0.18,
+      "Healthcare": 0.12,
+      "Industrials": 0.11,
+      "Consumer": 0.11,
+      "Energy": 0.09,
+      "Utilities": 0.06,
+      "Materials": 0.06,
+      "Real Estate": 0.04
+    },
+    "timestamp": "2026-06-07T20:05:30.067102",
+    "source": "static_allocation"
+  },
+  "NON40OJPH": {
+    "sectors": {
+      "Technology": 0.33,
+      "Financials": 0.16,
+      "Healthcare": 0.14,
+      "Industrials": 0.1,
+      "Consumer": 0.1,
+      "Energy": 0.05,
+      "Utilities": 0.05,
+      "Materials": 0.03,
+      "Real Estate": 0.04
+    },
+    "timestamp": "2026-06-07T20:05:30.067156",
+    "source": "static_allocation"
+  },
+  "NON40OJI9": {
+    "sectors": {
+      "Technology": 0.2,
+      "Financials": 0.13,
+      "Healthcare": 0.1,
+      "Industrials": 0.07,
+      "Consumer": 0.07,
+      "Bonds": 0.31,
+      "Energy": 0.03,
+      "Utilities": 0.03,
+      "Materials": 0.02,
+      "Real Estate": 0.02,
+      "Commodities": 0.01,
+      "Cryptocurrencies": 0.01
+    },
+    "timestamp": "2026-06-07T20:05:30.067280",
+    "source": "static_allocation"
+  }
+}

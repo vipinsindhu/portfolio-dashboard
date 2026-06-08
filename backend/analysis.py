@@ -15,6 +15,7 @@ from educational import LESSONS
 # Sector cache file for dynamic lookups
 SECTOR_CACHE_FILE = "sector_cache.json"
 SECTOR_MAP_FILE = "sector_map.json"
+INDEX_DECOMPOSITION_CACHE_FILE = "index_decomposition_cache.json"
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 FINNHUB_BASE = "https://finnhub.io/api/v1"
 
@@ -83,6 +84,31 @@ def fetch_sector_from_finnhub(symbol: str) -> Optional[str]:
     return None
 
 
+def load_index_decomposition_cache() -> Dict:
+    """Load cached index fund decompositions"""
+    if os.path.exists(INDEX_DECOMPOSITION_CACHE_FILE):
+        try:
+            with open(INDEX_DECOMPOSITION_CACHE_FILE, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[Index Decomposer] Error loading decomposition cache: {e}")
+    return {}
+
+
+def get_index_decomposition(symbol: str) -> Optional[Dict[str, float]]:
+    """
+    Get decomposed sector allocation for an index fund
+    Returns dict of {sector: allocation_weight} or None if not an index fund
+    """
+    cache = load_index_decomposition_cache()
+
+    if symbol in cache:
+        decomposition = cache[symbol]
+        return decomposition.get("sectors")
+
+    return None
+
+
 def get_sector_for_stock(symbol: str, static_map: Dict[str, str]) -> str:
     """
     Hybrid sector lookup:
@@ -135,7 +161,7 @@ class PortfolioAnalysis:
     portfolio: Portfolio
     pitfalls: List[Pitfall]
     risk_metrics: Dict[str, float]
-    sector_allocation: Dict[str, float]
+    sector_allocation: Dict
     concentration_metrics: Dict[str, float]
     recommendations: List[str]
     summary: str
@@ -144,192 +170,23 @@ class PortfolioAnalysis:
 # Load sector mapping from JSON file (supports auto-updates every 7 days)
 # This will be populated by load_sector_map_from_file() when the module loads
 SECTOR_MAP = {}
-    "MSFT": "Technology",
-    "GOOGL": "Technology",
-    "GOOG": "Technology",
-    "NVDA": "Technology",
-    "META": "Technology",
-    "TSLA": "Technology",
-    "AMD": "Technology",
-    "INTC": "Technology",
-    "QCOM": "Technology",
-    "CSCO": "Technology",
-    "CRM": "Technology",
-    "ADBE": "Technology",
-    "NFLX": "Technology",
-    "AVGO": "Technology",
-    "PYPL": "Technology",
-    "ASML": "Technology",
-    "UBER": "Technology",
-    "SNOW": "Technology",
-    "COIN": "Technology",
-
-    # Financials
-    "JPM": "Financials",
-    "BAC": "Financials",
-    "WFC": "Financials",
-    "GS": "Financials",
-    "MS": "Financials",
-    "BLK": "Financials",
-    "AXP": "Financials",
-    "C": "Financials",
-    "USB": "Financials",
-    "PNC": "Financials",
-    "TD": "Financials",
-    "BK": "Financials",
-    "ICE": "Financials",
-    "CME": "Financials",
-
-    # Healthcare
-    "JNJ": "Healthcare",
-    "UNH": "Healthcare",
-    "PFE": "Healthcare",
-    "ABBV": "Healthcare",
-    "MRK": "Healthcare",
-    "LLY": "Healthcare",
-    "AMGN": "Healthcare",
-    "GILD": "Healthcare",
-    "REGN": "Healthcare",
-    "BIIB": "Healthcare",
-    "CVS": "Healthcare",
-    "TMO": "Healthcare",
-    "DHR": "Healthcare",
-    "EW": "Healthcare",
-    "VRTX": "Healthcare",
-
-    # Consumer / Retail
-    "AMZN": "Consumer",
-    "WMT": "Consumer",
-    "MCD": "Consumer",
-    "COST": "Consumer",
-    "TJX": "Consumer",
-    "HD": "Consumer",
-    "LOW": "Consumer",
-    "NKE": "Consumer",
-    "SBUX": "Consumer",
-    "KO": "Consumer",
-    "PEP": "Consumer",
-    "MO": "Consumer",
-    "PM": "Consumer",
-    "GE": "Consumer",
-    "DIS": "Consumer",
-    "NCLH": "Consumer",
-    "CCL": "Consumer",
-
-    # Industrials
-    "BA": "Industrials",
-    "CAT": "Industrials",
-    "HON": "Industrials",
-    "MMM": "Industrials",
-    "UTX": "Industrials",
-    "RTX": "Industrials",
-    "LMT": "Industrials",
-    "NOC": "Industrials",
-    "WM": "Industrials",
-    "CSX": "Industrials",
-    "NSC": "Industrials",
-    "UNP": "Industrials",
-    "KSU": "Industrials",
-
-    # Energy
-    "XOM": "Energy",
-    "CVX": "Energy",
-    "COP": "Energy",
-    "SLB": "Energy",
-    "EOG": "Energy",
-    "MPC": "Energy",
-    "PSX": "Energy",
-    "OXY": "Energy",
-    "MUR": "Energy",
-
-    # Utilities
-    "NEE": "Utilities",
-    "DUK": "Utilities",
-    "SO": "Utilities",
-    "EXC": "Utilities",
-    "D": "Utilities",
-    "AEP": "Utilities",
-    "XEL": "Utilities",
-    "PEG": "Utilities",
-    "ED": "Utilities",
-    "WEC": "Utilities",
-
-    # Materials
-    "LIN": "Materials",
-    "APD": "Materials",
-    "FCX": "Materials",
-    "NEM": "Materials",
-    "SCCO": "Materials",
-
-    # Real Estate / REIT
-    "PSA": "Diversified",
-    "PLD": "Diversified",
-    "EQIX": "Diversified",
-    "DLR": "Diversified",
-    "ARE": "Diversified",
-
-    # Index Funds / Diversified / ETFs
-    "VTI": "Diversified",
-    "VOO": "Diversified",
-    "SPY": "Diversified",
-    "VTSAX": "Diversified",
-    "SPLG": "Diversified",
-    "IVV": "Diversified",
-    "SCHB": "Diversified",
-    "VFIAX": "Diversified",
-    "FSKAX": "Diversified",
-    "FXAIX": "Diversified",
-    "SCHX": "Diversified",
-    "SCHF": "Diversified",
-    "SWTSX": "Diversified",
-    "VTSXF": "Diversified",
-    "IJH": "Diversified",
-    "IJR": "Diversified",
-    "SCHD": "Diversified",
-    "VXUS": "Diversified",
-    "VTIAX": "Diversified",
-    "VWO": "Diversified",
-    "VTIAX": "Diversified",
-    "IEMG": "Diversified",
-    "EEM": "Diversified",
-
-    # Bonds / Fixed Income
-    "AGG": "Bonds",
-    "BND": "Bonds",
-    "VBTLX": "Bonds",
-    "BLV": "Bonds",
-    "VCIT": "Bonds",
-    "VGIT": "Bonds",
-    "VWOB": "Bonds",
-    "LQD": "Bonds",
-    "HYG": "Bonds",
-    "TLT": "Bonds",
-    "FBNDX": "Bonds",
-    "VBTIX": "Bonds",
-    "SBTIX": "Bonds",
-    "VBTX": "Bonds",
-
-    # Commodities / Precious Metals
-    "GLD": "Commodities",
-    "SLV": "Commodities",
-    "DBC": "Commodities",
-    "USO": "Commodities",
-    "DBB": "Commodities",
 
 # Target sector allocation ranges
 TARGET_ALLOCATION = {
-    "Technology": {"min": 0.20, "max": 0.30, "ideal": 0.25},
-    "Financials": {"min": 0.12, "max": 0.20, "ideal": 0.16},
-    "Healthcare": {"min": 0.12, "max": 0.20, "ideal": 0.16},
-    "Consumer": {"min": 0.08, "max": 0.15, "ideal": 0.12},
-    "Industrials": {"min": 0.05, "max": 0.12, "ideal": 0.08},
-    "Energy": {"min": 0.03, "max": 0.10, "ideal": 0.05},
-    "Utilities": {"min": 0.03, "max": 0.10, "ideal": 0.05},
-    "Materials": {"min": 0.02, "max": 0.08, "ideal": 0.04},
-    "Diversified": {"min": 0.05, "max": 0.30, "ideal": 0.15},
-    "Bonds": {"min": 0.10, "max": 0.30, "ideal": 0.20},
-    "Commodities": {"min": 0.00, "max": 0.10, "ideal": 0.05},
-    "Cryptocurrencies": {"min": 0.00, "max": 0.05, "ideal": 0.02},
+    "Broad Market Index": {"min": 0.25, "max": 0.50, "ideal": 0.40},  # Core US equity exposure
+    "International Equities": {"min": 0.10, "max": 0.25, "ideal": 0.15},  # Diversification globally
+    "Real Estate": {"min": 0.05, "max": 0.15, "ideal": 0.10},  # REITs for diversification
+    "Technology": {"min": 0.10, "max": 0.20, "ideal": 0.15},  # Sector within equities
+    "Financials": {"min": 0.08, "max": 0.15, "ideal": 0.11},
+    "Healthcare": {"min": 0.08, "max": 0.15, "ideal": 0.11},
+    "Consumer": {"min": 0.05, "max": 0.12, "ideal": 0.08},
+    "Industrials": {"min": 0.03, "max": 0.10, "ideal": 0.06},
+    "Energy": {"min": 0.02, "max": 0.08, "ideal": 0.04},
+    "Utilities": {"min": 0.02, "max": 0.08, "ideal": 0.04},
+    "Materials": {"min": 0.01, "max": 0.05, "ideal": 0.02},
+    "Bonds": {"min": 0.10, "max": 0.40, "ideal": 0.20},  # Stability, age-dependent
+    "Commodities": {"min": 0.00, "max": 0.10, "ideal": 0.03},  # Inflation hedge
+    "Cryptocurrencies": {"min": 0.00, "max": 0.05, "ideal": 0.01},  # High risk/speculative
     "Other": {"min": 0.00, "max": 0.05, "ideal": 0.00},  # Should minimize unknown stocks
 }
 
@@ -347,21 +204,35 @@ _initialize_sector_map()
 
 def get_hybrid_sector_weights(portfolio: Portfolio, static_sector_map: Dict[str, str]) -> Dict[str, float]:
     """
-    Calculate sector weights using hybrid lookup:
-    1. Static map for known stocks
-    2. Cache for previously looked up stocks
-    3. Finnhub for new unknown stocks
-    4. "Other" as fallback
+    Calculate sector weights using hybrid lookup with index fund decomposition:
+    1. Check if holding is an index fund - if yes, decompose into constituent sectors
+    2. Otherwise use standard sector lookup:
+       a. Static map for known stocks
+       b. Cache for previously looked up stocks
+       c. Finnhub for new unknown stocks
+       d. "Other" as fallback
     """
     sector_values = {}
 
     for holding in portfolio.holdings:
-        # Use hybrid lookup for each stock
-        sector = get_sector_for_stock(holding.symbol, static_sector_map)
+        # Check if this is an index fund with decomposed sectors
+        decomposition = get_index_decomposition(holding.symbol)
 
-        if sector not in sector_values:
-            sector_values[sector] = 0
-        sector_values[sector] += holding.current_value
+        if decomposition:
+            # This is an index fund - allocate its value across decomposed sectors
+            print(f"[Analysis] Decomposing index fund {holding.symbol} into {len(decomposition)} sectors")
+            for sector, sector_weight in decomposition.items():
+                if sector not in sector_values:
+                    sector_values[sector] = 0
+                # Multiply holding's value by the sector's weight within the index
+                sector_values[sector] += holding.current_value * sector_weight
+        else:
+            # Regular stock - use standard sector lookup
+            sector = get_sector_for_stock(holding.symbol, static_sector_map)
+
+            if sector not in sector_values:
+                sector_values[sector] = 0
+            sector_values[sector] += holding.current_value
 
     total = sum(sector_values.values())
     return {
@@ -370,10 +241,68 @@ def get_hybrid_sector_weights(portfolio: Portfolio, static_sector_map: Dict[str,
     }
 
 
+def get_sector_weights_with_holdings(portfolio: Portfolio, static_sector_map: Dict) -> Tuple[Dict[str, float], Dict[str, List[Dict]]]:
+    """
+    Calculate sector weights AND track contributing holdings
+    Returns: (sector_weights, sector_holdings)
+    """
+    sector_values = {}
+    sector_holdings = {}
+    total_portfolio_value = sum(h.current_value for h in portfolio.holdings)
+
+    for holding in portfolio.holdings:
+        # Check if this is an index fund with decomposed sectors
+        decomposition = get_index_decomposition(holding.symbol)
+
+        if decomposition:
+            # Index fund - allocate across decomposed sectors
+            for sector, sector_weight in decomposition.items():
+                if sector not in sector_values:
+                    sector_values[sector] = 0
+                    sector_holdings[sector] = []
+
+                contribution = holding.current_value * sector_weight
+                sector_values[sector] += contribution
+
+                # Track this holding's contribution to the sector
+                sector_holdings[sector].append({
+                    "symbol": holding.symbol,
+                    "contribution": contribution,
+                    "percentage": (contribution / total_portfolio_value * 100) if total_portfolio_value > 0 else 0
+                })
+        else:
+            # Regular stock - use standard sector lookup
+            sector = get_sector_for_stock(holding.symbol, static_sector_map)
+
+            if sector not in sector_values:
+                sector_values[sector] = 0
+                sector_holdings[sector] = []
+
+            sector_values[sector] += holding.current_value
+            sector_holdings[sector].append({
+                "symbol": holding.symbol,
+                "contribution": holding.current_value,
+                "percentage": (holding.current_value / total_portfolio_value * 100) if total_portfolio_value > 0 else 0
+            })
+
+    # Convert to percentages
+    total = sum(sector_values.values())
+    sector_weights = {
+        sector: (value / total) if total > 0 else 0
+        for sector, value in sector_values.items()
+    }
+
+    # Sort holdings by contribution within each sector
+    for sector in sector_holdings:
+        sector_holdings[sector].sort(key=lambda x: x["contribution"], reverse=True)
+
+    return sector_weights, sector_holdings
+
+
 def get_enhanced_sector_analysis(portfolio: Portfolio, sector_map: Dict) -> Dict:
-    """Get detailed sector allocation analysis with recommendations"""
-    # Use hybrid sector weights instead of static-only
-    sector_weights = get_hybrid_sector_weights(portfolio, sector_map)
+    """Get detailed sector allocation analysis with recommendations and contributing holdings"""
+    # Get sector weights and contributing holdings
+    sector_weights, sector_holdings = get_sector_weights_with_holdings(portfolio, sector_map)
     enhanced_data = {}
 
     for sector, weight in sector_weights.items():
@@ -385,16 +314,16 @@ def get_enhanced_sector_analysis(portfolio: Portfolio, sector_map: Dict) -> Dict
         # Determine health status
         if weight < min_target * 0.8:  # Significantly underweight
             status = "underweight"
-            recommendation = f"Consider adding {sector} holdings (current: {weight:.1%}, target: {ideal:.0%})"
+            recommendation = f"You have very little in {sector} ({weight:.0%}). Consider adding more to balance your portfolio."
         elif weight > max_target * 1.2:  # Significantly overweight
             status = "overweight"
-            recommendation = f"Reduce {sector} concentration (current: {weight:.1%}, target: {ideal:.0%})"
+            recommendation = f"Too much in {sector} ({weight:.0%}). Try to reduce this and add other types of investments."
         elif min_target <= weight <= max_target:  # Within range
             status = "optimal"
-            recommendation = f"{sector} allocation is well-balanced"
+            recommendation = f"Your {sector} amount looks good ({weight:.0%})."
         else:
             status = "caution"
-            recommendation = f"Monitor {sector} allocation (current: {weight:.1%}, target: {ideal:.0%})"
+            recommendation = f"Your {sector} is close to being out of balance ({weight:.0%}). Keep an eye on it."
 
         gap = ideal - weight
 
@@ -405,7 +334,8 @@ def get_enhanced_sector_analysis(portfolio: Portfolio, sector_map: Dict) -> Dict
             "max": max_target,
             "gap": gap,
             "status": status,
-            "recommendation": recommendation
+            "recommendation": recommendation,
+            "holdings": sector_holdings.get(sector, [])
         }
 
     return enhanced_data
@@ -484,8 +414,8 @@ def detect_overconcentration(portfolio: Portfolio, lesson: Dict) -> List[Pitfall
                 metric_name="position_weight",
                 current_value=weight,
                 threshold=threshold,
-                message=f"{holding.symbol} is {weight:.1%} of portfolio (max: {threshold:.0%})",
-                recommendation=f"Reduce {holding.symbol} to {int(threshold * 100)}% or less. Current excess: ${holding.current_value - (portfolio.total_current_value * threshold):.2f}",
+                message=f"{holding.symbol} is {weight:.1%} of your portfolio. That's a lot of eggs in one basket!",
+                recommendation=f"Try to reduce {holding.symbol} to {int(threshold * 100)}% or less of your portfolio. This will reduce your risk.",
                 affected_holdings=[holding.symbol]
             ))
 
@@ -518,8 +448,8 @@ def detect_sector_clustering(
                 metric_name="sector_concentration",
                 current_value=weight,
                 threshold=threshold,
-                message=f"{sector} sector is {weight:.1%} of portfolio (max: {threshold:.0%})",
-                recommendation=f"Reduce {sector} holdings or add holdings from underrepresented sectors. Consider adding Healthcare or Financials.",
+                message=f"{sector} makes up {weight:.0%} of your portfolio. You need more variety.",
+                recommendation=f"Reduce your {sector} stocks and add other industries like Healthcare or Financials.",
                 affected_holdings=affected
             ))
 
@@ -549,8 +479,8 @@ def detect_top_concentration(portfolio: Portfolio, lesson: Dict) -> List[Pitfall
             metric_name="top3_concentration",
             current_value=concentration,
             threshold=threshold,
-            message=f"Top 3 holdings are {concentration:.1%} of portfolio (max: {threshold:.0%})",
-            recommendation="Trim largest positions and reinvest in other holdings to reduce concentration risk.",
+            message=f"Your top 3 stocks are {concentration:.0%} of your portfolio. That's too much risk.",
+            recommendation="Make your biggest stocks smaller and buy more different stocks.",
             affected_holdings=[h.symbol for h in top_3]
         ))
 
@@ -570,8 +500,8 @@ def detect_insufficient_diversification(portfolio: Portfolio, lesson: Dict) -> L
             metric_name="holding_count",
             current_value=portfolio.holding_count,
             threshold=threshold,
-            message=f"Portfolio has only {portfolio.holding_count} holdings (recommended: {threshold}+)",
-            recommendation=f"Add {threshold - portfolio.holding_count} more holdings, or use diversified ETFs (VTI, VOO) to fill gaps",
+            message=f"You only own {portfolio.holding_count} different stocks. You need more variety.",
+            recommendation=f"Add {threshold - portfolio.holding_count} more stocks, or use ETFs like VTI or VOO to spread your money across many companies at once.",
             affected_holdings=[]
         ))
 
@@ -598,8 +528,8 @@ def detect_asset_allocation_imbalance(portfolio: Portfolio, lesson: Dict) -> Lis
             metric_name="stock_percentage",
             current_value=stock_pct,
             threshold=0.70,
-            message=f"Portfolio is {stock_pct:.0%} stocks, {100-stock_pct:.0%} bonds/cash",
-            recommendation="Consider adding bonds for stability or stocks for growth depending on your age and goals",
+            message=f"You have {stock_pct:.0%} in stocks and {1-stock_pct:.0%} in bonds or cash.",
+            recommendation="Think about balancing your mix. Younger? Focus on stocks. Older? Add more bonds for safety.",
             affected_holdings=[]
         ))
 
@@ -668,19 +598,19 @@ def generate_recommendations(pitfalls: List[Pitfall], portfolio: Portfolio) -> L
 
     # Critical recommendations
     if critical:
-        recommendations.append(f"⚠️ ADDRESS CRITICAL ISSUES: {len(critical)} pitfall(s) need immediate attention")
+        recommendations.append(f"⚠️ IMPORTANT: You have {len(critical)} big issue(s) to fix right away:")
         for pitfall in critical[:3]:  # Top 3 critical
             recommendations.append(f"• {pitfall.recommendation}")
 
     # Warning recommendations
     if warnings:
-        recommendations.append(f"📌 ADDRESS WARNINGS: {len(warnings)} area(s) to improve")
+        recommendations.append(f"📌 GOOD TO FIX: {len(warnings)} thing(s) you could improve:")
         for pitfall in warnings[:2]:  # Top 2 warnings
             recommendations.append(f"• {pitfall.recommendation}")
 
     # If no pitfalls
     if not pitfalls:
-        recommendations.append("✅ Portfolio looks well-diversified! Consider annual rebalancing.")
+        recommendations.append("Great! Your portfolio looks well-balanced. Check it once a year and rebalance if needed.")
 
     return recommendations
 
@@ -691,11 +621,11 @@ def create_summary(pitfalls: List[Pitfall], risk_metrics: Dict) -> str:
     warning_count = len([p for p in pitfalls if p.severity == "warning"])
 
     if critical_count > 0:
-        return f"🔴 Portfolio needs attention: {critical_count} critical issue(s), {warning_count} warning(s)"
+        return f"🔴 Fix {critical_count} big problem(s) and {warning_count} smaller issue(s)"
     elif warning_count > 0:
-        return f"🟡 Portfolio is acceptable but could be improved: {warning_count} warning(s)"
+        return f"🟡 Pretty good! You could improve {warning_count} thing(s)"
     else:
-        return "🟢 Portfolio is well-structured and diversified"
+        return "🟢 Excellent! Your portfolio is well-balanced"
 
 
 def severity_rank(severity: str) -> int:

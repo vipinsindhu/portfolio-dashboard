@@ -40,6 +40,9 @@ from portfolio import (
     save_portfolio,
     load_portfolio,
 )
+import analysis
+import importlib
+importlib.reload(analysis)
 from analysis import analyze_portfolio
 from signals_filter import (
     filter_signals_by_timeframe,
@@ -80,15 +83,15 @@ def create_app():
     # Initialize storage (database optional, file storage fallback)
     if HAS_DATABASE:
         try:
-            engine = init_db(app.config["DATABASE_URL"])
+            engine = init_db(app.config.get("DATABASE_URL"))
             session = get_session(engine)
-            signal_store = SignalStore(session=session, file_path=app.config["SIGNALS_FILE"])
-            macro_store = MacroConfigStore(session=session, file_path=app.config["MACRO_CONFIG_FILE"])
+            signal_store = SignalStore(session=session, file_path=app.config.get("SIGNALS_FILE", "signals.json"))
+            macro_store = MacroConfigStore(session=session, file_path=app.config.get("MACRO_CONFIG_FILE", "macro_config.json"))
             app.logger.info(f"Database initialized: {app.config['DATABASE_URL']}")
         except Exception as e:
             app.logger.warning(f"Database initialization failed, falling back to file storage: {e}")
-            signal_store = SignalStore(session=None, file_path=app.config["SIGNALS_FILE"])
-            macro_store = MacroConfigStore(session=None, file_path=app.config["MACRO_CONFIG_FILE"])
+            signal_store = SignalStore(session=None, file_path=app.config.get("SIGNALS_FILE", "signals.json"))
+            macro_store = MacroConfigStore(session=None, file_path=app.config.get("MACRO_CONFIG_FILE", "macro_config.json"))
     else:
         # Fallback to simple file-based storage
         class SimpleSignalStore:

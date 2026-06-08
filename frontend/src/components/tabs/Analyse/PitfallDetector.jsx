@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import './PitfallDetector.css'
 
 function PitfallDetector({ analysis }) {
+  const [expandedSector, setExpandedSector] = useState(null)
+
   if (!analysis) {
     return null
   }
@@ -31,38 +34,38 @@ function PitfallDetector({ analysis }) {
       {/* Risk Metrics Grid */}
       <div className="metrics-grid">
         <div className="metric-card">
-          <div className="metric-label">Largest Position</div>
+          <div className="metric-label">Biggest Stock</div>
           <div className="metric-value">
             {(risk_metrics.largest_position_pct * 100).toFixed(1)}%
           </div>
-          <div className="metric-hint">Recommended: &lt;15%</div>
+          <div className="metric-hint">Keep under 15% (avoid too much risk)</div>
         </div>
 
         <div className="metric-card">
-          <div className="metric-label">Top 3 Holdings</div>
+          <div className="metric-label">Top 3 Stocks Combined</div>
           <div className="metric-value">
             {(risk_metrics.top_3_concentration * 100).toFixed(1)}%
           </div>
-          <div className="metric-hint">Recommended: &lt;50%</div>
+          <div className="metric-hint">Keep under 50% (good mix)</div>
         </div>
 
         <div className="metric-card">
-          <div className="metric-label">Holdings</div>
+          <div className="metric-label">Number of Stocks</div>
           <div className="metric-value">{risk_metrics.holding_count}</div>
-          <div className="metric-hint">Recommended: 15-30</div>
+          <div className="metric-hint">Aim for 15-30 stocks</div>
         </div>
 
         <div className="metric-card">
-          <div className="metric-label">Portfolio Value</div>
+          <div className="metric-label">Total Invested</div>
           <div className="metric-value">${(risk_metrics.total_value / 1000).toFixed(1)}k</div>
-          <div className="metric-hint">Total invested</div>
+          <div className="metric-hint">Your total money in stocks</div>
         </div>
       </div>
 
       {/* Sector Allocation */}
       <div className="sector-section">
-        <h4>Sector Allocation</h4>
-        <p className="sector-hint">Compare your allocation to recommended targets</p>
+        <h4>Spread Across Industries</h4>
+        <p className="sector-hint">See how your stocks spread across different industries. A good mix reduces risk.</p>
         <div className="sector-list">
           {Object.entries(sector_allocation)
             .sort((a, b) => b[1].current - a[1].current)
@@ -102,6 +105,39 @@ function PitfallDetector({ analysis }) {
                 </div>
 
                 <div className="sector-recommendation">{data.recommendation}</div>
+
+                {/* Contributing Stocks */}
+                {data.holdings && data.holdings.length > 0 && (
+                  <div className="sector-holdings">
+                    <button
+                      type="button"
+                      className="holdings-toggle"
+                      onClick={() =>
+                        setExpandedSector(expandedSector === sector ? null : sector)
+                      }
+                    >
+                      <span className="toggle-arrow">
+                        {expandedSector === sector ? '▼' : '▶'}
+                      </span>
+                      <span className="toggle-label">
+                        Contributing Stocks ({data.holdings.length})
+                      </span>
+                    </button>
+
+                    {expandedSector === sector && (
+                      <div className="holdings-list">
+                        {data.holdings.map((holding) => (
+                          <div key={holding.symbol} className="holding-row">
+                            <span className="holding-symbol">{holding.symbol}</span>
+                            <span className="holding-percentage">
+                              {holding.percentage.toFixed(1)}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
         </div>
@@ -110,7 +146,7 @@ function PitfallDetector({ analysis }) {
       {/* Pitfalls */}
       {pitfalls.length > 0 && (
         <div className="pitfalls-section">
-          <h4>⚠️ Issues Detected</h4>
+          <h4>⚠️ Things to Watch Out For</h4>
 
           {pitfalls.map((pitfall, idx) => (
             <div key={idx} className={`pitfall-card ${getSeverityColor(pitfall.severity)}`}>
@@ -127,7 +163,7 @@ function PitfallDetector({ analysis }) {
               <div className="pitfall-message">{pitfall.message}</div>
 
               <div className="pitfall-recommendation">
-                <p className="recommendation-label">💡 How to fix:</p>
+                <p className="recommendation-label">💡 What to do:</p>
                 <p>{pitfall.recommendation}</p>
               </div>
 
@@ -155,7 +191,7 @@ function PitfallDetector({ analysis }) {
       {/* Recommendations */}
       {recommendations.length > 0 && (
         <div className="recommendations-section">
-          <h4>📋 Recommendations</h4>
+          <h4>📋 Ideas to Improve</h4>
           <ul className="recommendations-list">
             {recommendations.map((rec, idx) => (
               <li key={idx}>{rec}</li>
@@ -166,7 +202,7 @@ function PitfallDetector({ analysis }) {
 
       {pitfalls.length === 0 && (
         <div className="no-pitfalls">
-          <p>✅ No major issues detected! Your portfolio looks well-diversified.</p>
+          <p>Great job! Your portfolio looks balanced and well-spread across different investments.</p>
         </div>
       )}
     </div>
