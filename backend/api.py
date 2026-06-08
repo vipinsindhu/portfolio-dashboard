@@ -24,6 +24,7 @@ from signals import (
     fetch_macro_context,
     fetch_fundamentals,
 )
+from sector_updater import update_sector_mappings
 from educational import (
     get_all_lessons,
     get_lesson_by_id,
@@ -653,13 +654,21 @@ def create_app():
         name="Auto-generate signals every hour",
         replace_existing=True
     )
+    scheduler.add_job(
+        update_sector_mappings,
+        trigger="interval",
+        days=7,
+        id="sector_update",
+        name="Update sector mappings from Finnhub every 7 days",
+        replace_existing=True
+    )
 
     @app.before_request
     def start_scheduler():
         """Start scheduler on first request if not already running"""
         if not scheduler.running:
             scheduler.start()
-            app.logger.info("✅ Schedulers started: macro refresh + signal generation (every 1 hour)")
+            app.logger.info("✅ Schedulers started: macro refresh (1h) + signal generation (1h) + sector update (7d)")
 
     return app
 

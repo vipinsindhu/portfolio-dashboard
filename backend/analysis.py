@@ -14,8 +14,25 @@ from educational import LESSONS
 
 # Sector cache file for dynamic lookups
 SECTOR_CACHE_FILE = "sector_cache.json"
+SECTOR_MAP_FILE = "sector_map.json"
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 FINNHUB_BASE = "https://finnhub.io/api/v1"
+
+
+def load_sector_map_from_file() -> Dict[str, str]:
+    """Load sector map from JSON file, with fallback to hardcoded map"""
+    if os.path.exists(SECTOR_MAP_FILE):
+        try:
+            with open(SECTOR_MAP_FILE, "r") as f:
+                sector_map = json.load(f)
+                print(f"[Analysis] Loaded {len(sector_map)} sector mappings from file")
+                return sector_map
+        except Exception as e:
+            print(f"[Analysis] Error loading sector map file: {e}, using fallback")
+
+    # Fallback to empty dict - will be populated by lookups
+    print("[Analysis] Using dynamic sector lookup (no sector_map.json found)")
+    return {}
 
 
 def load_sector_cache() -> Dict[str, str]:
@@ -124,10 +141,9 @@ class PortfolioAnalysis:
     summary: str
 
 
-# Sector mapping for analysis
-SECTOR_MAP = {
-    # Technology
-    "AAPL": "Technology",
+# Load sector mapping from JSON file (supports auto-updates every 7 days)
+# This will be populated by load_sector_map_from_file() when the module loads
+SECTOR_MAP = {}
     "MSFT": "Technology",
     "GOOGL": "Technology",
     "GOOG": "Technology",
@@ -300,13 +316,6 @@ SECTOR_MAP = {
     "USO": "Commodities",
     "DBB": "Commodities",
 
-    # Cryptocurrency / Digital Assets
-    "FBTC": "Cryptocurrencies",
-    "IBIT": "Cryptocurrencies",
-    "GBTC": "Cryptocurrencies",
-    "ETHE": "Cryptocurrencies",
-}
-
 # Target sector allocation ranges
 TARGET_ALLOCATION = {
     "Technology": {"min": 0.20, "max": 0.30, "ideal": 0.25},
@@ -323,6 +332,17 @@ TARGET_ALLOCATION = {
     "Cryptocurrencies": {"min": 0.00, "max": 0.05, "ideal": 0.02},
     "Other": {"min": 0.00, "max": 0.05, "ideal": 0.00},  # Should minimize unknown stocks
 }
+
+
+# Load sector map from JSON file at module initialization
+def _initialize_sector_map():
+    """Initialize sector map from JSON file"""
+    global SECTOR_MAP
+    SECTOR_MAP = load_sector_map_from_file()
+
+
+# Initialize sector map when module loads
+_initialize_sector_map()
 
 
 def get_hybrid_sector_weights(portfolio: Portfolio, static_sector_map: Dict[str, str]) -> Dict[str, float]:
