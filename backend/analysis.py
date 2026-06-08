@@ -5,8 +5,97 @@ Detects pitfalls, calculates risk metrics, compares against benchmarks
 
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
+import json
+import os
+import requests
 from portfolio import Portfolio, Holding, get_sector_weights, get_top_n_concentration
 from educational import LESSONS
+
+
+# Sector cache file for dynamic lookups
+SECTOR_CACHE_FILE = "sector_cache.json"
+FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
+FINNHUB_BASE = "https://finnhub.io/api/v1"
+
+
+def load_sector_cache() -> Dict[str, str]:
+    """Load cached sector mappings from file"""
+    if os.path.exists(SECTOR_CACHE_FILE):
+        try:
+            with open(SECTOR_CACHE_FILE, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading sector cache: {e}")
+    return {}
+
+
+def save_sector_cache(cache: Dict[str, str]):
+    """Save sector cache to file"""
+    try:
+        with open(SECTOR_CACHE_FILE, "w") as f:
+            json.dump(cache, f, indent=2)
+    except Exception as e:
+        print(f"Error saving sector cache: {e}")
+
+
+def fetch_sector_from_finnhub(symbol: str) -> Optional[str]:
+    """Fetch sector from Finnhub API for unknown stocks"""
+    if not FINNHUB_API_KEY:
+        return None
+
+    try:
+        # Try company profile endpoint
+        profile_url = f"{FINNHUB_BASE}/stock/profile2"
+        response = requests.get(
+            profile_url,
+            params={"symbol": symbol, "token": FINNHUB_API_KEY},
+            timeout=5
+        )
+
+        if response.status_code == 200:
+            data = response.json()
+            sector = data.get("finnhubIndustry")
+            if sector:
+                # Normalize sector name
+                sector = sector.title() if isinstance(sector, str) else None
+                print(f"[Sector Cache] Found sector for {symbol}: {sector}")
+                return sector
+    except Exception as e:
+        print(f"[Sector Cache] Error fetching {symbol} from Finnhub: {e}")
+
+    return None
+
+
+def get_sector_for_stock(symbol: str, static_map: Dict[str, str]) -> str:
+    """
+    Hybrid sector lookup:
+    1. Check static map (fast, zero cost)
+    2. Check cache (fast, no API call)
+    3. Fetch from Finnhub (slow, API call, cached for future)
+    4. Default to "Other"
+    """
+    # Step 1: Check static map
+    if symbol in static_map:
+        return static_map[symbol]
+
+    # Step 2: Load and check cache
+    cache = load_sector_cache()
+    if symbol in cache:
+        return cache[symbol]
+
+    # Step 3: Try Finnhub (only for new stocks)
+    print(f"[Sector Cache] Looking up {symbol} from Finnhub...")
+    sector = fetch_sector_from_finnhub(symbol)
+
+    if sector:
+        # Cache the result
+        cache[symbol] = sector
+        save_sector_cache(cache)
+        return sector
+
+    # Step 4: Default to "Other"
+    print(f"[Sector Cache] No sector found for {symbol}, defaulting to 'Other'")
+    return "Other"
 
 
 @dataclass
@@ -200,9 +289,35 @@ TARGET_ALLOCATION = {
 }
 
 
+def get_hybrid_sector_weights(portfolio: Portfolio, static_sector_map: Dict[str, str]) -> Dict[str, float]:
+    """
+    Calculate sector weights using hybrid lookup:
+    1. Static map for known stocks
+    2. Cache for previously looked up stocks
+    3. Finnhub for new unknown stocks
+    4. "Other" as fallback
+    """
+    sector_values = {}
+
+    for holding in portfolio.holdings:
+        # Use hybrid lookup for each stock
+        sector = get_sector_for_stock(holding.symbol, static_sector_map)
+
+        if sector not in sector_values:
+            sector_values[sector] = 0
+        sector_values[sector] += holding.current_value
+
+    total = sum(sector_values.values())
+    return {
+        sector: (value / total) if total > 0 else 0
+        for sector, value in sector_values.items()
+    }
+
+
 def get_enhanced_sector_analysis(portfolio: Portfolio, sector_map: Dict) -> Dict:
     """Get detailed sector allocation analysis with recommendations"""
-    sector_weights = get_sector_weights(portfolio, sector_map)
+    # Use hybrid sector weights instead of static-only
+    sector_weights = get_hybrid_sector_weights(portfolio, sector_map)
     enhanced_data = {}
 
     for sector, weight in sector_weights.items():
@@ -272,8 +387,8 @@ def detect_all_pitfalls(portfolio: Portfolio) -> List[Pitfall]:
     """Detect all pitfalls in portfolio"""
     pitfalls = []
 
-    # Get sector allocation
-    sector_allocation = get_sector_weights(portfolio, SECTOR_MAP)
+    # Get sector allocation using hybrid lookup
+    sector_allocation = get_hybrid_sector_weights(portfolio, SECTOR_MAP)
 
     # Check each pitfall lesson
     for lesson in LESSONS:
@@ -334,10 +449,10 @@ def detect_sector_clustering(
         if weight > threshold:
             severity = "critical" if weight > 0.50 else "warning"
 
-            # Find holdings in this sector
+            # Find holdings in this sector using hybrid lookup
             affected = [
                 h.symbol for h in portfolio.holdings
-                if SECTOR_MAP.get(h.symbol) == sector
+                if get_sector_for_stock(h.symbol, SECTOR_MAP) == sector
             ]
 
             pitfalls.append(Pitfall(
