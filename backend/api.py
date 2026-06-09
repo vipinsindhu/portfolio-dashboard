@@ -111,9 +111,11 @@ def create_app():
                         return s
                 return None
             def save_signals(self, signals):
-                data = load_signals()
-                data["signals"] = signals + data.get("signals", [])
-                data["generated_at"] = datetime.utcnow().isoformat()
+                # Replace signals completely (don't append) to avoid duplicates
+                data = {
+                    "signals": signals,
+                    "generated_at": datetime.utcnow().isoformat()
+                }
                 save_signals(data)
                 return True
 
