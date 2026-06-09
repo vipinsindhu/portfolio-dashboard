@@ -124,8 +124,13 @@ class Portfolio:
 def parse_csv(csv_content: str) -> List[Holding]:
     """
     Parse CSV content into holdings
-    Expected format: Symbol,Quantity,PurchasePrice (case-insensitive)
+    Accepts multiple column name variations:
+    - Symbol (required)
+    - Quantity (required)
+    - PurchasePrice, Purchase Price, Cost Basis, or Price (required)
+
     Example:
+    Symbol,Quantity,PurchasePrice
     AAPL,10,150
     MSFT,5,350
     """
@@ -145,17 +150,45 @@ def parse_csv(csv_content: str) -> List[Holding]:
         for field in reader.fieldnames
     }
 
-    # Check required fields exist
-    required = {'symbol', 'quantity', 'purchaseprice'}
-    if not required.issubset(set(normalized_headers.keys())):
-        raise ValueError(f"CSV must have Symbol, Quantity, PurchasePrice columns. Found: {', '.join(reader.fieldnames)}")
+    # Check for required Symbol column
+    if 'symbol' not in normalized_headers:
+        raise ValueError(f"CSV must have Symbol column. Found: {', '.join(reader.fieldnames)}")
+
+    # Check for required Quantity column
+    if 'quantity' not in normalized_headers:
+        raise ValueError(f"CSV must have Quantity column. Found: {', '.join(reader.fieldnames)}")
+
+    # Check for price column (accept multiple name variations)
+    price_col = None
+    price_variations = [
+        'purchaseprice',
+        'purchase price',
+        'purchase_price',
+        'costbasis',
+        'cost basis',
+        'cost_basis',
+        'price',
+        'unit cost',
+        'unit_cost'
+    ]
+    for variation in price_variations:
+        if variation in normalized_headers:
+            price_col = variation
+            break
+
+    if not price_col:
+        raise ValueError(f"CSV must have a Price column (PurchasePrice, Cost Basis, or Price). Found: {', '.join(reader.fieldnames)}")
 
     for row in reader:
         try:
-            # Get values using original header names
+            # Get values using normalized header lookups
             symbol_val = row[normalized_headers['symbol']].strip().upper()
             qty_str = row[normalized_headers['quantity']].strip()
-            price_str = row[normalized_headers['purchaseprice']].strip()
+            price_str = row[normalized_headers[price_col]].strip()
+
+            # Skip empty rows
+            if not symbol_val or not qty_str or not price_str:
+                continue
 
             # Remove currency symbols and commas from numbers
             qty_str = qty_str.replace('$', '').replace(',', '')
@@ -171,7 +204,10 @@ def parse_csv(csv_content: str) -> List[Holding]:
             )
             holdings.append(holding)
         except (KeyError, ValueError) as e:
-            raise ValueError(f"Invalid CSV format: {e}")
+            raise ValueError(f"Invalid CSV row: {e}")
+
+    if not holdings:
+        raise ValueError("CSV contains no valid holdings")
 
     return holdings
 
