@@ -393,29 +393,35 @@ def generate_signals(count=10):
         data = fetch_fundamentals(ticker)
         if data.get("current_price"):
             candidates.append(data)
-        if i < len(SIGNAL_CANDIDATES) - 1:
+        if i < len(signal_candidates) - 1:
             time.sleep(0.3)  # Rate limiting for Finnhub
 
     if not candidates:
         print("No candidates with price data found")
         return []
 
+    print(f"📊 Fetched fundamentals for {len(candidates)} stocks")
+
     # Fetch macro context
     print("Fetching macro context...")
     macro_data = fetch_macro_context()
     macro_sentiment = get_macro_sentiment(macro_data)
 
-    # Prepare data for Groq LLM
-    candidates_str = json.dumps(candidates[:15], indent=2)
+    # Prepare data for Groq LLM - use up to 25 candidates for better diversity
+    candidates_to_send = min(25, len(candidates))
+    candidates_str = json.dumps(candidates[:candidates_to_send], indent=2)
+    print(f"📤 Sending {candidates_to_send} candidates to Groq for signal generation")
 
     # Use Groq to generate signals
     print("Generating signals with Groq LLM...")
     prompt = f"""You are helping regular people understand stocks. Generate exactly {count} simple stock ideas.
 
+REQUIREMENT: Pick from DIFFERENT industries/sectors to give variety (tech, healthcare, finance, energy, consumer, etc).
+
 MARKET CONDITIONS RIGHT NOW:
 {macro_sentiment}
 
-STOCKS TO CONSIDER:
+STOCKS TO CONSIDER (from many different industries):
 {candidates_str}
 
 For each stock, give:
@@ -432,6 +438,7 @@ IMPORTANT - WRITE LIKE YOU'RE TALKING TO A 10TH GRADER:
 - Avoid fancy financial terms
 - Explain WHY in everyday language
 - Make it clear what they should do
+- Pick stocks from DIFFERENT industries for variety
 
 Example of GOOD simple language:
 "Apple is a solid company. Interest rates are high, which might hurt its stock prices. But Apple makes great products people love. Not a great time to buy right now - wait."

@@ -1,6 +1,246 @@
 {
   "signals": [
     {
+      "id": "JNJ_2026-06-09T05:15:13.193969",
+      "ticker": "JNJ",
+      "direction": "buy",
+      "confidence": 8,
+      "rationale": "Johnson & Johnson is a stable company that makes important healthcare products. Even when the economy is uncertain, people still need healthcare, so it's a good time to invest.",
+      "sector": "Healthcare",
+      "market_cap": 450000000000,
+      "created_at": "2026-06-09T05:15:13.194042",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "JPM_2026-06-09T05:15:13.194060",
+      "ticker": "JPM",
+      "direction": "hold",
+      "confidence": 7,
+      "rationale": "JPMorgan Chase is a big bank with a lot of customers. High interest rates can be good for banks, but they can also make it harder for people to borrow money, so it's okay to keep the stock if you already own it.",
+      "sector": "Financials",
+      "market_cap": 500000000000,
+      "created_at": "2026-06-09T05:15:13.194064",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "AMZN_2026-06-09T05:15:13.194075",
+      "ticker": "AMZN",
+      "direction": "avoid",
+      "confidence": 6,
+      "rationale": "Amazon is a big company that grows quickly, but high interest rates can make it harder for them to borrow money and grow even more. Maybe wait until interest rates go down to invest.",
+      "sector": "Consumer",
+      "market_cap": 2000000000000,
+      "created_at": "2026-06-09T05:15:13.194079",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "XOM_2026-06-09T05:15:13.194086",
+      "ticker": "XOM",
+      "direction": "buy",
+      "confidence": 9,
+      "rationale": "ExxonMobil is a big energy company that provides oil and gas. Even when the economy is slow, people still need energy, so it's a good time to invest in a stable company like ExxonMobil.",
+      "sector": "Energy",
+      "market_cap": null,
+      "created_at": "2026-06-09T05:15:13.194090",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "UNH_2026-06-09T05:15:13.194096",
+      "ticker": "UNH",
+      "direction": "hold",
+      "confidence": 5,
+      "rationale": "UnitedHealth Group is a big healthcare company that helps people pay for medical care. High interest rates can make it harder for them to make money, but they still have a lot of customers, so it's okay to keep the stock if you already own it.",
+      "sector": "Healthcare",
+      "market_cap": 520000000000,
+      "created_at": "2026-06-09T05:15:13.194100",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "WMT_2026-06-09T05:15:13.194108",
+      "ticker": "WMT",
+      "direction": "buy",
+      "confidence": 8,
+      "rationale": "Walmart is a big store that sells a lot of different products. When the economy is slow, people look for cheaper options, so Walmart can do well even when times are tough.",
+      "sector": "Consumer",
+      "market_cap": 450000000000,
+      "created_at": "2026-06-09T05:15:13.194111",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "BA_2026-06-09T05:15:13.194118",
+      "ticker": "BA",
+      "direction": "avoid",
+      "confidence": 6,
+      "rationale": "Boeing is a big company that makes airplanes. High interest rates can make it harder for them to sell planes, and the economy is uncertain, so it might be better to wait before investing.",
+      "sector": "Industrials",
+      "market_cap": null,
+      "created_at": "2026-06-09T05:15:13.194122",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "VZ_2026-06-09T05:15:13.194132",
+      "ticker": "VZ",
+      "direction": "buy",
+      "confidence": 7,
+      "rationale": "Verizon is a big phone company that provides internet and phone services. People always need to communicate, so Verizon can do well even when the economy is slow.",
+      "sector": "Telecommunications",
+      "market_cap": null,
+      "created_at": "2026-06-09T05:15:13.194135",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "BAC_2026-06-09T05:15:13.194140",
+      "ticker": "BAC",
+      "direction": "hold",
+      "confidence": 5,
+      "rationale": "Bank of America is a big bank with a lot of customers. High interest rates can be good for banks, but they can also make it harder for people to borrow money, so it's okay to keep the stock if you already own it.",
+      "sector": "Financials",
+      "market_cap": 350000000000,
+      "created_at": "2026-06-09T05:15:13.194143",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "MET_2026-06-09T05:15:13.194150",
+      "ticker": "MET",
+      "direction": "buy",
+      "confidence": 8,
+      "rationale": "MetLife is a big insurance company that helps people protect themselves from unexpected events. People always need insurance, so MetLife can do well even when the economy is uncertain.",
+      "sector": "Insurance",
+      "market_cap": null,
+      "created_at": "2026-06-09T05:15:13.194153",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "AAPL_2026-06-09T05:13:36.722242",
+      "ticker": "AAPL",
+      "direction": "hold",
+      "confidence": 6,
+      "rationale": "Apple makes great products, but high interest rates might make investors less excited about buying stocks. If you already own it, it's okay to keep, but not a great time to buy more.",
+      "sector": "Technology",
+      "market_cap": 3000000000000,
+      "created_at": "2026-06-09T05:13:36.722257",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "JNJ_2026-06-09T05:13:36.722265",
+      "ticker": "JNJ",
+      "direction": "buy",
+      "confidence": 8,
+      "rationale": "Johnson & Johnson is a stable company that makes important healthcare products. Even when the economy is uncertain, people still need healthcare, so it's a relatively safe investment.",
+      "sector": "Healthcare",
+      "market_cap": 450000000000,
+      "created_at": "2026-06-09T05:13:36.722268",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "MSFT_2026-06-09T05:13:36.722271",
+      "ticker": "MSFT",
+      "direction": "hold",
+      "confidence": 7,
+      "rationale": "Microsoft is a strong company, but its stock price is already pretty high. With interest rates high, it might not be the best time to buy more, but if you own it, you can probably keep it.",
+      "sector": "Technology",
+      "market_cap": 3100000000000,
+      "created_at": "2026-06-09T05:13:36.722272",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "UNH_2026-06-09T05:13:36.722275",
+      "ticker": "UNH",
+      "direction": "buy",
+      "confidence": 9,
+      "rationale": "UnitedHealth Group is a big healthcare company that people rely on. Since healthcare is always needed, this stock is a good choice even when the economy is a bit uncertain.",
+      "sector": "Healthcare",
+      "market_cap": 520000000000,
+      "created_at": "2026-06-09T05:13:36.722277",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "JPM_2026-06-09T05:13:36.722281",
+      "ticker": "JPM",
+      "direction": "avoid",
+      "confidence": 5,
+      "rationale": "JPMorgan Chase is a bank, and high interest rates can be tricky for banks. It's not a great time to invest in banks, so it's better to wait and see what happens.",
+      "sector": "Financials",
+      "market_cap": 500000000000,
+      "created_at": "2026-06-09T05:13:36.722282",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "AMZN_2026-06-09T05:13:36.722287",
+      "ticker": "AMZN",
+      "direction": "hold",
+      "confidence": 6,
+      "rationale": "Amazon is a big and successful company, but its stock price can be a bit unpredictable. If you already own it, you can keep it, but be careful about buying more right now.",
+      "sector": "Consumer",
+      "market_cap": 2000000000000,
+      "created_at": "2026-06-09T05:13:36.722289",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "WMT_2026-06-09T05:13:36.722293",
+      "ticker": "WMT",
+      "direction": "buy",
+      "confidence": 8,
+      "rationale": "Walmart is a stable company that people shop at regularly. Since people always need basic goods, Walmart's stock is a relatively safe choice, even when the economy is uncertain.",
+      "sector": "Consumer",
+      "market_cap": 450000000000,
+      "created_at": "2026-06-09T05:13:36.722295",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "GOOGL_2026-06-09T05:13:36.722298",
+      "ticker": "GOOGL",
+      "direction": "hold",
+      "confidence": 7,
+      "rationale": "Google is a strong company, but its stock price is already high. With interest rates high, it might not be the best time to buy more, but if you own it, you can probably keep it.",
+      "sector": "Technology",
+      "market_cap": 2000000000000,
+      "created_at": "2026-06-09T05:13:36.722299",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "BAC_2026-06-09T05:13:36.722302",
+      "ticker": "BAC",
+      "direction": "avoid",
+      "confidence": 5,
+      "rationale": "Bank of America is a bank, and high interest rates can be tricky for banks. It's not a great time to invest in banks, so it's better to wait and see what happens.",
+      "sector": "Financials",
+      "market_cap": 350000000000,
+      "created_at": "2026-06-09T05:13:36.722304",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "NVDA_2026-06-09T05:13:36.722307",
+      "ticker": "NVDA",
+      "direction": "buy",
+      "confidence": 9,
+      "rationale": "NVIDIA is a technology company that makes important products for the future. Even with high interest rates, this company has a lot of potential for growth, making it a good investment.",
+      "sector": "Technology",
+      "market_cap": 1200000000000,
+      "created_at": "2026-06-09T05:13:36.722308",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
       "id": "AAPL_2026-06-09T05:10:42.727845",
       "ticker": "AAPL",
       "direction": "hold",
@@ -421,5 +661,5 @@
       "accuracy_pct": null
     }
   ],
-  "generated_at": "2026-06-09T05:10:42.734041"
+  "generated_at": "2026-06-09T05:15:13.213702"
 }
