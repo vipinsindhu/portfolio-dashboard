@@ -9,6 +9,7 @@ import time
 from datetime import datetime, timedelta
 import requests
 from groq import Groq
+import yfinance as yf
 from stock_discovery import discover_stocks, TICKER_SECTOR_MAP
 
 # Environment configuration
@@ -122,45 +123,74 @@ def load_macro_cache():
     return None, None
 
 
-def fetch_fundamentals(ticker):
-    """Fetch stock fundamentals from Finnhub"""
-    if not FINNHUB_API_KEY:
-        print(f"Warning: FINNHUB_API_KEY not set, using mock data for {ticker}")
-        return get_mock_fundamentals(ticker)
-
+def fetch_fundamentals_from_yfinance(ticker):
+    """Fetch fundamentals from yfinance as fallback"""
     try:
-        quote_url = f"{FINNHUB_BASE}/quote"
-        quote_response = requests.get(
-            quote_url,
-            params={"symbol": ticker, "token": FINNHUB_API_KEY},
-            timeout=5
-        )
+        stock = yf.Ticker(ticker)
+        info = stock.info
 
-        if quote_response.status_code == 200:
-            quote = quote_response.json()
+        if info and info.get('currentPrice'):
+            sector = TICKER_SECTOR_MAP.get(ticker, info.get('sector', 'Unknown'))
+            return {
+                "ticker": ticker,
+                "company_name": info.get('longName', ticker),
+                "sector": sector,
+                "market_cap": info.get('marketCap', 0),
+                "pe_ratio": info.get('trailingPE'),
+                "dividend_yield": info.get('dividendYield', 0),
+                "52_week_high": info.get('fiftyTwoWeekHigh'),
+                "52_week_low": info.get('fiftyTwoWeekLow'),
+                "current_price": info.get('currentPrice'),
+            }
+    except Exception as e:
+        pass
 
-            if quote.get("c"):  # Current price exists
-                # Get sector from COMPANY_SECTORS or fallback to TICKER_SECTOR_MAP
-                sector = COMPANY_SECTORS.get(ticker)
-                if not sector:
-                    sector = TICKER_SECTOR_MAP.get(ticker, "Unknown")
+    return None
 
-                return {
-                    "ticker": ticker,
-                    "company_name": COMPANY_NAMES.get(ticker, ticker),
-                    "sector": sector,
-                    "market_cap": COMPANY_MARKET_CAPS.get(ticker, 0),
-                    "pe_ratio": quote.get("pe"),
-                    "dividend_yield": COMPANY_DIVIDEND_YIELDS.get(ticker, 0),
-                    "52_week_high": quote.get("h52", None),
-                    "52_week_low": quote.get("l52", None),
-                    "current_price": quote.get("c"),
-                }
 
-        return get_mock_fundamentals(ticker)
+def fetch_fundamentals(ticker):
+    """Fetch stock fundamentals with fallback chain: Finnhub → yfinance → mock"""
+    # Priority 1: Try Finnhub
+    if FINNHUB_API_KEY:
+        try:
+            quote_url = f"{FINNHUB_BASE}/quote"
+            quote_response = requests.get(
+                quote_url,
+                params={"symbol": ticker, "token": FINNHUB_API_KEY},
+                timeout=5
+            )
 
-    except requests.exceptions.RequestException as e:
-        return get_mock_fundamentals(ticker)
+            if quote_response.status_code == 200:
+                quote = quote_response.json()
+
+                if quote.get("c"):  # Current price exists
+                    # Get sector from COMPANY_SECTORS or fallback to TICKER_SECTOR_MAP
+                    sector = COMPANY_SECTORS.get(ticker)
+                    if not sector:
+                        sector = TICKER_SECTOR_MAP.get(ticker, "Unknown")
+
+                    return {
+                        "ticker": ticker,
+                        "company_name": COMPANY_NAMES.get(ticker, ticker),
+                        "sector": sector,
+                        "market_cap": COMPANY_MARKET_CAPS.get(ticker, 0),
+                        "pe_ratio": quote.get("pe"),
+                        "dividend_yield": COMPANY_DIVIDEND_YIELDS.get(ticker, 0),
+                        "52_week_high": quote.get("h52", None),
+                        "52_week_low": quote.get("l52", None),
+                        "current_price": quote.get("c"),
+                    }
+
+        except requests.exceptions.RequestException as e:
+            pass
+
+    # Priority 2: Try yfinance
+    yf_data = fetch_fundamentals_from_yfinance(ticker)
+    if yf_data:
+        return yf_data
+
+    # Priority 3: Fall back to mock data
+    return get_mock_fundamentals(ticker)
 
 
 def get_mock_fundamentals(ticker):

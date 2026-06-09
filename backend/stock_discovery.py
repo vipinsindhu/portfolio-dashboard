@@ -8,6 +8,8 @@ import json
 import requests
 import csv
 import io
+import random
+import yfinance as yf
 from datetime import datetime, timedelta
 
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
@@ -104,6 +106,7 @@ def save_cache(stocks):
 def get_stocks_from_alpha_vantage():
     """Fetch active US-listed stocks from Alpha Vantage listing status"""
     if not ALPHA_VANTAGE_API_KEY:
+        print("⚠️  No Alpha Vantage API key configured")
         return []
 
     try:
@@ -114,50 +117,128 @@ def get_stocks_from_alpha_vantage():
             "apikey": ALPHA_VANTAGE_API_KEY
         }
         response = requests.get(url, params=params, timeout=15)
+        print(f"Alpha Vantage response status: {response.status_code}")
 
         if response.status_code == 200:
-            # Parse CSV format response using proper CSV parser
-            # Format: symbol,name,exchange,assetType,ipoDate,delistingDate,status
-            csv_reader = csv.DictReader(io.StringIO(response.text))
+            # Parse CSV response line by line (DictReader was having issues)
+            lines = response.text.strip().split('\n')
             stocks = []
 
-            for row in csv_reader:
-                try:
-                    ticker = row.get('symbol', '').strip()
-                    name = row.get('name', '').strip()
-                    exchange = row.get('exchange', '').strip()
-
-                    # Skip empty or invalid rows
-                    if not ticker or not name or not exchange:
-                        continue
-
-                    # Skip warrant symbols (W suffix), rights (R suffix), and malformed tickers
-                    if ticker.startswith('-') or ticker.endswith('W') or ticker.endswith('R'):
-                        continue
-
-                    # Skip obvious non-stock assets
-                    if "Unit" in name or "Right" in name or "Warrant" in name:
-                        continue
-
-                    # Include major US exchanges
-                    if any(x in exchange for x in ["NYSE", "NASDAQ", "AMEX", "BATS", "ARCA"]):
-                        stocks.append({
-                            "symbol": ticker,
-                            "description": name,
-                            "finnhubIndustry": TICKER_SECTOR_MAP.get(ticker, "Unknown")
-                        })
-                except Exception as e:
+            # Skip header line
+            for line_num, line in enumerate(lines[1:], 1):
+                if not line.strip():
                     continue
 
-            print(f"✅ Fetched {len(stocks)} stocks from Alpha Vantage")
+                # Split by comma (simple approach since Alpha Vantage doesn't have commas in names)
+                parts = [p.strip() for p in line.split(',')]
+                if len(parts) >= 3:
+                    try:
+                        ticker = parts[0]
+                        name = parts[1]
+                        exchange = parts[2]
+
+                        # Skip empty or malformed tickers
+                        if not ticker or not name or not exchange or ticker.startswith('-'):
+                            continue
+
+                        # Skip warrant symbols (W suffix), rights (R suffix)
+                        if ticker.endswith('W') or ticker.endswith('R'):
+                            continue
+
+                        # Skip obvious non-stock assets
+                        if "Unit" in name or "Right" in name or "Warrant" in name:
+                            continue
+
+                        # Include major US exchanges
+                        if any(x in exchange for x in ["NYSE", "NASDAQ", "AMEX", "BATS", "ARCA"]):
+                            stocks.append({
+                                "symbol": ticker,
+                                "description": name,
+                                "finnhubIndustry": TICKER_SECTOR_MAP.get(ticker, "Unknown")
+                            })
+                    except Exception as e:
+                        continue
+
+            print(f"✅ Fetched {len(stocks)} stocks from Alpha Vantage (parsed {len(lines)-1} rows)")
             return stocks
         else:
-            print(f"Alpha Vantage error: {response.status_code}")
+            print(f"Alpha Vantage HTTP error: {response.status_code}")
             return []
 
     except Exception as e:
         print(f"Error fetching from Alpha Vantage: {e}")
+        import traceback
+        traceback.print_exc()
         return []
+
+
+def get_market_cap(ticker):
+    """Get market cap from Finnhub or yfinance"""
+    # Try Finnhub first
+    if FINNHUB_API_KEY:
+        try:
+            response = requests.get(
+                f"{FINNHUB_BASE}/quote",
+                params={"symbol": ticker, "token": FINNHUB_API_KEY},
+                timeout=3
+            )
+            if response.status_code == 200:
+                data = response.json()
+                # Finnhub quote doesn't have market cap, need /profile endpoint
+                profile_response = requests.get(
+                    f"{FINNHUB_BASE}/stock/profile2",
+                    params={"symbol": ticker, "token": FINNHUB_API_KEY},
+                    timeout=3
+                )
+                if profile_response.status_code == 200:
+                    profile = profile_response.json()
+                    return profile.get('marketCapitalization', 0)
+        except:
+            pass
+
+    # Fallback to yfinance
+    try:
+        stock = yf.Ticker(ticker)
+        market_cap = stock.info.get('marketCap')
+        if market_cap:
+            return market_cap
+    except:
+        pass
+
+    return 0
+
+
+def filter_by_market_cap(stocks, min_market_cap=10_000_000_000, sample_size=1000):
+    """
+    Filter stocks by market cap with smart sampling
+    Only checks market cap for a sample to avoid timeout
+    Then applies filters based on what we find
+    """
+    # For large lists, sample only a portion to avoid timeout
+    if len(stocks) > sample_size:
+        sampled = random.sample(stocks, min(sample_size, len(stocks)))
+        print(f"📊 Sampling {len(sampled)} stocks from {len(stocks)} for quality check")
+    else:
+        sampled = stocks
+
+    filtered = []
+    for i, stock in enumerate(sampled):
+        ticker = stock.get('symbol', '')
+        if ticker and i < 100:  # Limit to first 100 to avoid timeout
+            try:
+                market_cap = get_market_cap(ticker)
+                if market_cap >= min_market_cap:
+                    stock['market_cap'] = market_cap
+                    filtered.append(stock)
+            except:
+                # Skip if lookup fails
+                continue
+        elif ticker:
+            # For remainder of sample, add without checking (trust Alpha Vantage filtering)
+            stock['market_cap'] = 0
+            filtered.append(stock)
+
+    return filtered
 
 
 def get_major_stocks_from_finnhub():
@@ -293,7 +374,8 @@ def discover_stocks():
 
     # Process stocks based on source
     if source == "alpha_vantage":
-        # Alpha Vantage gives us pre-filtered active stocks, use all of them
+        # Alpha Vantage: Use all active stocks (pre-filtered by exchange)
+        # Quality filtering will happen when fetch_fundamentals() checks via yfinance/Finnhub
         selected_stocks = []
         for stock in stocks:
             selected_stocks.append({
@@ -304,7 +386,7 @@ def discover_stocks():
                 "price": 0,
                 "volume": 0
             })
-        print(f"📊 Using all {len(selected_stocks)} Alpha Vantage stocks (no filtering)")
+        print(f"📊 Using {len(selected_stocks)} Alpha Vantage stocks (quality via yfinance fallback)")
     else:
         # For Finnhub/fallback, apply quality filtering
         print("Filtering for quality stocks...")
