@@ -387,8 +387,21 @@ def discover_stocks():
                 "volume": 0
             })
         print(f"📊 Using {len(selected_stocks)} Alpha Vantage stocks (quality via yfinance fallback)")
+    elif source == "fallback":
+        # Fallback stocks are pre-selected high-quality stocks, no need for additional filtering
+        selected_stocks = []
+        for stock in stocks:
+            selected_stocks.append({
+                "ticker": stock.get("symbol", ""),
+                "name": stock.get("description", ""),
+                "sector": stock.get("finnhubIndustry", "Unknown"),
+                "market_cap": 0,
+                "price": 0,
+                "volume": 0
+            })
+        print(f"✅ Using fallback stocks (pre-selected for quality)")
     else:
-        # For Finnhub/fallback, apply quality filtering
+        # For Finnhub, apply quality filtering
         print("Filtering for quality stocks...")
         quality_stocks = filter_quality_stocks(stocks)
 

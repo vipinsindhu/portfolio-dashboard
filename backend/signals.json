@@ -1,1 +1,125 @@
-﻿{"signals": [], "generated_at": null}
+{
+  "signals": [
+    {
+      "id": "JNJ_2026-06-09T06:20:27.727171",
+      "ticker": "JNJ",
+      "direction": "buy",
+      "confidence": 8,
+      "rationale": "Johnson & Johnson is a strong company that makes important healthcare products. Even when the economy is slow, people still need healthcare, so it's a good time to invest.",
+      "sector": "Healthcare",
+      "market_cap": 558859485184,
+      "created_at": "2026-06-09T06:20:27.727192",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "XOM_2026-06-09T06:20:27.727202",
+      "ticker": "XOM",
+      "direction": "hold",
+      "confidence": 6,
+      "rationale": "Exxon Mobil is a big energy company. With interest rates high, it's not the best time to buy, but if you already own it, it's okay to keep because people will always need energy.",
+      "sector": "Energy",
+      "market_cap": 628995719168,
+      "created_at": "2026-06-09T06:20:27.727205",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "VZ_2026-06-09T06:20:27.727212",
+      "ticker": "VZ",
+      "direction": "buy",
+      "confidence": 7,
+      "rationale": "Verizon is a solid phone company that pays a good dividend. When interest rates are high, investors look for safe investments with regular income, making Verizon a good choice.",
+      "sector": "Telecommunications",
+      "market_cap": 189737385984,
+      "created_at": "2026-06-09T06:20:27.727217",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "WMT_2026-06-09T06:20:27.727224",
+      "ticker": "WMT",
+      "direction": "avoid",
+      "confidence": 5,
+      "rationale": "Walmart is a big store, but with high interest rates, people might not spend as much money. This could hurt Walmart's sales, so it's not the best time to invest.",
+      "sector": "Retail & E-commerce",
+      "market_cap": 953616629760,
+      "created_at": "2026-06-09T06:20:27.727228",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "JPM_2026-06-09T06:20:27.727237",
+      "ticker": "JPM",
+      "direction": "hold",
+      "confidence": 8,
+      "rationale": "JPMorgan Chase is a strong bank. Even with high interest rates, banks can do well because they can charge more for loans, so it's okay to keep if you own it.",
+      "sector": "Financials",
+      "market_cap": 833622704128,
+      "created_at": "2026-06-09T06:20:27.727243",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "AMZN_2026-06-09T06:20:27.727253",
+      "ticker": "AMZN",
+      "direction": "buy",
+      "confidence": 9,
+      "rationale": "Amazon is a very innovative company that people rely on. Even in tough economic times, Amazon's diverse businesses can help it stay strong, making it a good investment.",
+      "sector": "Retail & E-commerce",
+      "market_cap": 2637858340864,
+      "created_at": "2026-06-09T06:20:27.727256",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "UNH_2026-06-09T06:20:27.727263",
+      "ticker": "UNH",
+      "direction": "buy",
+      "confidence": 8,
+      "rationale": "UnitedHealth Group is a major healthcare company. With people always needing healthcare, it's a stable investment, and the company's size and diversity can help it weather economic storms.",
+      "sector": "Healthcare",
+      "market_cap": 369224253440,
+      "created_at": "2026-06-09T06:20:27.727269",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "CVX_2026-06-09T06:20:27.727280",
+      "ticker": "CVX",
+      "direction": "hold",
+      "confidence": 7,
+      "rationale": "Chevron is a big energy company. While high interest rates might affect the stock, the demand for energy remains, so it's not a bad time to keep if you already own it.",
+      "sector": "Energy",
+      "market_cap": 376889966592,
+      "created_at": "2026-06-09T06:20:27.727285",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "PFE_2026-06-09T06:20:27.727294",
+      "ticker": "PFE",
+      "direction": "buy",
+      "confidence": 6,
+      "rationale": "Pfizer is a well-known pharmaceutical company with a history of making important medicines. Its dividend is attractive, especially when interest rates are high and investors seek income.",
+      "sector": "Pharma & Biotech",
+      "market_cap": 146019762176,
+      "created_at": "2026-06-09T06:20:27.727300",
+      "result": null,
+      "accuracy_pct": null
+    },
+    {
+      "id": "MET_2026-06-09T06:20:27.727312",
+      "ticker": "MET",
+      "direction": "avoid",
+      "confidence": 5,
+      "rationale": "MetLife is an insurance company, and with high interest rates, people might be less likely to buy insurance or invest in related products, which could hurt the company's performance.",
+      "sector": "Insurance",
+      "market_cap": 54293196800,
+      "created_at": "2026-06-09T06:20:27.727319",
+      "result": null,
+      "accuracy_pct": null
+    }
+  ],
+  "generated_at": "2026-06-09T06:20:27.727361"
+}

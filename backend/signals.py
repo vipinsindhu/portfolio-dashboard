@@ -417,13 +417,17 @@ def generate_signals(count=10):
     print("Discovering high-quality stocks...")
     signal_candidates = discover_stocks()
 
-    print("Fetching fundamentals data...")
+    # Limit fundamentals fetching to first 30 candidates to avoid timeout
+    max_candidates_to_fetch = 30
+    candidates_to_fetch = signal_candidates[:max_candidates_to_fetch]
+    print(f"Fetching fundamentals for {len(candidates_to_fetch)} of {len(signal_candidates)} discovered stocks...")
+
     candidates = []
-    for i, ticker in enumerate(signal_candidates):
+    for i, ticker in enumerate(candidates_to_fetch):
         data = fetch_fundamentals(ticker)
         if data.get("current_price"):
             candidates.append(data)
-        if i < len(signal_candidates) - 1:
+        if i < len(candidates_to_fetch) - 1:
             time.sleep(0.3)  # Rate limiting for Finnhub
 
     if not candidates:
