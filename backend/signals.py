@@ -299,7 +299,7 @@ def auto_generate_signals():
     """Scheduled job to auto-generate signals every 60 minutes"""
     print(f"[{datetime.now().isoformat()}] Starting auto-signal generation...")
     try:
-        signals = generate_signals(count=10)
+        signals = generate_signals(count=15)
         if signals:
             print(f"✅ Auto-generated {len(signals)} signals with fresh market data")
             return True
@@ -402,7 +402,7 @@ def generate_realistic_mock_signals(candidates, count=5):
     return signals
 
 
-def generate_signals(count=10):
+def generate_signals(count=15):
     """
     Generate stock/ETF signals using Groq cloud LLM
 
