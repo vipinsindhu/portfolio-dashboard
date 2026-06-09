@@ -6,7 +6,13 @@
 
 .short-term-header {
   margin-bottom: 32px;
-  text-align: center;
+}
+
+.header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
 }
 
 .short-term-header h2 {
@@ -20,6 +26,44 @@
   font-size: 14px;
   color: var(--text-secondary);
   margin: 0;
+}
+
+.btn-refresh {
+  padding: 8px 16px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: #4f46e5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(85, 104, 211, 0.2);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading State */
+.short-term-container.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.loading-spinner {
+  font-size: 16px;
+  color: var(--text-secondary);
 }
 
 /* Error Message */
@@ -38,20 +82,29 @@
   margin-bottom: 40px;
 }
 
-.signals-section.sell-reduce {
-  border-top: 4px solid var(--signal-sell);
+.signals-section.buy {
+  border-top: 4px solid #22c55e;
   padding-top: 20px;
-  opacity: 0.8;
 }
 
 .signals-section.hold {
-  border-top: 4px solid var(--signal-hold);
+  border-top: 4px solid #5568d3;
+  padding-top: 20px;
+}
+
+.signals-section.avoid {
+  border-top: 4px solid #ef4444;
+  padding-top: 20px;
+}
+
+.signals-section.sell-reduce {
+  border-top: 4px solid #ef4444;
   padding-top: 20px;
   opacity: 0.8;
 }
 
 .signals-section.add {
-  border-top: 4px solid var(--signal-buy);
+  border-top: 4px solid #22c55e;
   padding-top: 20px;
   opacity: 0.8;
 }
@@ -90,6 +143,16 @@
   border-radius: 8px;
   color: var(--text-secondary);
   font-size: 16px;
+}
+
+.empty-state p {
+  margin: 0 0 8px 0;
+}
+
+.empty-state .empty-hint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 /* CTA Section */
@@ -145,6 +208,16 @@
   .cta-section {
     padding: 32px 24px;
   }
+
+  .header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-refresh {
+    width: 100%;
+    text-align: center;
+  }
 }
 
 /* Mobile */
@@ -155,6 +228,18 @@
 
   .short-term-header h2 {
     font-size: 22px;
+  }
+
+  .header-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .btn-refresh {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 13px;
   }
 
   .signals-grid {

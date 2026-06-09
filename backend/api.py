@@ -24,6 +24,7 @@ from signals import (
     fetch_macro_context,
     fetch_fundamentals,
 )
+from stock_discovery import discover_stocks
 from sector_updater import update_sector_mappings
 from educational import (
     get_all_lessons,
@@ -178,6 +179,86 @@ def create_app():
         archive = signal_store.get_signal_archive(limit)
         return jsonify(archive), 200
 
+    @app.route("/api/signals/short-term", methods=["GET"])
+    def get_short_term_signals():
+        """Get top 10 buy/avoid signals for short-term trading
+
+        Query parameters:
+        - limit: number of signals to return (default: 10)
+        - direction: filter by direction (buy/hold/avoid, default: all)
+        - min_confidence: minimum confidence threshold (1-10, default: 6)
+        - sector: filter by sector (default: all)
+        """
+        try:
+            limit = request.args.get("limit", 10, type=int)
+            direction = request.args.get("direction", None, type=str)
+            min_confidence = request.args.get("min_confidence", 6, type=int)
+            sector = request.args.get("sector", None, type=str)
+
+            # Get latest 50 signals to filter from
+            signals_response = signal_store.get_latest_signals(50)
+            all_signals = signals_response.get("data", []) if isinstance(signals_response, dict) else []
+            generated_at = signals_response.get("generated_at") if isinstance(signals_response, dict) else None
+
+            # Filter signals
+            filtered_signals = []
+            for signal in all_signals:
+                # Check confidence threshold
+                if signal.get("confidence", 0) < min_confidence:
+                    continue
+
+                # Check direction filter
+                if direction and signal.get("direction") != direction:
+                    continue
+
+                # Check sector filter
+                if sector and signal.get("sector") != sector:
+                    continue
+
+                filtered_signals.append(signal)
+
+            # Sort by confidence (descending)
+            sorted_signals = sorted(filtered_signals, key=lambda x: x.get("confidence", 0), reverse=True)
+
+            # Take top N
+            top_signals = sorted_signals[:limit]
+
+            # Calculate stats
+            if top_signals:
+                avg_confidence = sum(s.get("confidence", 0) for s in top_signals) / len(top_signals)
+                buy_count = len([s for s in top_signals if s.get("direction") == "buy"])
+                hold_count = len([s for s in top_signals if s.get("direction") == "hold"])
+                avoid_count = len([s for s in top_signals if s.get("direction") == "avoid"])
+            else:
+                avg_confidence = 0
+                buy_count = hold_count = avoid_count = 0
+
+            return jsonify({
+                "signals": top_signals,
+                "total": len(top_signals),
+                "generated_at": generated_at,
+                "stats": {
+                    "avg_confidence": round(avg_confidence, 1),
+                    "buy_count": buy_count,
+                    "hold_count": hold_count,
+                    "avoid_count": avoid_count,
+                    "by_direction": {
+                        "buy": buy_count,
+                        "hold": hold_count,
+                        "avoid": avoid_count
+                    }
+                },
+                "filters": {
+                    "min_confidence": min_confidence,
+                    "direction": direction or "all",
+                    "sector": sector or "all"
+                }
+            }), 200
+
+        except Exception as e:
+            app.logger.error(f"Error getting short-term signals: {e}")
+            return jsonify({"error": str(e)}), 500
+
     @app.route("/api/signals/<signal_id>", methods=["GET"])
     def get_signal_detail(signal_id):
         """Get detailed view of a specific signal"""
@@ -190,7 +271,7 @@ def create_app():
     def generate_new_signals():
         """Generate new signals (admin endpoint)"""
         try:
-            count = request.json.get("count", 5) if request.json else 5
+            count = request.json.get("count", 10) if request.json else 10
             new_signals = generate_signals(count)
 
             if not new_signals:
@@ -483,86 +564,6 @@ def create_app():
 
     # ============= SIGNALS FILTERING ENDPOINTS =============
 
-    @app.route("/api/signals/short-term", methods=["GET"])
-    def get_short_term_signals():
-        """Get short-term investment signals (1-3 months)"""
-        try:
-            # Load current signals
-            signals_data = load_signals()
-            signals = signals_data.get("signals", [])
-
-            # Load macro context for market conditions
-            macro_data = fetch_macro_context(use_cache=True)
-
-            # Filter for short-term
-            filtered = filter_signals_by_timeframe(
-                signals,
-                TimeHorizon.SHORT_TERM,
-                macro_data
-            )
-
-            return jsonify({
-                "status": "success",
-                "timeframe": "short_term",
-                "signals": [
-                    {
-                        "ticker": s.ticker,
-                        "direction": s.direction,
-                        "confidence": s.confidence,
-                        "rationale": s.rationale,
-                        "portfolio_context": s.portfolio_context,
-                        "recommendation_type": s.recommendation_type
-                    }
-                    for s in filtered
-                ],
-                "count": len(filtered),
-                "market_conditions": {
-                    "vix": macro_data.get("vix"),
-                    "fed_rate": macro_data.get("fed_rate"),
-                    "inflation": macro_data.get("inflation")
-                }
-            }), 200
-        except Exception as e:
-            app.logger.error(f"Error getting short-term signals: {e}")
-            return jsonify({"error": str(e)}), 500
-
-    @app.route("/api/signals/long-term", methods=["GET"])
-    def get_long_term_signals():
-        """Get long-term investment signals (1+ years)"""
-        try:
-            # Load current signals
-            signals_data = load_signals()
-            signals = signals_data.get("signals", [])
-
-            # Load macro context
-            macro_data = fetch_macro_context(use_cache=True)
-
-            # Filter for long-term
-            filtered = filter_signals_by_timeframe(
-                signals,
-                TimeHorizon.LONG_TERM,
-                macro_data
-            )
-
-            return jsonify({
-                "status": "success",
-                "timeframe": "long_term",
-                "signals": [
-                    {
-                        "ticker": s.ticker,
-                        "direction": s.direction,
-                        "confidence": s.confidence,
-                        "rationale": s.rationale,
-                        "portfolio_context": s.portfolio_context,
-                        "recommendation_type": s.recommendation_type
-                    }
-                    for s in filtered
-                ],
-                "count": len(filtered)
-            }), 200
-        except Exception as e:
-            app.logger.error(f"Error getting long-term signals: {e}")
-            return jsonify({"error": str(e)}), 500
 
     @app.route("/api/portfolio/recommendations", methods=["GET"])
     def get_portfolio_recommendations():
@@ -639,6 +640,14 @@ def create_app():
         app.logger.error(f"Internal error: {error}")
         return jsonify({"error": "Internal server error"}), 500
 
+    # Initial stock discovery on startup
+    print("\n🚀 Initializing stock discovery on startup...")
+    try:
+        discover_stocks()
+        print("✓ Stock discovery initialized on startup")
+    except Exception as e:
+        print(f"⚠️  Stock discovery initialization failed: {e} (will retry on first use)")
+
     # Initialize APScheduler for periodic data refresh
     scheduler = BackgroundScheduler()
     scheduler.add_job(
@@ -663,6 +672,14 @@ def create_app():
         days=7,
         id="sector_update",
         name="Update sector mappings from Finnhub every 7 days",
+        replace_existing=True
+    )
+    scheduler.add_job(
+        discover_stocks,
+        trigger="interval",
+        hours=24,
+        id="stock_discovery",
+        name="Refresh high-quality stock discovery daily",
         replace_existing=True
     )
 

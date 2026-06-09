@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files and data
-COPY api.py signals.py educational.py portfolio.py analysis.py signals_filter.py sector_updater.py index_decomposer.py lessons.json sector_map.json ./
+COPY api.py signals.py stock_discovery.py educational.py portfolio.py analysis.py signals_filter.py sector_updater.py index_decomposer.py lessons.json sector_map.json ./
 
 # Expose port
 EXPOSE 5000

@@ -10,6 +10,7 @@ services:
     volumes:
       - ./backend/macro_config.json:/app/macro_config.json
       - ./backend/index_decomposition_cache.json:/app/index_decomposition_cache.json
+      - ./backend/signals.json:/app/signals.json
     ports:
       - "5000:5000"
     restart: unless-stopped

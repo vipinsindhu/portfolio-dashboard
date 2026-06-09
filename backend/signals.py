@@ -9,6 +9,7 @@ import time
 from datetime import datetime, timedelta
 import requests
 from groq import Groq
+from stock_discovery import discover_stocks, TICKER_SECTOR_MAP
 
 # Environment configuration
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
@@ -83,14 +84,14 @@ MACRO_CACHE_FILE = "macro_cache.json"
 def load_signals():
     """Load signals from JSON file"""
     if os.path.exists(SIGNALS_FILE):
-        with open(SIGNALS_FILE, 'r') as f:
+        with open(SIGNALS_FILE, 'r', encoding='utf-8-sig') as f:
             return json.load(f)
     return {"signals": [], "generated_at": None}
 
 
 def save_signals(data):
     """Save signals to JSON file"""
-    with open(SIGNALS_FILE, 'w') as f:
+    with open(SIGNALS_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2)
 
 
@@ -101,7 +102,7 @@ def save_macro_cache(macro_data):
         "cached_at": datetime.now().isoformat()
     }
     try:
-        with open(MACRO_CACHE_FILE, 'w') as f:
+        with open(MACRO_CACHE_FILE, 'w', encoding='utf-8') as f:
             json.dump(cache, f, indent=2)
         return True
     except Exception as e:
@@ -113,7 +114,7 @@ def load_macro_cache():
     """Load macro data from cache file"""
     try:
         if os.path.exists(MACRO_CACHE_FILE):
-            with open(MACRO_CACHE_FILE, 'r') as f:
+            with open(MACRO_CACHE_FILE, 'r', encoding='utf-8-sig') as f:
                 cache = json.load(f)
                 return cache.get("data"), cache.get("cached_at")
     except Exception as e:
@@ -139,10 +140,15 @@ def fetch_fundamentals(ticker):
             quote = quote_response.json()
 
             if quote.get("c"):  # Current price exists
+                # Get sector from COMPANY_SECTORS or fallback to TICKER_SECTOR_MAP
+                sector = COMPANY_SECTORS.get(ticker)
+                if not sector:
+                    sector = TICKER_SECTOR_MAP.get(ticker, "Unknown")
+
                 return {
                     "ticker": ticker,
                     "company_name": COMPANY_NAMES.get(ticker, ticker),
-                    "sector": COMPANY_SECTORS.get(ticker, "Unknown"),
+                    "sector": sector,
                     "market_cap": COMPANY_MARKET_CAPS.get(ticker, 0),
                     "pe_ratio": quote.get("pe"),
                     "dividend_yield": COMPANY_DIVIDEND_YIELDS.get(ticker, 0),
@@ -175,7 +181,15 @@ def get_mock_fundamentals(ticker):
         "VOO": {"ticker": "VOO", "company_name": "Vanguard S&P 500 ETF", "sector": "ETF", "market_cap": None, "pe_ratio": None, "dividend_yield": 0.015, "52_week_high": 545, "52_week_low": 420, "current_price": 520},
         "AGG": {"ticker": "AGG", "company_name": "iShares Core U.S. Aggregate Bond ETF", "sector": "ETF", "market_cap": None, "pe_ratio": None, "dividend_yield": 0.045, "52_week_high": 110, "52_week_low": 100, "current_price": 105},
     }
-    return mock_data.get(ticker, {"ticker": ticker, "sector": "Unknown", "current_price": 100})
+    # Return mock data or fallback with sector from TICKER_SECTOR_MAP
+    data = mock_data.get(ticker)
+    if data:
+        return data
+    return {
+        "ticker": ticker,
+        "sector": TICKER_SECTOR_MAP.get(ticker, "Unknown"),
+        "current_price": 100
+    }
 
 
 def fetch_macro_context(use_cache=True):
@@ -255,7 +269,7 @@ def auto_generate_signals():
     """Scheduled job to auto-generate signals every 60 minutes"""
     print(f"[{datetime.now().isoformat()}] Starting auto-signal generation...")
     try:
-        signals = generate_signals(count=5)
+        signals = generate_signals(count=10)
         if signals:
             print(f"✅ Auto-generated {len(signals)} signals with fresh market data")
             return True
@@ -358,7 +372,7 @@ def generate_realistic_mock_signals(candidates, count=5):
     return signals
 
 
-def generate_signals(count=5):
+def generate_signals(count=10):
     """
     Generate stock/ETF signals using Groq cloud LLM
 
@@ -369,9 +383,13 @@ def generate_signals(count=5):
         List of signal dictionaries
     """
 
+    # Discover high-quality stocks dynamically
+    print("Discovering high-quality stocks...")
+    signal_candidates = discover_stocks()
+
     print("Fetching fundamentals data...")
     candidates = []
-    for i, ticker in enumerate(SIGNAL_CANDIDATES):
+    for i, ticker in enumerate(signal_candidates):
         data = fetch_fundamentals(ticker)
         if data.get("current_price"):
             candidates.append(data)
@@ -392,40 +410,48 @@ def generate_signals(count=5):
 
     # Use Groq to generate signals
     print("Generating signals with Groq LLM...")
-    prompt = f"""You are a sophisticated stock analyst. Generate exactly {count} investment signals
-considering both fundamental analysis and current macro environment.
+    prompt = f"""You are helping regular people understand stocks. Generate exactly {count} simple stock ideas.
 
-CURRENT MACRO ENVIRONMENT:
+MARKET CONDITIONS RIGHT NOW:
 {macro_sentiment}
 
-CANDIDATE STOCKS/ETFS (fundamentals data):
+STOCKS TO CONSIDER:
 {candidates_str}
 
-For each signal, provide:
-1. Ticker symbol
-2. Direction (buy, hold, or avoid)
-3. Confidence score (1-10)
-4. 2-3 sentence rationale that includes:
-   - Specific fundamental metrics (P/E, dividend, etc.)
-   - How the macro environment affects this investment
-   - Clear reason why now is good/bad for this position
+For each stock, give:
+1. Stock symbol
+2. What to do (buy, hold, or avoid)
+3. Confidence (1-10: 1=not sure, 10=very sure)
+4. WHY in SIMPLE WORDS (1-2 sentences):
+   - ONE easy-to-understand reason
+   - How today's market affects it
+   - What should a beginner do
+
+IMPORTANT - WRITE LIKE YOU'RE TALKING TO A 10TH GRADER:
+- Use simple words, no jargon
+- Avoid fancy financial terms
+- Explain WHY in everyday language
+- Make it clear what they should do
+
+Example of GOOD simple language:
+"Apple is a solid company. Interest rates are high, which might hurt its stock prices. But Apple makes great products people love. Not a great time to buy right now - wait."
 
 Return ONLY a JSON array with no other text:
 [
   {{
     "ticker": "AAPL",
-    "direction": "buy",
-    "confidence": 8,
-    "rationale": "P/E of 28.5 is reasonable given growth profile. With elevated rates at 5.25%, dividend yield of 0.4% provides income cushion. Strong balance sheet benefits from high rates. Good value in current environment."
+    "direction": "hold",
+    "confidence": 6,
+    "rationale": "Apple makes stuff people want to buy. Right now money is expensive (high interest rates), so investors want savings instead of stocks. Not a good time to buy, but okay to keep if you own it."
   }}
 ]
 
-IMPORTANT:
-- Generate EXACTLY {count} signals
-- Mix of BUY, HOLD, AVOID (realistic distribution)
-- Confidence scores should vary 5-9
-- Include specific numbers from fundamentals
-- Consider how macro conditions help/hurt each sector"""
+RULES:
+- Exactly {count} signals
+- Mix of BUY, HOLD, AVOID
+- Confidence 5-9 (vary them)
+- SIMPLE rationale - no fancy words
+- Anyone without investing knowledge should understand it"""
 
     response_text = call_groq(prompt)
 

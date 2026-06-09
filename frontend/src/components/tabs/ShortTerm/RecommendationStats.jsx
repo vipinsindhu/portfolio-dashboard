@@ -1,0 +1,96 @@
+import { useState, useEffect } from 'react'
+import './RecommendationStats.css'
+
+function RecommendationStats({ stats, generatedAt }) {
+  const [timeAgo, setTimeAgo] = useState('')
+
+  useEffect(() => {
+    const updateTimeAgo = () => {
+      if (!generatedAt) return
+
+      const now = new Date()
+      const generated = new Date(generatedAt)
+      const diffMs = now - generated
+      const diffMins = Math.floor(diffMs / 60000)
+      const diffHours = Math.floor(diffMs / 3600000)
+      const diffDays = Math.floor(diffMs / 86400000)
+
+      if (diffMins < 1) {
+        setTimeAgo('just now')
+      } else if (diffMins < 60) {
+        setTimeAgo(`${diffMins}m ago`)
+      } else if (diffHours < 24) {
+        setTimeAgo(`${diffHours}h ago`)
+      } else if (diffDays < 7) {
+        setTimeAgo(`${diffDays}d ago`)
+      } else {
+        setTimeAgo(new Date(generatedAt).toLocaleDateString())
+      }
+    }
+
+    updateTimeAgo()
+    const interval = setInterval(updateTimeAgo, 30000)
+    return () => clearInterval(interval)
+  }, [generatedAt])
+
+  if (!stats) {
+    return null
+  }
+
+  const confidenceLevel = stats.avg_confidence >= 8 ? 'high' : stats.avg_confidence >= 6 ? 'medium' : 'low'
+
+  return (
+    <div className="recommendation-stats">
+      <div className="stats-container">
+        <div className="stat-card confidence-card">
+          <div className="stat-label">How Strong Are These Ideas?</div>
+          <div className={`stat-value confidence-${confidenceLevel}`}>
+            {stats.avg_confidence.toFixed(1)}<span className="stat-unit">/10</span>
+          </div>
+          <div className="stat-confidence-bars">
+            {[...Array(10)].map((_, i) => (
+              <div
+                key={i}
+                className={`bar ${i < Math.round(stats.avg_confidence) ? 'filled' : ''}`}
+              />
+            ))}
+          </div>
+          <div className="stat-hint" style={{ marginTop: '8px', fontSize: '11px' }}>
+            {confidenceLevel === 'high' && '💪 Very Strong'}
+            {confidenceLevel === 'medium' && '👍 Pretty Good'}
+            {confidenceLevel === 'low' && '⚠️ Be Careful'}
+          </div>
+        </div>
+
+        <div className="stat-card direction-card">
+          <div className="stat-label">What Should You Do?</div>
+          <div className="direction-breakdown">
+            <div className="direction-item buy">
+              <span className="icon">🟢</span>
+              <span className="count">{stats.buy_count}</span>
+              <span className="label">Buy Now</span>
+            </div>
+            <div className="direction-item hold">
+              <span className="icon">⏸️</span>
+              <span className="count">{stats.hold_count}</span>
+              <span className="label">Wait & See</span>
+            </div>
+            <div className="direction-item avoid">
+              <span className="icon">🔴</span>
+              <span className="count">{stats.avoid_count}</span>
+              <span className="label">Skip This</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="stat-card update-card">
+          <div className="stat-label">How Fresh Is This?</div>
+          <div className="stat-value time-ago">{timeAgo}</div>
+          <div className="stat-hint">Updates every hour</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default RecommendationStats
