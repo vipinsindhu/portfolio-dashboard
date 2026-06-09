@@ -192,9 +192,9 @@ def create_app():
         - sector: filter by sector (default: all)
         """
         try:
-            limit = request.args.get("limit", 15, type=int)
+            limit = request.args.get("limit", 10, type=int)
             direction = request.args.get("direction", None, type=str)
-            min_confidence = request.args.get("min_confidence", 5, type=int)
+            min_confidence = request.args.get("min_confidence", 6, type=int)
             sector = request.args.get("sector", None, type=str)
 
             # Get latest 50 signals to filter from
@@ -284,7 +284,7 @@ def create_app():
     def generate_new_signals():
         """Generate new signals (admin endpoint)"""
         try:
-            count = request.json.get("count", 15) if request.json else 15
+            count = request.json.get("count", 10) if request.json else 10
             new_signals = generate_signals(count)
 
             if not new_signals:
