@@ -6,6 +6,8 @@ Fetches and filters stocks by quality metrics (market cap, volume, price)
 import os
 import json
 import requests
+import csv
+import io
 from datetime import datetime, timedelta
 
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
@@ -114,31 +116,38 @@ def get_stocks_from_alpha_vantage():
         response = requests.get(url, params=params, timeout=15)
 
         if response.status_code == 200:
-            # Parse CSV format response
-            lines = response.text.strip().split('\n')
+            # Parse CSV format response using proper CSV parser
+            # Format: symbol,name,exchange,assetType,ipoDate,delistingDate,status
+            csv_reader = csv.DictReader(io.StringIO(response.text))
             stocks = []
 
-            # Skip header line
-            for line in lines[1:]:
-                if not line.strip():
+            for row in csv_reader:
+                try:
+                    ticker = row.get('symbol', '').strip()
+                    name = row.get('name', '').strip()
+                    exchange = row.get('exchange', '').strip()
+
+                    # Skip empty or invalid rows
+                    if not ticker or not name or not exchange:
+                        continue
+
+                    # Skip warrant symbols (W suffix), rights (R suffix), and malformed tickers
+                    if ticker.startswith('-') or ticker.endswith('W') or ticker.endswith('R'):
+                        continue
+
+                    # Skip obvious non-stock assets
+                    if "Unit" in name or "Right" in name or "Warrant" in name:
+                        continue
+
+                    # Include major US exchanges
+                    if any(x in exchange for x in ["NYSE", "NASDAQ", "AMEX", "BATS", "ARCA"]):
+                        stocks.append({
+                            "symbol": ticker,
+                            "description": name,
+                            "finnhubIndustry": TICKER_SECTOR_MAP.get(ticker, "Unknown")
+                        })
+                except Exception as e:
                     continue
-
-                parts = [p.strip() for p in line.split(',')]
-                if len(parts) >= 2:
-                    ticker = parts[0]
-                    name = parts[1]
-
-                    # Skip non-US exchanges and prefer NYSE/NASDAQ
-                    if len(parts) > 3:
-                        exchange = parts[3]
-                        if exchange not in ["NYSE", "NASDAQ", "AMEX"]:
-                            continue
-
-                    stocks.append({
-                        "symbol": ticker,
-                        "description": name,
-                        "finnhubIndustry": TICKER_SECTOR_MAP.get(ticker, "Unknown")
-                    })
 
             print(f"✅ Fetched {len(stocks)} stocks from Alpha Vantage")
             return stocks
@@ -249,6 +258,7 @@ def discover_stocks():
 
     # Hybrid approach: Try multiple sources in priority order
     stocks = None
+    source = None
 
     # Priority 1: Alpha Vantage
     if ALPHA_VANTAGE_API_KEY:
@@ -256,6 +266,7 @@ def discover_stocks():
         stocks = get_stocks_from_alpha_vantage()
         if stocks:
             print(f"✅ Success with Alpha Vantage ({len(stocks)} stocks)")
+            source = "alpha_vantage"
 
     # Priority 2: Finnhub
     if not stocks:
@@ -263,6 +274,7 @@ def discover_stocks():
         stocks = get_major_stocks_from_finnhub()
         if stocks:
             print(f"✅ Success with Finnhub ({len(stocks)} stocks)")
+            source = "finnhub"
 
     # Priority 3: Fallback to hardcoded list
     if not stocks:
@@ -277,11 +289,11 @@ def discover_stocks():
             for ticker in fallback_tickers
         ]
         print(f"✅ Using {len(stocks)} fallback stocks")
+        source = "fallback"
 
-    # For Alpha Vantage (already returns active US-listed stocks), use all of them
-    # For other sources, apply quality filtering
-    if ALPHA_VANTAGE_API_KEY and get_stocks_from_alpha_vantage():
-        # Alpha Vantage gives us pre-filtered active stocks, just normalize and use them
+    # Process stocks based on source
+    if source == "alpha_vantage":
+        # Alpha Vantage gives us pre-filtered active stocks, use all of them
         selected_stocks = []
         for stock in stocks:
             selected_stocks.append({
