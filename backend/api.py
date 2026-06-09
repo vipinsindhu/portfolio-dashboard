@@ -219,8 +219,19 @@ def create_app():
 
                 filtered_signals.append(signal)
 
+            # Deduplicate by ticker (keep highest confidence for each stock)
+            ticker_signals = {}
+            for signal in filtered_signals:
+                ticker = signal.get("ticker", "")
+                if ticker:
+                    # Keep signal with highest confidence for this ticker
+                    if ticker not in ticker_signals or signal.get("confidence", 0) > ticker_signals[ticker].get("confidence", 0):
+                        ticker_signals[ticker] = signal
+
+            deduped_signals = list(ticker_signals.values())
+
             # Sort by confidence (descending)
-            sorted_signals = sorted(filtered_signals, key=lambda x: x.get("confidence", 0), reverse=True)
+            sorted_signals = sorted(deduped_signals, key=lambda x: x.get("confidence", 0), reverse=True)
 
             # Take top N
             top_signals = sorted_signals[:limit]
