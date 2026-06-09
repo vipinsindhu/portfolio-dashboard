@@ -11,6 +11,9 @@ from datetime import datetime, timedelta
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 FINNHUB_BASE = "https://finnhub.io/api/v1"
 
+ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "")
+ALPHA_VANTAGE_BASE = "https://www.alphavantage.co"
+
 # Cache file for discovered stocks
 STOCK_DISCOVERY_CACHE = "stock_discovery_cache.json"
 
@@ -94,6 +97,58 @@ def save_cache(stocks):
         print(f"Cached {len(stocks)} stocks")
     except Exception as e:
         print(f"Error saving cache: {e}")
+
+
+def get_stocks_from_alpha_vantage():
+    """Fetch active US-listed stocks from Alpha Vantage listing status"""
+    if not ALPHA_VANTAGE_API_KEY:
+        return []
+
+    try:
+        url = f"{ALPHA_VANTAGE_BASE}/query"
+        params = {
+            "function": "LISTING_STATUS",
+            "state": "active",
+            "apikey": ALPHA_VANTAGE_API_KEY
+        }
+        response = requests.get(url, params=params, timeout=15)
+
+        if response.status_code == 200:
+            # Parse CSV format response
+            lines = response.text.strip().split('\n')
+            stocks = []
+
+            # Skip header line
+            for line in lines[1:]:
+                if not line.strip():
+                    continue
+
+                parts = [p.strip() for p in line.split(',')]
+                if len(parts) >= 2:
+                    ticker = parts[0]
+                    name = parts[1]
+
+                    # Skip non-US exchanges and prefer NYSE/NASDAQ
+                    if len(parts) > 3:
+                        exchange = parts[3]
+                        if exchange not in ["NYSE", "NASDAQ", "AMEX"]:
+                            continue
+
+                    stocks.append({
+                        "symbol": ticker,
+                        "description": name,
+                        "finnhubIndustry": TICKER_SECTOR_MAP.get(ticker, "Unknown")
+                    })
+
+            print(f"✅ Fetched {len(stocks)} stocks from Alpha Vantage")
+            return stocks
+        else:
+            print(f"Alpha Vantage error: {response.status_code}")
+            return []
+
+    except Exception as e:
+        print(f"Error fetching from Alpha Vantage: {e}")
+        return []
 
 
 def get_major_stocks_from_finnhub():
@@ -189,39 +244,63 @@ def discover_stocks():
     cached = load_cache()
     if cached:
         tickers = [s["ticker"] for s in cached]
+        print(f"📦 Using cached stocks from previous discovery")
         return tickers
 
-    # Fetch from Finnhub
-    print("Fetching from Finnhub API...")
-    stocks = get_major_stocks_from_finnhub()
+    # Hybrid approach: Try multiple sources in priority order
+    stocks = None
 
+    # Priority 1: Alpha Vantage
+    if ALPHA_VANTAGE_API_KEY:
+        print("1️⃣  Trying Alpha Vantage API...")
+        stocks = get_stocks_from_alpha_vantage()
+        if stocks:
+            print(f"✅ Success with Alpha Vantage ({len(stocks)} stocks)")
+
+    # Priority 2: Finnhub
     if not stocks:
-        print("⚠️  Could not fetch stocks from Finnhub, using fallback")
-        # Convert fallback tickers to dicts with sector info
+        print("2️⃣  Trying Finnhub API...")
+        stocks = get_major_stocks_from_finnhub()
+        if stocks:
+            print(f"✅ Success with Finnhub ({len(stocks)} stocks)")
+
+    # Priority 3: Fallback to hardcoded list
+    if not stocks:
+        print("3️⃣  Using hardcoded fallback list")
         fallback_tickers = get_fallback_stocks()
-        fallback_stocks = [
+        stocks = [
             {
-                "ticker": ticker,
-                "name": ticker,
-                "sector": TICKER_SECTOR_MAP.get(ticker, "Unknown"),
-                "market_cap": 0,
-                "price": 0,
-                "volume": 0
+                "symbol": ticker,
+                "description": ticker,
+                "finnhubIndustry": TICKER_SECTOR_MAP.get(ticker, "Unknown")
             }
             for ticker in fallback_tickers
         ]
-        # Return tickers from all fallback stocks
-        tickers = [s["ticker"] for s in fallback_stocks]
-        print(f"✅ Using {len(tickers)} fallback stocks: {', '.join(tickers[:15])}...")
-        return tickers
+        print(f"✅ Using {len(stocks)} fallback stocks")
 
-    # Filter for quality
-    print("Filtering for quality stocks...")
-    quality_stocks = filter_quality_stocks(stocks)
+    # For Alpha Vantage (already returns active US-listed stocks), use all of them
+    # For other sources, apply quality filtering
+    if ALPHA_VANTAGE_API_KEY and get_stocks_from_alpha_vantage():
+        # Alpha Vantage gives us pre-filtered active stocks, just normalize and use them
+        selected_stocks = []
+        for stock in stocks:
+            selected_stocks.append({
+                "ticker": stock.get("symbol", ""),
+                "name": stock.get("description", ""),
+                "sector": stock.get("finnhubIndustry", "Unknown"),
+                "market_cap": 0,
+                "price": 0,
+                "volume": 0
+            })
+        print(f"📊 Using all {len(selected_stocks)} Alpha Vantage stocks (no filtering)")
+    else:
+        # For Finnhub/fallback, apply quality filtering
+        print("Filtering for quality stocks...")
+        quality_stocks = filter_quality_stocks(stocks)
 
-    # Select top per sector
-    print("Selecting top stocks per sector...")
-    selected_stocks = select_top_per_sector(quality_stocks, top_n=5)
+        # Select top per sector
+        print("Selecting top stocks per sector...")
+        selected_stocks = select_top_per_sector(quality_stocks, top_n=5)
 
     # Add popular ETFs
     selected_stocks.extend([
@@ -241,7 +320,7 @@ def discover_stocks():
 
     # Return tickers
     tickers = [s["ticker"] for s in selected_stocks]
-    print(f"✅ Discovered {len(tickers)} quality stocks/ETFs: {', '.join(tickers[:10])}...")
+    print(f"✅ Discovered {len(tickers)} stocks/ETFs: {', '.join(tickers[:15])}...")
 
     return tickers
 
