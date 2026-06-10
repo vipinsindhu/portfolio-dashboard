@@ -1,1 +1,1 @@
-web: gunicorn --chdir backend --workers 2 --bind 0.0.0.0:$PORT api:app
+web: PYTHONPATH=/app/backend gunicorn --workers 2 --bind 0.0.0.0:$PORT api:app
