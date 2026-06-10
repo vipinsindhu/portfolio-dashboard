@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Header from './components/Header'
+import Disclaimer from './components/Disclaimer'
 import Learn from './components/tabs/Learn/Learn'
 import Analyse from './components/tabs/Analyse/Analyse'
 import ShortTerm from './components/tabs/ShortTerm/ShortTerm'
@@ -12,6 +13,10 @@ function App() {
   return (
     <>
       <Header />
+
+      <div className="app-container">
+        <Disclaimer />
+      </div>
 
       <div className="tab-bar">
         <button
