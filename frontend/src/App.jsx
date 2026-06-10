@@ -8,7 +8,7 @@ import LongTerm from './components/tabs/LongTerm/LongTerm'
 import './App.css'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('learn')
+  const [activeTab, setActiveTab] = useState('short-term')
 
   return (
     <>
@@ -19,18 +19,6 @@ function App() {
       </div>
 
       <div className="tab-bar">
-        <button
-          className={`tab-button ${activeTab === 'learn' ? 'active' : ''}`}
-          onClick={() => setActiveTab('learn')}
-        >
-          📚 Learn
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'analyse' ? 'active' : ''}`}
-          onClick={() => setActiveTab('analyse')}
-        >
-          📊 My Stocks
-        </button>
         <button
           className={`tab-button ${activeTab === 'short-term' ? 'active' : ''}`}
           onClick={() => setActiveTab('short-term')}
@@ -43,13 +31,25 @@ function App() {
         >
           🎯 Build Wealth
         </button>
+        <button
+          className={`tab-button ${activeTab === 'analyse' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analyse')}
+        >
+          📊 My Stocks
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'learn' ? 'active' : ''}`}
+          onClick={() => setActiveTab('learn')}
+        >
+          📚 Learn
+        </button>
       </div>
 
       <div className="app-content">
-        {activeTab === 'learn' && <Learn />}
-        {activeTab === 'analyse' && <Analyse />}
         {activeTab === 'short-term' && <ShortTerm />}
         {activeTab === 'long-term' && <LongTerm />}
+        {activeTab === 'analyse' && <Analyse />}
+        {activeTab === 'learn' && <Learn />}
       </div>
     </>
   )
