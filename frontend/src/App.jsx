@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import Header from './components/Header'
 import Disclaimer from './components/Disclaimer'
+import Welcome from './components/tabs/Welcome/Welcome'
 import Learn from './components/tabs/Learn/Learn'
 import Analyse from './components/tabs/Analyse/Analyse'
 import ShortTerm from './components/tabs/ShortTerm/ShortTerm'
 import LongTerm from './components/tabs/LongTerm/LongTerm'
+import FeedbackForm from './components/FeedbackForm'
 import './App.css'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('short-term')
+  const [activeTab, setActiveTab] = useState('welcome')
+  const [showFeedback, setShowFeedback] = useState(false)
 
   return (
     <>
@@ -19,6 +22,12 @@ function App() {
       </div>
 
       <div className="tab-bar">
+        <button
+          className={`tab-button ${activeTab === 'welcome' ? 'active' : ''}`}
+          onClick={() => setActiveTab('welcome')}
+        >
+          🏠 Home
+        </button>
         <button
           className={`tab-button ${activeTab === 'short-term' ? 'active' : ''}`}
           onClick={() => setActiveTab('short-term')}
@@ -46,11 +55,18 @@ function App() {
       </div>
 
       <div className="app-content">
+        {activeTab === 'welcome' && (
+          <Welcome onTabChange={setActiveTab} onFeedback={() => setShowFeedback(true)} />
+        )}
         {activeTab === 'short-term' && <ShortTerm />}
         {activeTab === 'long-term' && <LongTerm />}
         {activeTab === 'analyse' && <Analyse />}
         {activeTab === 'learn' && <Learn />}
       </div>
+
+      {showFeedback && (
+        <FeedbackForm onClose={() => setShowFeedback(false)} />
+      )}
     </>
   )
 }
