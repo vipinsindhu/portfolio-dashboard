@@ -70,7 +70,7 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
         console.warn('No holdings_list in response or empty:', data.holdings_list)
       }
 
-      setSuccess(`✅ Loaded ${data.holdings} holdings from CSV`)
+      setSuccess(`Loaded ${data.holdings} stocks`)
 
       // Reset file input
       event.target.value = ''

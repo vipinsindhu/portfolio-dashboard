@@ -403,9 +403,52 @@ def generate_realistic_mock_signals(candidates, count=5):
     return signals
 
 
+def score_company_quality(company_data):
+    """
+    Score a company for long-term investment quality (0-100)
+    Looks at fundamentals, stability, and growth characteristics
+    """
+    score = 50  # Start at neutral
+
+    pe_ratio = company_data.get("pe_ratio")
+    dividend_yield = company_data.get("dividend_yield", 0)
+    market_cap = company_data.get("market_cap", 0)
+
+    # PE Ratio evaluation (lower is often better, but not too low)
+    # Target range: 15-35 for quality companies
+    if pe_ratio:
+        if 15 <= pe_ratio <= 35:
+            score += 15  # Reasonable valuation
+        elif pe_ratio < 15:
+            score += 10  # Potentially undervalued
+        elif 35 < pe_ratio <= 50:
+            score += 5   # Growth premium (acceptable)
+        else:
+            score -= 10  # Very expensive
+
+    # Dividend yield (stability indicator)
+    if dividend_yield and dividend_yield > 0:
+        if dividend_yield >= 0.01:  # At least 1%
+            score += 15  # Good income return
+        if dividend_yield >= 0.02:
+            score += 5   # Strong dividend
+    else:
+        score -= 5  # No dividend may indicate growth-stage (still okay)
+
+    # Market cap (larger = more stable for long-term)
+    if market_cap:
+        if market_cap >= 100_000_000_000:  # $100B+
+            score += 10  # Large-cap stability
+        elif market_cap >= 10_000_000_000:  # $10B+
+            score += 5   # Mid-cap decent
+
+    return min(100, max(0, score))
+
+
 def generate_signals(count=10):
     """
     Generate stock/ETF signals using Groq cloud LLM
+    Enhanced for long-term quality stock identification
 
     Args:
         count: Number of signals to generate
@@ -419,7 +462,6 @@ def generate_signals(count=10):
     signal_candidates = discover_stocks()
 
     # Fetch fundamentals in parallel for better performance
-    # Can fetch more candidates since we're not blocked on sequential API calls
     max_candidates_to_fetch = 50
     candidates_to_fetch = signal_candidates[:max_candidates_to_fetch]
     print(f"Fetching fundamentals for {len(candidates_to_fetch)} of {len(signal_candidates)} discovered stocks (parallel)...")
@@ -427,14 +469,14 @@ def generate_signals(count=10):
     candidates = []
     # Use ThreadPoolExecutor to fetch fundamentals in parallel (max 5 concurrent requests)
     with ThreadPoolExecutor(max_workers=5) as executor:
-        # Submit all tasks
         future_to_ticker = {executor.submit(fetch_fundamentals, ticker): ticker for ticker in candidates_to_fetch}
 
-        # Collect results as they complete
         for future in as_completed(future_to_ticker):
             try:
                 data = future.result()
                 if data.get("current_price"):
+                    # Score company for quality (long-term perspective)
+                    data["quality_score"] = score_company_quality(data)
                     candidates.append(data)
             except Exception as e:
                 ticker = future_to_ticker[future]
@@ -446,26 +488,36 @@ def generate_signals(count=10):
 
     print(f"📊 Fetched fundamentals for {len(candidates)} stocks (parallel)")
 
+    # Sort by quality score for better long-term selections
+    candidates.sort(key=lambda x: x.get("quality_score", 0), reverse=True)
+
     # Fetch macro context
     print("Fetching macro context...")
     macro_data = fetch_macro_context()
     macro_sentiment = get_macro_sentiment(macro_data)
 
-    # Prepare data for Groq LLM - use up to 25 candidates for better diversity
+    # Prepare data for Groq LLM - use top quality candidates
     candidates_to_send = min(25, len(candidates))
     candidates_str = json.dumps(candidates[:candidates_to_send], indent=2)
-    print(f"📤 Sending {candidates_to_send} candidates to Groq for signal generation")
+    print(f"📤 Sending {candidates_to_send} candidates (quality-ranked) to Groq for signal generation")
 
-    # Use Groq to generate signals
-    print("Generating signals with Groq LLM...")
-    prompt = f"""You are helping regular people understand stocks. Generate exactly {count} simple stock ideas.
+    # Use Groq to generate signals with enhanced long-term focus
+    print("Generating signals with Groq LLM (long-term quality focus)...")
+    prompt = f"""You are helping regular people find good companies to own for years. Generate exactly {count} simple stock ideas.
 
-REQUIREMENT: Pick from DIFFERENT industries/sectors to give variety (tech, healthcare, finance, energy, consumer, etc).
+FOCUS ON LONG-TERM QUALITY:
+- Companies with strong earnings and dividends
+- Businesses people trust and use regularly
+- Reasonable prices (not too expensive)
+- Stable industries that will exist in 10 years
+- Market leaders with competitive advantages
+
+REQUIREMENT: Pick from DIFFERENT industries/sectors for variety.
 
 MARKET CONDITIONS RIGHT NOW:
 {macro_sentiment}
 
-STOCKS TO CONSIDER (from many different industries):
+STOCKS TO CONSIDER (ranked by fundamental quality):
 {candidates_str}
 
 For each stock, give:
@@ -473,36 +525,42 @@ For each stock, give:
 2. What to do (buy, hold, or avoid)
 3. Confidence (1-10: 1=not sure, 10=very sure)
 4. WHY in SIMPLE WORDS (1-2 sentences):
-   - ONE easy-to-understand reason
-   - How today's market affects it
-   - What should a beginner do
+   - Easy reason a 10th grader would understand
+   - Why this matters for long-term holding
+   - What a beginner should do
 
-IMPORTANT - WRITE LIKE YOU'RE TALKING TO A 10TH GRADER:
-- Use simple words, no jargon
-- Avoid fancy financial terms
-- Explain WHY in everyday language
-- Make it clear what they should do
-- Pick stocks from DIFFERENT industries for variety
+LONG-TERM INVESTING TIPS TO USE:
+- Strong dividends = good for staying invested
+- Low PE ratio = reasonable price
+- Big market cap = stable/established company
+- Market conditions matter, but matter LESS for long-term holds
 
-Example of GOOD simple language:
-"Apple is a solid company. Interest rates are high, which might hurt its stock prices. But Apple makes great products people love. Not a great time to buy right now - wait."
+WRITE LIKE YOU'RE TALKING TO A TEENAGER:
+- Simple words only, no jargon
+- Explain the business idea simply
+- Say why it matters for 5+ year holds
+- Be clear on what to do
+
+Example of GOOD long-term thinking:
+"Walmart is a store everyone uses. It pays dividends (free money) every quarter. The price is reasonable. This is the kind of company to buy and hold for years. Good time to buy a little at a time."
 
 Return ONLY a JSON array with no other text:
 [
   {{
-    "ticker": "AAPL",
-    "direction": "hold",
-    "confidence": 6,
-    "rationale": "Apple makes stuff people want to buy. Right now money is expensive (high interest rates), so investors want savings instead of stocks. Not a good time to buy, but okay to keep if you own it."
+    "ticker": "WMT",
+    "direction": "buy",
+    "confidence": 8,
+    "rationale": "Walmart is the grocery store everyone uses. It pays dividends (money returned to shareholders). The price is fair right now. This is a hold-forever company that grows slowly but steadily."
   }}
 ]
 
 RULES:
 - Exactly {count} signals
-- Mix of BUY, HOLD, AVOID
-- Confidence 5-9 (vary them)
+- Focus on QUALITY companies (good PE, dividends, stability)
+- Confidence 5-10 (vary them, 7+ for quality stocks)
 - SIMPLE rationale - no fancy words
-- Anyone without investing knowledge should understand it"""
+- LONG-TERM rationale (5+ year perspective)
+- Pick from DIFFERENT industries"""
 
     response_text = call_groq(prompt)
 

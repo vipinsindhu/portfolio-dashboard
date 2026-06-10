@@ -66,7 +66,7 @@ function Analyse() {
     <div className="analyse-container">
       <div className="analyse-header">
         <h2>📊 Check Your Portfolio</h2>
-        <p>Upload your stocks to see if they're balanced. A balanced portfolio has different stocks and industries.</p>
+        <p>Upload your stocks to see if you're diversified enough</p>
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -107,8 +107,8 @@ function Analyse() {
         <div className="empty-state">
           <div className="empty-state-content">
             <div className="empty-icon">📁</div>
-            <h3>Get Started</h3>
-            <p>Upload your stocks using a CSV file or add them one by one</p>
+            <h3>Upload Your Stocks</h3>
+            <p>Use CSV or add them manually</p>
           </div>
         </div>
       )}

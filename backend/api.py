@@ -82,7 +82,8 @@ def create_app():
     CORS(app, origins=app.config.get("CORS_ORIGINS", "*").split(","))
 
     # Initialize storage (database optional, file storage fallback)
-    if HAS_DATABASE:
+    use_database = HAS_DATABASE and app.config.get("DATABASE_URL")
+    if use_database:
         try:
             engine = init_db(app.config.get("DATABASE_URL"))
             session = get_session(engine)
@@ -121,7 +122,9 @@ def create_app():
 
         signal_store = SimpleSignalStore()
         macro_store = None
-        app.logger.info("Using file-based storage (database not available)")
+        if not use_database:
+            storage_reason = "database not configured" if HAS_DATABASE else "database modules not available"
+            app.logger.info(f"Using file-based storage ({storage_reason})")
 
     # ============= HEALTH & STATUS =============
 
@@ -197,8 +200,8 @@ def create_app():
             min_confidence = request.args.get("min_confidence", 6, type=int)
             sector = request.args.get("sector", None, type=str)
 
-            # Get latest 50 signals to filter from
-            signals_response = signal_store.get_latest_signals(50)
+            # Get latest 20 signals to filter from (reduced from 50)
+            signals_response = signal_store.get_latest_signals(20)
             all_signals = signals_response.get("data", []) if isinstance(signals_response, dict) else []
             generated_at = signals_response.get("generated_at") if isinstance(signals_response, dict) else None
 
@@ -246,7 +249,24 @@ def create_app():
                 avg_confidence = 0
                 buy_count = hold_count = avoid_count = 0
 
-            return jsonify({
+            # Include portfolio recommendations if available
+            recommendations = None
+            try:
+                portfolio = load_portfolio()
+                if portfolio and portfolio.holding_count > 0:
+                    # Get recommendations for this timeframe
+                    recs = filter_signals_with_portfolio(all_signals, portfolio, TimeHorizon.SHORT_TERM, {})
+                    recommendations = {
+                        "sell_reduce": [dict(s) for s in recs.get("sell_reduce", [])],
+                        "hold": [dict(s) for s in recs.get("hold", [])],
+                        "add": [dict(s) for s in recs.get("add", [])],
+                        "portfolio_value": recs.get("portfolio_value", 0),
+                        "portfolio_holdings": recs.get("portfolio_holdings", 0)
+                    }
+            except:
+                pass
+
+            response_data = {
                 "signals": top_signals,
                 "total": len(top_signals),
                 "generated_at": generated_at,
@@ -266,15 +286,139 @@ def create_app():
                     "direction": direction or "all",
                     "sector": sector or "all"
                 }
-            }), 200
+            }
+
+            # Add recommendations if available
+            if recommendations:
+                response_data["recommendations"] = recommendations
+
+            return jsonify(response_data), 200
 
         except Exception as e:
             app.logger.error(f"Error getting short-term signals: {e}")
             return jsonify({"error": str(e)}), 500
 
-    @app.route("/api/signals/<signal_id>", methods=["GET"])
+    @app.route("/api/signals/long-term", methods=["GET"])
+    def get_long_term_signals():
+        """Get signals for long-term investing (1+ years)
+
+        Query parameters:
+        - limit: number of signals to return (default: 15)
+        - direction: filter by direction (buy/hold/avoid, default: all)
+        - min_confidence: minimum confidence threshold (1-10, default: 5)
+        - sector: filter by sector (default: all)
+        """
+        try:
+            limit = request.args.get("limit", 15, type=int)
+            direction = request.args.get("direction", None, type=str)
+            min_confidence = request.args.get("min_confidence", 5, type=int)
+            sector = request.args.get("sector", None, type=str)
+
+            # Get latest 25 signals to filter from (reduced from 100 for better performance)
+            signals_response = signal_store.get_latest_signals(25)
+            all_signals = signals_response.get("data", []) if isinstance(signals_response, dict) else []
+            generated_at = signals_response.get("generated_at") if isinstance(signals_response, dict) else None
+
+            # Filter signals
+            filtered_signals = []
+            for signal in all_signals:
+                # Check confidence threshold (lower bar for long-term fundamentals)
+                if signal.get("confidence", 0) < min_confidence:
+                    continue
+
+                # Check direction filter
+                if direction and signal.get("direction") != direction:
+                    continue
+
+                # Check sector filter
+                if sector and signal.get("sector") != sector:
+                    continue
+
+                filtered_signals.append(signal)
+
+            # Deduplicate by ticker (keep highest confidence for each stock)
+            ticker_signals = {}
+            for signal in filtered_signals:
+                ticker = signal.get("ticker", "")
+                if ticker:
+                    # Keep signal with highest confidence for this ticker
+                    if ticker not in ticker_signals or signal.get("confidence", 0) > ticker_signals[ticker].get("confidence", 0):
+                        ticker_signals[ticker] = signal
+
+            deduped_signals = list(ticker_signals.values())
+
+            # Sort by confidence (descending)
+            sorted_signals = sorted(deduped_signals, key=lambda x: x.get("confidence", 0), reverse=True)
+
+            # Take top N
+            top_signals = sorted_signals[:limit]
+
+            # Calculate stats
+            if top_signals:
+                avg_confidence = sum(s.get("confidence", 0) for s in top_signals) / len(top_signals)
+                buy_count = len([s for s in top_signals if s.get("direction") == "buy"])
+                hold_count = len([s for s in top_signals if s.get("direction") == "hold"])
+                avoid_count = len([s for s in top_signals if s.get("direction") == "avoid"])
+            else:
+                avg_confidence = 0
+                buy_count = hold_count = avoid_count = 0
+
+            # Include portfolio recommendations if available
+            recommendations = None
+            try:
+                portfolio = load_portfolio()
+                if portfolio and portfolio.holding_count > 0:
+                    # Get recommendations for this timeframe
+                    recs = filter_signals_with_portfolio(all_signals, portfolio, TimeHorizon.LONG_TERM, {})
+                    recommendations = {
+                        "sell_reduce": [dict(s) for s in recs.get("sell_reduce", [])],
+                        "hold": [dict(s) for s in recs.get("hold", [])],
+                        "add": [dict(s) for s in recs.get("add", [])],
+                        "portfolio_value": recs.get("portfolio_value", 0),
+                        "portfolio_holdings": recs.get("portfolio_holdings", 0)
+                    }
+            except:
+                pass
+
+            response_data = {
+                "signals": top_signals,
+                "total": len(top_signals),
+                "generated_at": generated_at,
+                "stats": {
+                    "avg_confidence": round(avg_confidence, 1),
+                    "buy_count": buy_count,
+                    "hold_count": hold_count,
+                    "avoid_count": avoid_count,
+                    "by_direction": {
+                        "buy": buy_count,
+                        "hold": hold_count,
+                        "avoid": avoid_count
+                    }
+                },
+                "filters": {
+                    "min_confidence": min_confidence,
+                    "direction": direction or "all",
+                    "sector": sector or "all"
+                }
+            }
+
+            # Add recommendations if available
+            if recommendations:
+                response_data["recommendations"] = recommendations
+
+            return jsonify(response_data), 200
+
+        except Exception as e:
+            app.logger.error(f"Error getting long-term signals: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/signals/<path:signal_id>", methods=["GET"])
     def get_signal_detail(signal_id):
         """Get detailed view of a specific signal"""
+        # Reject requests for special endpoints
+        if signal_id in ["long-term", "short-term", "archive", "generate", "accuracy"]:
+            return jsonify({"error": "Endpoint not found"}), 404
+
         signal = signal_store.get_signal_by_id(signal_id)
         if not signal:
             return jsonify({"error": "Signal not found"}), 404
@@ -654,12 +798,12 @@ def create_app():
         return jsonify({"error": "Internal server error"}), 500
 
     # Initial stock discovery on startup
-    print("\n🚀 Initializing stock discovery on startup...")
+    print("\n[STARTUP] Initializing stock discovery on startup...")
     try:
         discover_stocks()
-        print("✓ Stock discovery initialized on startup")
+        print("[SUCCESS] Stock discovery initialized on startup")
     except Exception as e:
-        print(f"⚠️  Stock discovery initialization failed: {e} (will retry on first use)")
+        print(f"[WARNING] Stock discovery initialization failed: {e} (will retry on first use)")
 
     # Initialize APScheduler for periodic data refresh
     scheduler = BackgroundScheduler()
@@ -701,7 +845,7 @@ def create_app():
         """Start scheduler on first request if not already running"""
         if not scheduler.running:
             scheduler.start()
-            app.logger.info("✅ Schedulers started: macro refresh (1h) + signal generation (1h) + sector update (7d)")
+            app.logger.info("[OK] Schedulers started: macro refresh (1h) + signal generation (1h) + sector update (7d)")
 
     return app
 

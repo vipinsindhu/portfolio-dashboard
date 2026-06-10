@@ -3,6 +3,7 @@ import SignalCard from '../../shared/SignalCard'
 import RecommendationStats from './RecommendationStats'
 import FilterBar from './FilterBar'
 import SignalCardEnhanced from './SignalCardEnhanced'
+import { usePortfolioRecommendations } from '../../../hooks/usePortfolioRecommendations'
 import './ShortTerm.css'
 
 function ShortTerm() {
@@ -10,15 +11,21 @@ function ShortTerm() {
   const [filteredSignals, setFilteredSignals] = useState([])
   const [stats, setStats] = useState(null)
   const [generatedAt, setGeneratedAt] = useState(null)
-  const [recommendations, setRecommendations] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [hasPortfolio, setHasPortfolio] = useState(false)
+
+  // Use cached portfolio recommendations hook (fallback if not in signals response)
+  const { recommendations: hookRecommendations } = usePortfolioRecommendations('short_term')
+  const [signalRecommendations, setSignalRecommendations] = useState(null)
   const [filters, setFilters] = useState({
     direction: 'all',
     min_confidence: 6,
     sector: null
   })
+
+  // Use recommendations from signals response if available, otherwise fall back to hook
+  const recommendations = signalRecommendations || hookRecommendations
 
   useEffect(() => {
     fetchData()
@@ -31,6 +38,13 @@ function ShortTerm() {
 
     return () => clearInterval(refreshInterval)
   }, [])
+
+  // Update hasPortfolio when recommendations load
+  useEffect(() => {
+    if (recommendations) {
+      setHasPortfolio(true)
+    }
+  }, [recommendations])
 
   const fetchData = async () => {
     setLoading(true)
@@ -52,19 +66,14 @@ function ShortTerm() {
       setStats(signalsData.stats)
       setGeneratedAt(signalsData.generated_at)
 
-      // Try to fetch portfolio recommendations
-      try {
-        const recsResponse = await fetch(
-          '/api/portfolio/recommendations?timeframe=short_term'
-        )
-        if (recsResponse.ok) {
-          const recsData = await recsResponse.json()
-          setRecommendations(recsData)
-          setHasPortfolio(true)
-        }
-      } catch {
-        setHasPortfolio(false)
+      // Use recommendations from signals response if available (combined API call)
+      if (signalsData.recommendations) {
+        setSignalRecommendations(signalsData.recommendations)
+        setHasPortfolio(true)
       }
+
+      // Check if recommendations are available (will be loaded by the hook)
+      setHasPortfolio(!!recommendations)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -74,32 +83,29 @@ function ShortTerm() {
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters)
-    // Refetch with new filters
-    setLoading(true)
-    fetchDataWithFilters(newFilters)
+    // Apply filters client-side (no server call needed)
+    applyFiltersClientSide(signals, newFilters)
   }
 
-  const fetchDataWithFilters = async (filters) => {
-    setError(null)
-    try {
-      const params = new URLSearchParams()
-      if (filters.direction !== 'all') params.append('direction', filters.direction)
-      if (filters.min_confidence !== 6) params.append('min_confidence', filters.min_confidence)
-      if (filters.sector) params.append('sector', filters.sector)
+  const applyFiltersClientSide = (allSignals, filters) => {
+    let filtered = allSignals
 
-      const response = await fetch(`/api/signals/short-term?${params.toString()}`)
-      if (!response.ok) throw new Error('Failed to fetch signals')
-      const data = await response.json()
-
-      setSignals(data.signals || [])
-      setFilteredSignals(data.signals || [])
-      setStats(data.stats)
-      setGeneratedAt(data.generated_at)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+    // Filter by direction
+    if (filters.direction && filters.direction !== 'all') {
+      filtered = filtered.filter(s => s.direction === filters.direction)
     }
+
+    // Filter by confidence
+    if (filters.min_confidence) {
+      filtered = filtered.filter(s => s.confidence >= filters.min_confidence)
+    }
+
+    // Filter by sector
+    if (filters.sector) {
+      filtered = filtered.filter(s => s.sector === filters.sector)
+    }
+
+    setFilteredSignals(filtered)
   }
 
   if (loading && signals.length === 0) {
@@ -115,8 +121,8 @@ function ShortTerm() {
       <div className="short-term-header">
         <div className="header-top">
           <div>
-            <h2>💡 Stock Ideas for This Week</h2>
-            <p>AI picked these stocks based on what's happening in the markets right now</p>
+            <h2>💡 Hot Picks This Week</h2>
+            <p>AI-picked stocks based on current market conditions</p>
           </div>
           <button
             className="btn-refresh"
@@ -197,18 +203,28 @@ function ShortTerm() {
         </>
       )}
 
-      {/* Top Signals (General or Filtered) */}
-      {filteredSignals.length > 0 && (
+      {/* Top Signals (General or Filtered) - Deduplicated */}
+      {(() => {
+        // Remove stocks already in portfolio recommendations from general signals
+        const recommendationTickers = new Set()
+        if (recommendations) {
+          if (recommendations.sell_reduce) recommendations.sell_reduce.forEach(s => recommendationTickers.add(s.ticker))
+          if (recommendations.hold) recommendations.hold.forEach(s => recommendationTickers.add(s.ticker))
+          if (recommendations.add) recommendations.add.forEach(s => recommendationTickers.add(s.ticker))
+        }
+
+        const deduplicatedSignals = filteredSignals.filter(s => !recommendationTickers.has(s.ticker))
+        return deduplicatedSignals.length > 0 ? (
         <>
           {/* Buy Signals */}
-          {filteredSignals.filter(s => s.direction === 'buy').length > 0 && (
+          {deduplicatedSignals.filter(s => s.direction === 'buy').length > 0 && (
             <section className="signals-section buy">
               <h3 className="section-title">🟢 Good Time to Buy</h3>
               <p className="section-description">
                 These stocks look like good buys right now
               </p>
               <div className="signals-grid">
-                {filteredSignals
+                {deduplicatedSignals
                   .filter(s => s.direction === 'buy')
                   .map((signal, idx) => (
                     <SignalCardEnhanced key={idx} signal={signal} type="buy" />
@@ -218,14 +234,14 @@ function ShortTerm() {
           )}
 
           {/* Hold Signals */}
-          {filteredSignals.filter(s => s.direction === 'hold').length > 0 && (
+          {deduplicatedSignals.filter(s => s.direction === 'hold').length > 0 && (
             <section className="signals-section hold">
               <h3 className="section-title">⏸️ Wait and See</h3>
               <p className="section-description">
                 These could be good, but wait a bit longer to decide
               </p>
               <div className="signals-grid">
-                {filteredSignals
+                {deduplicatedSignals
                   .filter(s => s.direction === 'hold')
                   .map((signal, idx) => (
                     <SignalCardEnhanced key={idx} signal={signal} type="hold" />
@@ -235,14 +251,14 @@ function ShortTerm() {
           )}
 
           {/* Avoid Signals */}
-          {filteredSignals.filter(s => s.direction === 'avoid').length > 0 && (
+          {deduplicatedSignals.filter(s => s.direction === 'avoid').length > 0 && (
             <section className="signals-section avoid">
               <h3 className="section-title">🔴 Skip These</h3>
               <p className="section-description">
                 These stocks might not be good buys right now
               </p>
               <div className="signals-grid">
-                {filteredSignals
+                {deduplicatedSignals
                   .filter(s => s.direction === 'avoid')
                   .map((signal, idx) => (
                     <SignalCardEnhanced key={idx} signal={signal} type="avoid" />
@@ -251,7 +267,8 @@ function ShortTerm() {
             </section>
           )}
         </>
-      )}
+        ) : null
+      })()}
 
       {/* Empty State */}
       {filteredSignals.length === 0 && (

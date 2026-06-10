@@ -2,10 +2,10 @@ function Header() {
   return (
     <div className="header">
       <div className="header-content">
-        <h1>📊 Portfolio Builder</h1>
+        <h1>📊 Smart Stock Ideas</h1>
       </div>
       <div className="header-subtitle">
-        <span>Real-time stock data · AI-powered signals · Auto-refreshed hourly</span>
+        <span>Get AI stock picks · Check your portfolio · Learn to invest</span>
       </div>
     </div>
   )

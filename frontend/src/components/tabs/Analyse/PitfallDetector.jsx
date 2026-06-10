@@ -34,25 +34,25 @@ function PitfallDetector({ analysis }) {
       {/* Risk Metrics Grid */}
       <div className="metrics-grid">
         <div className="metric-card">
-          <div className="metric-label">Biggest Stock</div>
+          <div className="metric-label">Largest Stock</div>
           <div className="metric-value">
             {(risk_metrics.largest_position_pct * 100).toFixed(1)}%
           </div>
-          <div className="metric-hint">Keep under 15% (avoid too much risk)</div>
+          <div className="metric-hint">Keep under 15%</div>
         </div>
 
         <div className="metric-card">
-          <div className="metric-label">Top 3 Stocks Combined</div>
+          <div className="metric-label">Top 3 Combined</div>
           <div className="metric-value">
             {(risk_metrics.top_3_concentration * 100).toFixed(1)}%
           </div>
-          <div className="metric-hint">Keep under 50% (good mix)</div>
+          <div className="metric-hint">Keep under 50%</div>
         </div>
 
         <div className="metric-card">
-          <div className="metric-label">Number of Stocks</div>
+          <div className="metric-label">Total Stocks</div>
           <div className="metric-value">{risk_metrics.holding_count}</div>
-          <div className="metric-hint">Aim for 15-30 stocks</div>
+          <div className="metric-hint">15-30 is ideal</div>
         </div>
 
         <div className="metric-card">
@@ -65,7 +65,7 @@ function PitfallDetector({ analysis }) {
       {/* Sector Allocation */}
       <div className="sector-section">
         <h4>Spread Across Industries</h4>
-        <p className="sector-hint">See how your stocks spread across different industries. A good mix reduces risk.</p>
+        <p className="sector-hint">Mix of industries = lower risk</p>
         <div className="sector-list">
           {Object.entries(sector_allocation)
             .sort((a, b) => b[1].current - a[1].current)

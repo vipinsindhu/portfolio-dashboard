@@ -1,19 +1,121 @@
 {
-  "created_at": "2026-06-07T00:00:00",
-  "updated_at": "2026-06-07T00:00:00",
+  "created_at": "2026-06-10T02:18:24.684207",
+  "updated_at": "2026-06-10T02:18:24.684207",
   "user_id": null,
   "holdings": [
     {
-      "symbol": "AAPL",
-      "quantity": 10,
-      "purchase_price": 150,
-      "current_price": 180
+      "symbol": "MSFT",
+      "quantity": 403.0181,
+      "purchase_price": 88.8,
+      "current_price": null
     },
     {
-      "symbol": "MSFT",
-      "quantity": 5,
-      "purchase_price": 300,
-      "current_price": 350
+      "symbol": "FXAIX",
+      "quantity": 478.103,
+      "purchase_price": 146.95,
+      "current_price": null
+    },
+    {
+      "symbol": "VWO",
+      "quantity": 850.0,
+      "purchase_price": 44.76,
+      "current_price": null
+    },
+    {
+      "symbol": "TMUS",
+      "quantity": 132.0,
+      "purchase_price": 124.25,
+      "current_price": null
+    },
+    {
+      "symbol": "GLD",
+      "quantity": 56.978,
+      "purchase_price": 316.53,
+      "current_price": null
+    },
+    {
+      "symbol": "NVDA",
+      "quantity": 108.0,
+      "purchase_price": 170.83,
+      "current_price": null
+    },
+    {
+      "symbol": "SCHD",
+      "quantity": 754.124,
+      "purchase_price": 31.83,
+      "current_price": null
+    },
+    {
+      "symbol": "IJH",
+      "quantity": 219.719,
+      "purchase_price": 72.82,
+      "current_price": null
+    },
+    {
+      "symbol": "VXUS",
+      "quantity": 144.901,
+      "purchase_price": 82.82,
+      "current_price": null
+    },
+    {
+      "symbol": "BND",
+      "quantity": 273.156,
+      "purchase_price": 73.22,
+      "current_price": null
+    },
+    {
+      "symbol": "FBTC",
+      "quantity": 290.0,
+      "purchase_price": 70.52,
+      "current_price": null
+    },
+    {
+      "symbol": "FSANX",
+      "quantity": 42.769,
+      "purchase_price": 9.37,
+      "current_price": null
+    },
+    {
+      "symbol": "NON40OJPF",
+      "quantity": 240.406,
+      "purchase_price": 216.97,
+      "current_price": null
+    },
+    {
+      "symbol": "NON40OJI9",
+      "quantity": 857.193,
+      "purchase_price": 32.16,
+      "current_price": null
+    },
+    {
+      "symbol": "NON40OJJ4",
+      "quantity": 617.014,
+      "purchase_price": 56.27,
+      "current_price": null
+    },
+    {
+      "symbol": "NON40OJJ8",
+      "quantity": 803.135,
+      "purchase_price": 16.63,
+      "current_price": null
+    },
+    {
+      "symbol": "NON40OJJ6",
+      "quantity": 864.834,
+      "purchase_price": 15.61,
+      "current_price": null
+    },
+    {
+      "symbol": "NON40OJPG",
+      "quantity": 165.712,
+      "purchase_price": 85.72,
+      "current_price": null
+    },
+    {
+      "symbol": "NON40OJPH",
+      "quantity": 104.96,
+      "purchase_price": 9.23,
+      "current_price": null
     }
   ]
 }

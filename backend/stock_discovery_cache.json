@@ -1,0 +1,413 @@
+{
+  "stocks": [
+    {
+      "ticker": "AAPL",
+      "name": "AAPL",
+      "sector": "Technology",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "MSFT",
+      "name": "MSFT",
+      "sector": "Technology",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "GOOGL",
+      "name": "GOOGL",
+      "sector": "Technology",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "META",
+      "name": "META",
+      "sector": "Technology",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "NVDA",
+      "name": "NVDA",
+      "sector": "Semiconductors",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "AMD",
+      "name": "AMD",
+      "sector": "Semiconductors",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "QCOM",
+      "name": "QCOM",
+      "sector": "Semiconductors",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "JNJ",
+      "name": "JNJ",
+      "sector": "Healthcare",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "UNH",
+      "name": "UNH",
+      "sector": "Healthcare",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "PFE",
+      "name": "PFE",
+      "sector": "Pharma & Biotech",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "ABBV",
+      "name": "ABBV",
+      "sector": "Pharma & Biotech",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "JPM",
+      "name": "JPM",
+      "sector": "Financials",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "BAC",
+      "name": "BAC",
+      "sector": "Financials",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "C",
+      "name": "C",
+      "sector": "Banking",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "WFC",
+      "name": "WFC",
+      "sector": "Banking",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "BRK.B",
+      "name": "BRK.B",
+      "sector": "Insurance",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "MET",
+      "name": "MET",
+      "sector": "Insurance",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "XOM",
+      "name": "XOM",
+      "sector": "Energy",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "CVX",
+      "name": "CVX",
+      "sector": "Energy",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "BA",
+      "name": "BA",
+      "sector": "Industrials",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "CAT",
+      "name": "CAT",
+      "sector": "Industrials",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "AMZN",
+      "name": "AMZN",
+      "sector": "Retail & E-commerce",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "WMT",
+      "name": "WMT",
+      "sector": "Retail & E-commerce",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "TSLA",
+      "name": "TSLA",
+      "sector": "Retail & E-commerce",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "VZ",
+      "name": "VZ",
+      "sector": "Telecommunications",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "T",
+      "name": "T",
+      "sector": "Telecommunications",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "NEE",
+      "name": "NEE",
+      "sector": "Utilities",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "SO",
+      "name": "SO",
+      "sector": "Utilities",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "NEM",
+      "name": "NEM",
+      "sector": "Materials",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "SCCO",
+      "name": "SCCO",
+      "sector": "Materials",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "PLD",
+      "name": "PLD",
+      "sector": "Real Estate",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "EQIX",
+      "name": "EQIX",
+      "sector": "Real Estate",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "LMT",
+      "name": "LMT",
+      "sector": "Defense & Aerospace",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "RTX",
+      "name": "RTX",
+      "sector": "Defense & Aerospace",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "KO",
+      "name": "KO",
+      "sector": "Food & Beverage",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "PEP",
+      "name": "PEP",
+      "sector": "Food & Beverage",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "MCD",
+      "name": "MCD",
+      "sector": "Food & Beverage",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "VTI",
+      "name": "VTI",
+      "sector": "Index",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "VOO",
+      "name": "VOO",
+      "sector": "Index",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "SPY",
+      "name": "SPY",
+      "sector": "Index",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "QQQ",
+      "name": "QQQ",
+      "sector": "Technology",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "IWM",
+      "name": "IWM",
+      "sector": "Index",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "AGG",
+      "name": "AGG",
+      "sector": "Index",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "BND",
+      "name": "BND",
+      "sector": "Index",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "VTI",
+      "name": "Vanguard Total Stock Market ETF",
+      "sector": "Index",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "VOO",
+      "name": "Vanguard S&P 500 ETF",
+      "sector": "Index",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "SPY",
+      "name": "SPDR S&P 500 ETF Trust",
+      "sector": "Index",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "QQQ",
+      "name": "Invesco QQQ Trust",
+      "sector": "Technology",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "IWM",
+      "name": "iShares Russell 2000 ETF",
+      "sector": "Index",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "AGG",
+      "name": "iShares Core Aggregate Bond ETF",
+      "sector": "Index",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    },
+    {
+      "ticker": "BND",
+      "name": "Vanguard Total Bond Market ETF",
+      "sector": "Index",
+      "market_cap": 0,
+      "price": 0,
+      "volume": 0
+    }
+  ],
+  "cached_at": "2026-06-09T17:54:54.149129"
+}

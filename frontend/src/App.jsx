@@ -24,19 +24,19 @@ function App() {
           className={`tab-button ${activeTab === 'analyse' ? 'active' : ''}`}
           onClick={() => setActiveTab('analyse')}
         >
-          📊 Analyse
+          📊 My Stocks
         </button>
         <button
           className={`tab-button ${activeTab === 'short-term' ? 'active' : ''}`}
           onClick={() => setActiveTab('short-term')}
         >
-          📈 Short-term
+          💡 This Week
         </button>
         <button
           className={`tab-button ${activeTab === 'long-term' ? 'active' : ''}`}
           onClick={() => setActiveTab('long-term')}
         >
-          🎯 Long-term
+          🎯 Build Wealth
         </button>
       </div>
 

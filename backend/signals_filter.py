@@ -91,7 +91,10 @@ def filter_long_term_signals(
 ) -> List[FilteredSignal]:
     """
     Long-term (1+ year) signal filtering
-    Focuses on: fundamentals, valuation, dividend yield
+    Focuses on: fundamentals, valuation, dividend yield, business quality
+
+    No sector filtering - long-term investors should see all quality opportunities
+    Quality is determined by confidence score from signal generation system
     """
 
     filtered = []
@@ -99,22 +102,19 @@ def filter_long_term_signals(
     for signal in signals:
         # Long-term signals prioritize fundamentals
         # Less affected by short-term volatility
-        if signal.get("confidence", 5) >= 5:  # Lower bar for long-term
-
-            # Filter for quality/stability
-            sector = signal.get("sector")
-            if is_quality_sector_long_term(sector):
-                filtered.append(FilteredSignal(
-                    ticker=signal.get("ticker"),
-                    direction=signal.get("direction"),
-                    confidence=signal.get("confidence", 5),
-                    rationale=signal.get("rationale", ""),
-                    original_rationale=signal.get("rationale", ""),
-                    portfolio_context="Long-term fundamentals focused",
-                    recommendation_type=map_direction_to_action(
-                        signal.get("direction"), "long"
-                    )
-                ))
+        # Confidence score already filters for quality from generation system
+        if signal.get("confidence", 0) >= 5:  # Lower bar for long-term
+            filtered.append(FilteredSignal(
+                ticker=signal.get("ticker"),
+                direction=signal.get("direction"),
+                confidence=signal.get("confidence", 5),
+                rationale=signal.get("rationale", ""),
+                original_rationale=signal.get("rationale", ""),
+                portfolio_context="Fundamentals-focused long-term signal",
+                recommendation_type=map_direction_to_action(
+                    signal.get("direction"), "long"
+                )
+            ))
 
     return filtered
 
