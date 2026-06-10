@@ -152,6 +152,8 @@ def create_app():
             "timestamp": datetime.utcnow().isoformat(),
             "environment": app.config.get("FLASK_ENV"),
             "storage": "database" if signal_store.use_database else "file",
+            "frontend_dist": app.frontend_dist,
+            "frontend_exists": os.path.exists(app.frontend_dist),
         }), 200
 
     # ============= FRONTEND ROUTES =============
@@ -160,14 +162,23 @@ def create_app():
     def serve_assets(filename):
         """Serve frontend assets"""
         assets_dir = os.path.join(app.frontend_dist, "assets")
-        if not os.path.exists(assets_dir):
-            app.logger.error(f"Assets directory not found: {assets_dir}")
-            return jsonify({"error": f"Assets not found at {assets_dir}"}), 404
+        file_path = os.path.join(assets_dir, filename)
+
+        # Debug logging
+        app.logger.info(f"Asset request: {filename}")
+        app.logger.info(f"Assets dir: {assets_dir}")
+        app.logger.info(f"File path: {file_path}")
+        app.logger.info(f"File exists: {os.path.exists(file_path)}")
+
+        if not os.path.exists(file_path):
+            app.logger.error(f"Asset not found: {file_path}")
+            return jsonify({"error": "Asset not found"}), 404
+
         try:
             return send_from_directory(assets_dir, filename)
         except Exception as e:
-            app.logger.error(f"Failed to serve {filename}: {e}")
-            return jsonify({"error": str(e)}), 404
+            app.logger.error(f"Error serving asset {filename}: {e}")
+            return jsonify({"error": str(e)}), 500
 
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
