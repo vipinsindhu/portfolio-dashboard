@@ -72,7 +72,12 @@ except ImportError:
 
 
 def create_app():
-    app = Flask(__name__)
+    # Determine frontend dist path - works in both dev and production
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    frontend_dist = os.path.join(base_dir, "frontend", "dist")
+
+    app = Flask(__name__, static_folder=frontend_dist, static_url_path="")
+    app.frontend_dist = frontend_dist  # Store for use in routes
 
     # Load configuration
     config = get_config()
@@ -147,8 +152,8 @@ def create_app():
     @app.route("/assets/<path:filename>")
     def serve_assets(filename):
         """Serve frontend assets"""
-        frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist", "assets")
-        return send_from_directory(frontend_dist, filename)
+        assets_dir = os.path.join(app.frontend_dist, "assets")
+        return send_from_directory(assets_dir, filename)
 
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
@@ -156,10 +161,10 @@ def create_app():
         """Serve React frontend - catch-all for non-API routes"""
         if path.startswith("api/"):
             return jsonify({"error": "Endpoint not found"}), 404
-        frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
-        if os.path.exists(os.path.join(frontend_dist, path)):
-            return send_from_directory(frontend_dist, path)
-        return send_from_directory(frontend_dist, "index.html")
+        full_path = os.path.join(app.frontend_dist, path)
+        if os.path.isfile(full_path):
+            return send_from_directory(app.frontend_dist, path)
+        return send_from_directory(app.frontend_dist, "index.html")
 
     # ============= MACRO ENDPOINTS =============
 
