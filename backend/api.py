@@ -147,6 +147,14 @@ def create_app():
     @app.route("/api/health", methods=["GET"])
     def health():
         """Health check endpoint"""
+        # List files in frontend directory for debugging
+        files = []
+        if os.path.exists(app.frontend_dist):
+            try:
+                files = os.listdir(app.frontend_dist)
+            except Exception as e:
+                files = [f"Error listing files: {e}"]
+
         return jsonify({
             "status": "ok",
             "timestamp": datetime.utcnow().isoformat(),
@@ -154,6 +162,7 @@ def create_app():
             "storage": "database" if signal_store.use_database else "file",
             "frontend_dist": app.frontend_dist,
             "frontend_exists": os.path.exists(app.frontend_dist),
+            "frontend_files": files,
         }), 200
 
     # ============= FRONTEND ROUTES =============
