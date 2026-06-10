@@ -164,7 +164,6 @@ function LongTerm() {
                     key={idx}
                     signal={signal}
                     type="hold"
-                    weight={signal.weight_in_portfolio}
                   />
                 ))}
               </div>
@@ -180,7 +179,7 @@ function LongTerm() {
               </p>
               <div className="signals-grid">
                 {recommendations.sell_reduce.map((signal, idx) => (
-                  <SignalCard key={idx} signal={signal} type="sell-reduce" weight={signal.weight_in_portfolio} />
+                  <SignalCard key={idx} signal={signal} type="sell-reduce" />
                 ))}
               </div>
             </section>
