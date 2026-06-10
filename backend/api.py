@@ -262,8 +262,8 @@ def create_app():
             min_confidence = request.args.get("min_confidence", 6, type=int)
             sector = request.args.get("sector", None, type=str)
 
-            # Get latest 20 signals to filter from (reduced from 50)
-            signals_response = signal_store.get_latest_signals(20)
+            # Get latest 50 signals to filter from (increased for better sector diversity)
+            signals_response = signal_store.get_latest_signals(50)
             all_signals = signals_response.get("data", []) if isinstance(signals_response, dict) else []
             generated_at = signals_response.get("generated_at") if isinstance(signals_response, dict) else None
 
@@ -376,8 +376,8 @@ def create_app():
             min_confidence = request.args.get("min_confidence", 5, type=int)
             sector = request.args.get("sector", None, type=str)
 
-            # Get latest 25 signals to filter from (reduced from 100 for better performance)
-            signals_response = signal_store.get_latest_signals(25)
+            # Get latest 50 signals to filter from (increased for better sector diversity)
+            signals_response = signal_store.get_latest_signals(50)
             all_signals = signals_response.get("data", []) if isinstance(signals_response, dict) else []
             generated_at = signals_response.get("generated_at") if isinstance(signals_response, dict) else None
 
