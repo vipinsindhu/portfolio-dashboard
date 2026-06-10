@@ -76,7 +76,7 @@ def create_app():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     frontend_dist = os.path.join(base_dir, "frontend", "dist")
 
-    app = Flask(__name__, static_folder=frontend_dist, static_url_path="")
+    app = Flask(__name__)
     app.frontend_dist = frontend_dist  # Store for use in routes
 
     # Load configuration
