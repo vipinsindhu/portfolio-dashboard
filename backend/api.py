@@ -6,7 +6,7 @@ Supports both file-based (development) and database-backed (production) storage
 
 import os
 import sys
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -141,6 +141,25 @@ def create_app():
             "environment": app.config.get("FLASK_ENV"),
             "storage": "database" if signal_store.use_database else "file",
         }), 200
+
+    # ============= FRONTEND ROUTES =============
+
+    @app.route("/assets/<path:filename>")
+    def serve_assets(filename):
+        """Serve frontend assets"""
+        frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist", "assets")
+        return send_from_directory(frontend_dist, filename)
+
+    @app.route("/", defaults={"path": ""})
+    @app.route("/<path:path>")
+    def serve_frontend(path):
+        """Serve React frontend - catch-all for non-API routes"""
+        if path.startswith("api/"):
+            return jsonify({"error": "Endpoint not found"}), 404
+        frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
+        if os.path.exists(os.path.join(frontend_dist, path)):
+            return send_from_directory(frontend_dist, path)
+        return send_from_directory(frontend_dist, "index.html")
 
     # ============= MACRO ENDPOINTS =============
 
