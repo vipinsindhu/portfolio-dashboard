@@ -18,10 +18,16 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 FRED_API_KEY = os.getenv("FRED_API_KEY", "")  # Optional, FRED has generous free tier
 
-# Initialize Groq client
-if not GROQ_API_KEY:
-    raise ValueError("GROQ_API_KEY environment variable is required")
-groq_client = Groq(api_key=GROQ_API_KEY)
+# Lazy-initialize Groq client (only when needed, not at import time)
+groq_client = None
+
+def get_groq_client():
+    global groq_client
+    if groq_client is None:
+        if not GROQ_API_KEY:
+            raise ValueError("GROQ_API_KEY environment variable is required")
+        groq_client = Groq(api_key=GROQ_API_KEY)
+    return groq_client
 
 # API endpoints
 FINNHUB_BASE = "https://finnhub.io/api/v1"
@@ -349,7 +355,8 @@ def get_macro_sentiment(macro_data):
 def call_groq(prompt):
     """Call Groq cloud LLM for signal generation"""
     try:
-        message = groq_client.chat.completions.create(
+        client = get_groq_client()
+        message = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             max_tokens=1024,
             temperature=0.7,
