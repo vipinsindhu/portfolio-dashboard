@@ -73,8 +73,15 @@ except ImportError:
 
 def create_app():
     # Determine frontend dist path - works in both dev and production
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # In Railway: /app/backend/api.py → /app/frontend/dist
+    # In dev: ./backend/api.py → ./frontend/dist
+    script_dir = os.path.dirname(os.path.abspath(__file__))  # ./backend or /app/backend
+    base_dir = os.path.dirname(script_dir)  # . or /app
     frontend_dist = os.path.join(base_dir, "frontend", "dist")
+
+    # Fallback to current working directory if path doesn't exist
+    if not os.path.exists(frontend_dist):
+        frontend_dist = os.path.join(os.getcwd(), "frontend", "dist")
 
     app = Flask(__name__)
     app.frontend_dist = frontend_dist  # Store for use in routes
@@ -153,7 +160,14 @@ def create_app():
     def serve_assets(filename):
         """Serve frontend assets"""
         assets_dir = os.path.join(app.frontend_dist, "assets")
-        return send_from_directory(assets_dir, filename)
+        if not os.path.exists(assets_dir):
+            app.logger.error(f"Assets directory not found: {assets_dir}")
+            return jsonify({"error": f"Assets not found at {assets_dir}"}), 404
+        try:
+            return send_from_directory(assets_dir, filename)
+        except Exception as e:
+            app.logger.error(f"Failed to serve {filename}: {e}")
+            return jsonify({"error": str(e)}), 404
 
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
@@ -161,8 +175,12 @@ def create_app():
         """Serve React frontend - catch-all for non-API routes"""
         if path.startswith("api/"):
             return jsonify({"error": "Endpoint not found"}), 404
+
+        if not os.path.exists(app.frontend_dist):
+            return jsonify({"error": f"Frontend not found at {app.frontend_dist}"}), 500
+
         full_path = os.path.join(app.frontend_dist, path)
-        if os.path.isfile(full_path):
+        if os.path.isfile(full_path) and not path.endswith(".html"):
             return send_from_directory(app.frontend_dist, path)
         return send_from_directory(app.frontend_dist, "index.html")
 
