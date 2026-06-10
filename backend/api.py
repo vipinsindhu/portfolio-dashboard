@@ -797,13 +797,8 @@ def create_app():
         app.logger.error(f"Internal error: {error}")
         return jsonify({"error": "Internal server error"}), 500
 
-    # Initial stock discovery on startup
-    print("\n[STARTUP] Initializing stock discovery on startup...")
-    try:
-        discover_stocks()
-        print("[SUCCESS] Stock discovery initialized on startup")
-    except Exception as e:
-        print(f"[WARNING] Stock discovery initialization failed: {e} (will retry on first use)")
+    # Skip blocking startup - stock discovery happens on first request or via scheduler
+    print("[STARTUP] Flask app initialized (stock discovery deferred to first request)")
 
     # Initialize APScheduler for periodic data refresh
     scheduler = BackgroundScheduler()
