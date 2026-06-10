@@ -323,6 +323,21 @@ def select_top_per_sector(stocks, top_n=5):
     return selected
 
 
+def _format_stocks(stocks):
+    """Convert raw stock data to standardized format"""
+    return [
+        {
+            "ticker": stock.get("symbol", ""),
+            "name": stock.get("description", ""),
+            "sector": stock.get("finnhubIndustry", "Unknown"),
+            "market_cap": 0,
+            "price": 0,
+            "volume": 0
+        }
+        for stock in stocks
+    ]
+
+
 def discover_stocks():
     """
     Main function: Discover high-quality stocks
@@ -376,29 +391,11 @@ def discover_stocks():
     if source == "alpha_vantage":
         # Alpha Vantage: Use all active stocks (pre-filtered by exchange)
         # Quality filtering will happen when fetch_fundamentals() checks via yfinance/Finnhub
-        selected_stocks = []
-        for stock in stocks:
-            selected_stocks.append({
-                "ticker": stock.get("symbol", ""),
-                "name": stock.get("description", ""),
-                "sector": stock.get("finnhubIndustry", "Unknown"),
-                "market_cap": 0,
-                "price": 0,
-                "volume": 0
-            })
+        selected_stocks = _format_stocks(stocks)
         print(f"📊 Using {len(selected_stocks)} Alpha Vantage stocks (quality via yfinance fallback)")
     elif source == "fallback":
         # Fallback stocks are pre-selected high-quality stocks, no need for additional filtering
-        selected_stocks = []
-        for stock in stocks:
-            selected_stocks.append({
-                "ticker": stock.get("symbol", ""),
-                "name": stock.get("description", ""),
-                "sector": stock.get("finnhubIndustry", "Unknown"),
-                "market_cap": 0,
-                "price": 0,
-                "volume": 0
-            })
+        selected_stocks = _format_stocks(stocks)
         print(f"✅ Using fallback stocks (pre-selected for quality)")
     else:
         # For Finnhub, apply quality filtering

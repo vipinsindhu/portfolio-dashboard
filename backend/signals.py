@@ -7,6 +7,7 @@ import json
 import os
 import time
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 from groq import Groq
 import yfinance as yf
@@ -417,24 +418,33 @@ def generate_signals(count=10):
     print("Discovering high-quality stocks...")
     signal_candidates = discover_stocks()
 
-    # Limit fundamentals fetching to first 30 candidates to avoid timeout
-    max_candidates_to_fetch = 30
+    # Fetch fundamentals in parallel for better performance
+    # Can fetch more candidates since we're not blocked on sequential API calls
+    max_candidates_to_fetch = 50
     candidates_to_fetch = signal_candidates[:max_candidates_to_fetch]
-    print(f"Fetching fundamentals for {len(candidates_to_fetch)} of {len(signal_candidates)} discovered stocks...")
+    print(f"Fetching fundamentals for {len(candidates_to_fetch)} of {len(signal_candidates)} discovered stocks (parallel)...")
 
     candidates = []
-    for i, ticker in enumerate(candidates_to_fetch):
-        data = fetch_fundamentals(ticker)
-        if data.get("current_price"):
-            candidates.append(data)
-        if i < len(candidates_to_fetch) - 1:
-            time.sleep(0.3)  # Rate limiting for Finnhub
+    # Use ThreadPoolExecutor to fetch fundamentals in parallel (max 5 concurrent requests)
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        # Submit all tasks
+        future_to_ticker = {executor.submit(fetch_fundamentals, ticker): ticker for ticker in candidates_to_fetch}
+
+        # Collect results as they complete
+        for future in as_completed(future_to_ticker):
+            try:
+                data = future.result()
+                if data.get("current_price"):
+                    candidates.append(data)
+            except Exception as e:
+                ticker = future_to_ticker[future]
+                print(f"Warning: Failed to fetch fundamentals for {ticker}: {e}")
 
     if not candidates:
         print("No candidates with price data found")
         return []
 
-    print(f"📊 Fetched fundamentals for {len(candidates)} stocks")
+    print(f"📊 Fetched fundamentals for {len(candidates)} stocks (parallel)")
 
     # Fetch macro context
     print("Fetching macro context...")
