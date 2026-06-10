@@ -238,55 +238,57 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
           </button>
 
           {expandedSection === 'manual' && (
-            <form className="section-content" onSubmit={handleManualAdd}>
-              <div className="form-group">
-                <label htmlFor="symbol">Stock Symbol</label>
-                <input
-                  id="symbol"
-                  type="text"
-                  placeholder="e.g., AAPL"
-                  value={manualInput.symbol}
-                  onChange={(e) =>
-                    setManualInput({ ...manualInput, symbol: e.target.value.toUpperCase() })
-                  }
-                  disabled={loading}
-                  maxLength="5"
-                />
-              </div>
+            <form className="manual-form" onSubmit={handleManualAdd}>
+              <div className="form-columns">
+                <div className="form-group column">
+                  <label htmlFor="symbol">Symbol</label>
+                  <input
+                    id="symbol"
+                    type="text"
+                    placeholder="AAPL"
+                    value={manualInput.symbol}
+                    onChange={(e) =>
+                      setManualInput({ ...manualInput, symbol: e.target.value.toUpperCase() })
+                    }
+                    disabled={loading}
+                    maxLength="5"
+                  />
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="quantity">Quantity</label>
-                <input
-                  id="quantity"
-                  type="number"
-                  placeholder="e.g., 10"
-                  value={manualInput.quantity}
-                  onChange={(e) => setManualInput({ ...manualInput, quantity: e.target.value })}
-                  disabled={loading}
-                  step="0.01"
-                  min="0"
-                />
-              </div>
+                <div className="form-group column">
+                  <label htmlFor="quantity">Quantity</label>
+                  <input
+                    id="quantity"
+                    type="number"
+                    placeholder="10"
+                    value={manualInput.quantity}
+                    onChange={(e) => setManualInput({ ...manualInput, quantity: e.target.value })}
+                    disabled={loading}
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="purchase-price">Purchase Price ($)</label>
-                <input
-                  id="purchase-price"
-                  type="number"
-                  placeholder="e.g., 150.00"
-                  value={manualInput.purchase_price}
-                  onChange={(e) =>
-                    setManualInput({ ...manualInput, purchase_price: e.target.value })
-                  }
-                  disabled={loading}
-                  step="0.01"
-                  min="0"
-                />
-              </div>
+                <div className="form-group column">
+                  <label htmlFor="purchase-price">Purchase Price</label>
+                  <input
+                    id="purchase-price"
+                    type="number"
+                    placeholder="150.00"
+                    value={manualInput.purchase_price}
+                    onChange={(e) =>
+                      setManualInput({ ...manualInput, purchase_price: e.target.value })
+                    }
+                    disabled={loading}
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
 
-              <button type="submit" className="btn-primary" disabled={loading}>
-                {loading ? 'Adding...' : '➕ Add'}
-              </button>
+                <button type="submit" className="btn-add" disabled={loading}>
+                  {loading ? 'Adding...' : '➕'}
+                </button>
+              </div>
             </form>
           )}
         </div>
