@@ -10,25 +10,45 @@ function FilterBar({ onFilterChange, stats }) {
 
   useEffect(() => {
     fetchAvailableSectors()
-  }, [])
+  }, [stats])
 
   const fetchAvailableSectors = async () => {
-    // For now, use a predefined list of common sectors
-    // In future, could fetch from backend
-    const commonSectors = [
-      'Technology',
-      'Healthcare',
-      'Financials',
-      'Energy',
-      'Consumer Discretionary',
-      'Consumer Staples',
-      'Industrials',
-      'Materials',
-      'Real Estate',
-      'Utilities',
-      'Communication Services'
-    ]
-    setSectors(commonSectors)
+    try {
+      // Fetch all signals to extract unique sectors
+      const response = await fetch('/api/signals/short-term?limit=100')
+      if (!response.ok) throw new Error('Failed to fetch signals')
+      const data = await response.json()
+
+      // Extract unique sectors from signals
+      const uniqueSectors = [...new Set(
+        (data.signals || []).map(s => s.sector).filter(Boolean)
+      )].sort()
+
+      setSectors(uniqueSectors.length > 0 ? uniqueSectors : [
+        'Technology',
+        'Healthcare',
+        'Financials',
+        'Energy',
+        'Consumer Discretionary',
+        'Consumer Staples',
+        'Industrials',
+        'Real Estate',
+        'Utilities'
+      ])
+    } catch (err) {
+      // Fallback to predefined sectors if fetch fails
+      setSectors([
+        'Technology',
+        'Healthcare',
+        'Financials',
+        'Energy',
+        'Consumer Discretionary',
+        'Consumer Staples',
+        'Industrials',
+        'Real Estate',
+        'Utilities'
+      ])
+    }
   }
 
   const handleFilterChange = (newDirection, newConfidence, newSector) => {

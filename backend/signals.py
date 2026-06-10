@@ -35,53 +35,90 @@ FRED_BASE = "https://api.stlouisfed.org/fred"
 
 # Signal candidates pool - stocks/ETFs to consider
 SIGNAL_CANDIDATES = [
-    # Technology
-    "AAPL", "MSFT", "GOOGL", "NVDA", "META",
-    # Financial Services
-    "JPM", "BAC",
-    # Healthcare
-    "JNJ", "UNH",
-    # Consumer
-    "AMZN", "WMT",
-    # ETFs
-    "VTI", "VOO", "AGG"
+    # Technology (10)
+    "AAPL", "MSFT", "GOOGL", "NVDA", "META", "TSLA", "AVGO", "MU", "QCOM", "AMD",
+    # Financial Services (6)
+    "JPM", "BAC", "GS", "MS", "BX", "KKR",
+    # Healthcare (6)
+    "JNJ", "UNH", "PFE", "LLY", "MRK", "TMO",
+    # Consumer (6)
+    "AMZN", "WMT", "MCD", "COST", "NKE", "TJX",
+    # Industrials (4)
+    "BA", "GE", "LMT", "CAT",
+    # Energy (3)
+    "XOM", "CVX", "MPC",
+    # Real Estate (2)
+    "AMT", "EQIX",
+    # ETFs (6)
+    "VTI", "VOO", "SPY", "QQQ", "AGG", "BND"
 ]
 
 # Company metadata for Finnhub quote enrichment
 COMPANY_NAMES = {
     "AAPL": "Apple Inc", "MSFT": "Microsoft Corporation", "GOOGL": "Alphabet Inc",
-    "NVDA": "NVIDIA Corporation", "META": "Meta Platforms Inc",
-    "JPM": "JPMorgan Chase & Co", "BAC": "Bank of America Corp",
-    "JNJ": "Johnson & Johnson", "UNH": "UnitedHealth Group Inc",
-    "AMZN": "Amazon Inc", "WMT": "Walmart Inc",
-    "VTI": "Vanguard Total Stock", "VOO": "Vanguard S&P 500", "AGG": "iShares Core Aggregate"
+    "NVDA": "NVIDIA Corporation", "META": "Meta Platforms Inc", "TSLA": "Tesla Inc",
+    "AVGO": "Broadcom Inc", "MU": "Micron Technology", "QCOM": "Qualcomm Inc", "AMD": "Advanced Micro Devices",
+    "JPM": "JPMorgan Chase & Co", "BAC": "Bank of America Corp", "GS": "Goldman Sachs",
+    "MS": "Morgan Stanley", "BX": "Blackstone Inc", "KKR": "KKR & Co Inc",
+    "JNJ": "Johnson & Johnson", "UNH": "UnitedHealth Group Inc", "PFE": "Pfizer Inc",
+    "LLY": "Eli Lilly and Company", "MRK": "Merck & Co", "TMO": "Thermo Fisher Scientific",
+    "AMZN": "Amazon Inc", "WMT": "Walmart Inc", "MCD": "McDonald's Corp", "COST": "Costco Wholesale",
+    "NKE": "Nike Inc", "TJX": "The TJX Companies",
+    "BA": "Boeing Co", "GE": "General Electric", "LMT": "Lockheed Martin", "CAT": "Caterpillar Inc",
+    "XOM": "Exxon Mobil Corp", "CVX": "Chevron Corp", "MPC": "Marathon Petroleum",
+    "AMT": "American Tower Corp", "EQIX": "Equinix Inc",
+    "VTI": "Vanguard Total Stock", "VOO": "Vanguard S&P 500", "SPY": "SPDR S&P 500",
+    "QQQ": "Invesco QQQ Trust", "AGG": "iShares Core Aggregate", "BND": "Vanguard Total Bond"
 }
 
 COMPANY_SECTORS = {
     "AAPL": "Technology", "MSFT": "Technology", "GOOGL": "Technology",
-    "NVDA": "Technology", "META": "Technology",
-    "JPM": "Financials", "BAC": "Financials",
-    "JNJ": "Healthcare", "UNH": "Healthcare",
-    "AMZN": "Consumer", "WMT": "Consumer",
-    "VTI": "Index", "VOO": "Index", "AGG": "Index"
+    "NVDA": "Technology", "META": "Technology", "TSLA": "Consumer Discretionary",
+    "AVGO": "Technology", "MU": "Technology", "QCOM": "Technology", "AMD": "Technology",
+    "JPM": "Financials", "BAC": "Financials", "GS": "Financials",
+    "MS": "Financials", "BX": "Financials", "KKR": "Financials",
+    "JNJ": "Healthcare", "UNH": "Healthcare", "PFE": "Healthcare",
+    "LLY": "Healthcare", "MRK": "Healthcare", "TMO": "Healthcare",
+    "AMZN": "Consumer Discretionary", "WMT": "Consumer Staples", "MCD": "Consumer Discretionary",
+    "COST": "Consumer Staples", "NKE": "Consumer Discretionary", "TJX": "Consumer Discretionary",
+    "BA": "Industrials", "GE": "Industrials", "LMT": "Industrials", "CAT": "Industrials",
+    "XOM": "Energy", "CVX": "Energy", "MPC": "Energy",
+    "AMT": "Real Estate", "EQIX": "Real Estate",
+    "VTI": "Technology", "VOO": "Technology", "SPY": "Technology",
+    "QQQ": "Technology", "AGG": "Utilities", "BND": "Utilities"
 }
 
 COMPANY_MARKET_CAPS = {
     "AAPL": 3000000000000, "MSFT": 3100000000000, "GOOGL": 2000000000000,
-    "NVDA": 1200000000000, "META": 1300000000000,
-    "JPM": 500000000000, "BAC": 350000000000,
-    "JNJ": 450000000000, "UNH": 480000000000,
-    "AMZN": 2000000000000, "WMT": 420000000000,
-    "VTI": 0, "VOO": 0, "AGG": 0
+    "NVDA": 1200000000000, "META": 1300000000000, "TSLA": 900000000000,
+    "AVGO": 320000000000, "MU": 160000000000, "QCOM": 220000000000, "AMD": 280000000000,
+    "JPM": 500000000000, "BAC": 350000000000, "GS": 180000000000,
+    "MS": 220000000000, "BX": 250000000000, "KKR": 200000000000,
+    "JNJ": 450000000000, "UNH": 480000000000, "PFE": 220000000000,
+    "LLY": 650000000000, "MRK": 300000000000, "TMO": 420000000000,
+    "AMZN": 2000000000000, "WMT": 420000000000, "MCD": 200000000000,
+    "COST": 420000000000, "NKE": 160000000000, "TJX": 100000000000,
+    "BA": 200000000000, "GE": 240000000000, "LMT": 280000000000, "CAT": 220000000000,
+    "XOM": 520000000000, "CVX": 420000000000, "MPC": 140000000000,
+    "AMT": 200000000000, "EQIX": 180000000000,
+    "VTI": 0, "VOO": 0, "SPY": 0, "QQQ": 0, "AGG": 0, "BND": 0
 }
 
 COMPANY_DIVIDEND_YIELDS = {
     "AAPL": 0.004, "MSFT": 0.007, "GOOGL": 0.0,
-    "NVDA": 0.001, "META": 0.0,
-    "JPM": 0.028, "BAC": 0.033,
-    "JNJ": 0.029, "UNH": 0.015,
-    "AMZN": 0.0, "WMT": 0.014,
-    "VTI": 0.015, "VOO": 0.015, "AGG": 0.04
+    "NVDA": 0.001, "META": 0.0, "TSLA": 0.0,
+    "AVGO": 0.015, "MU": 0.0, "QCOM": 0.021, "AMD": 0.0,
+    "JPM": 0.028, "BAC": 0.033, "GS": 0.024,
+    "MS": 0.027, "BX": 0.035, "KKR": 0.031,
+    "JNJ": 0.029, "UNH": 0.015, "PFE": 0.061,
+    "LLY": 0.008, "MRK": 0.026, "TMO": 0.004,
+    "AMZN": 0.0, "WMT": 0.014, "MCD": 0.022,
+    "COST": 0.006, "NKE": 0.008, "TJX": 0.0,
+    "BA": 0.0, "GE": 0.025, "LMT": 0.026, "CAT": 0.019,
+    "XOM": 0.034, "CVX": 0.037, "MPC": 0.041,
+    "AMT": 0.041, "EQIX": 0.019,
+    "VTI": 0.015, "VOO": 0.015, "SPY": 0.015,
+    "QQQ": 0.006, "AGG": 0.04, "BND": 0.042
 }
 
 # Signals storage file
