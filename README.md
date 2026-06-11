@@ -6,10 +6,25 @@ AI-powered portfolio analysis and recommendations for beginner investors. Analyz
 ![Version](https://img.shields.io/badge/version-2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
+**🔴 Live demo:** [portfolio-builder.up.railway.app](https://portfolio-builder.up.railway.app/) — click **✨ Try a Demo** on the home page to see a full portfolio analysis with sample data, no sign-up needed.
+
+---
+
+## 📸 Screenshots
+
+| AI Stock Picks | Portfolio Risk Analysis |
+|---|---|
+| ![This week's AI stock signals](docs/screenshots/this-week.png) | ![Portfolio health analysis with concentration warnings](docs/screenshots/demo-analysis.png) |
+
+| Home | Mobile (bottom navigation) |
+|---|---|
+| ![Home page](docs/screenshots/home-desktop.png) | <img src="docs/screenshots/home-mobile.png" alt="Mobile view with bottom tab navigation" width="280"> |
+
 ---
 
 ## ⚡ Quick Start
 
+**Just want to see it?** → [Live demo](https://portfolio-builder.up.railway.app/) (✨ Try a Demo button loads a sample portfolio)  
 **Want to use the app?** → [User Guide](docs/guides/USER_GUIDE.md)  
 **Want to develop?** → [Developer Setup](docs/guides/DEVELOPER_GUIDE.md)  
 **Need deployment help?** → [Deployment Guide](docs/guides/DEPLOYMENT.md)
@@ -64,7 +79,7 @@ AI-powered portfolio analysis and recommendations for beginner investors. Analyz
 **Backend:** Python, Flask, APScheduler, Groq LLM  
 **Frontend:** React, Vite, CSS Grid/Flexbox  
 **Data:** Finnhub API, FRED, real-time market feeds  
-**Infrastructure:** Docker, Azure App Service, GitHub Actions  
+**Infrastructure:** Railway (auto-deploys from `main`), GitHub Actions  
 
 ---
 
@@ -95,7 +110,7 @@ See [Getting Started Guide](docs/GETTING_STARTED.md) for detailed setup.
 | Task | Guide |
 |------|-------|
 | Run locally | [Developer Guide](docs/guides/DEVELOPER_GUIDE.md) |
-| Deploy to Azure | [Deployment Guide](docs/guides/DEPLOYMENT.md) |
+| Deploy | Push to `main` — Railway auto-deploys |
 | Understand the code | [Architecture](docs/technical/ARCHITECTURE.md) |
 | Check API endpoints | [API Docs](docs/technical/API.md) |
 | View design system | [Design Guide](docs/design/UX_DESIGN.md) |
