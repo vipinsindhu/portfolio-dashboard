@@ -56,7 +56,7 @@ function Welcome({ onTabChange, onFeedback, onTryDemo }) {
             <div className="feature-icon">💡</div>
             <h3>AI Stock Picks</h3>
             <p>Get intelligent recommendations for this week's best opportunities and long-term wealth builders.</p>
-            <div className="feature-highlight">Updated every hour</div>
+            <div className="feature-highlight">Updated daily</div>
           </div>
 
           {/* Feature 2 */}

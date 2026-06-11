@@ -100,7 +100,7 @@ function RecommendationStats({ stats, generatedAt, displayCounts }) {
         <div className="stat-card update-card">
           <div className="stat-label">How Fresh Is This?</div>
           <div className="stat-value time-ago">{timeAgo}</div>
-          <div className="stat-hint">Updates every hour</div>
+          <div className="stat-hint">Updates daily</div>
         </div>
 
         {accuracy && (

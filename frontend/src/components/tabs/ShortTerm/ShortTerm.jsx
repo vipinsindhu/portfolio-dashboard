@@ -30,9 +30,9 @@ function ShortTerm() {
   useEffect(() => {
     fetchData()
 
-    // Auto-refresh every 60 minutes (3600000 ms) to match signal generation frequency
+    // Re-fetch hourly to pick up server-side regeneration (runs every 6h+)
     const refreshInterval = setInterval(() => {
-      console.log('Auto-refreshing signals (60-minute cycle)')
+      console.log('Auto-refreshing signals (hourly re-fetch)')
       fetchData()
     }, 3600000)
 
