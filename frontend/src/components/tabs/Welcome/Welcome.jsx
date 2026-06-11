@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './Welcome.css'
 
-function Welcome({ onTabChange, onFeedback }) {
+function Welcome({ onTabChange, onFeedback, onTryDemo }) {
   const [hoveredFeature, setHoveredFeature] = useState(null)
 
   return (
@@ -31,6 +31,12 @@ function Welcome({ onTabChange, onFeedback }) {
             onClick={() => onTabChange('analyse')}
           >
             📊 Analyze My Portfolio
+          </button>
+          <button
+            className="btn-secondary btn-large"
+            onClick={onTryDemo}
+          >
+            ✨ Try a Demo
           </button>
         </div>
       </section>

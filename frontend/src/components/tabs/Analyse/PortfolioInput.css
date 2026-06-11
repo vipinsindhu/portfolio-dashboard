@@ -39,6 +39,30 @@
   font-weight: 500;
 }
 
+.btn-sample-portfolio {
+  margin-top: 12px;
+  padding: 10px 20px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-sample-portfolio:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(85, 104, 211, 0.2);
+}
+
+.btn-sample-portfolio:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Error/Success Messages */
 .input-error {
   padding: 12px 16px;

@@ -1,7 +1,17 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import './PortfolioInput.css'
 
-function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
+// Deliberately tech-heavy (~60%) so the demo analysis surfaces concentration warnings
+const SAMPLE_PORTFOLIO = [
+  { symbol: 'AAPL', quantity: 10, purchase_price: 180 },
+  { symbol: 'MSFT', quantity: 6, purchase_price: 410 },
+  { symbol: 'NVDA', quantity: 30, purchase_price: 120 },
+  { symbol: 'JPM', quantity: 12, purchase_price: 195 },
+  { symbol: 'XOM', quantity: 15, purchase_price: 110 },
+  { symbol: 'BND', quantity: 20, purchase_price: 73 }
+]
+
+function PortfolioInput({ onPortfolioLoaded, onAnalyze, autoLoadSample, onAutoLoadHandled }) {
   const [holdings, setHoldings] = useState([])
   const [manualInput, setManualInput] = useState({
     symbol: '',
@@ -144,6 +154,61 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
     }
   }
 
+  const handleLoadSample = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    // Upload replaces the server-side portfolio, so repeat clicks stay idempotent
+    const csv =
+      'Symbol,Quantity,PurchasePrice\n' +
+      SAMPLE_PORTFOLIO.map(h => `${h.symbol},${h.quantity},${h.purchase_price}`).join('\n')
+    const formData = new FormData()
+    formData.append('file', new File([csv], 'sample_portfolio.csv', { type: 'text/csv' }))
+
+    try {
+      const response = await fetch('/api/portfolio/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to load sample portfolio')
+      }
+
+      const data = await response.json()
+      const stats = calculatePortfolioStats(
+        (data.holdings_list || []).map(h => ({ ...h, percentage: 0 }))
+      )
+      setHoldings(stats.holdings)
+      setSuccess(`✨ Loaded sample portfolio (${data.holdings} holdings) — analyzing...`)
+
+      if (onPortfolioLoaded) {
+        onPortfolioLoaded()
+      }
+      if (onAnalyze) {
+        onAnalyze()
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [calculatePortfolioStats, onPortfolioLoaded, onAnalyze])
+
+  // Auto-load the sample when arriving via the Welcome page's "Try a Demo" CTA
+  const autoLoadTriggered = useRef(false)
+  useEffect(() => {
+    if (autoLoadSample && !autoLoadTriggered.current) {
+      autoLoadTriggered.current = true
+      handleLoadSample()
+      if (onAutoLoadHandled) {
+        onAutoLoadHandled()
+      }
+    }
+  }, [autoLoadSample, handleLoadSample, onAutoLoadHandled])
+
   const handleRemoveHolding = (index) => {
     const newHoldings = holdings.filter((_, i) => i !== index)
     const stats = calculatePortfolioStats(newHoldings)
@@ -178,6 +243,14 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze }) {
       {holdings.length === 0 && (
         <div className="input-intro">
           <p>💡 Start by uploading a CSV or adding your first stock</p>
+          <button
+            type="button"
+            className="btn-sample-portfolio"
+            onClick={handleLoadSample}
+            disabled={loading}
+          >
+            {loading ? '⏳ Loading...' : '✨ No stocks handy? Try a sample portfolio'}
+          </button>
         </div>
       )}
 

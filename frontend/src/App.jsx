@@ -12,6 +12,12 @@ import './App.css'
 function App() {
   const [activeTab, setActiveTab] = useState('welcome')
   const [showFeedback, setShowFeedback] = useState(false)
+  const [demoRequested, setDemoRequested] = useState(false)
+
+  const handleTryDemo = () => {
+    setDemoRequested(true)
+    setActiveTab('analyse')
+  }
 
   return (
     <>
@@ -61,11 +67,20 @@ function App() {
 
       <div className="app-content">
         {activeTab === 'welcome' && (
-          <Welcome onTabChange={setActiveTab} onFeedback={() => setShowFeedback(true)} />
+          <Welcome
+            onTabChange={setActiveTab}
+            onFeedback={() => setShowFeedback(true)}
+            onTryDemo={handleTryDemo}
+          />
         )}
         {activeTab === 'short-term' && <ShortTerm />}
         {activeTab === 'long-term' && <LongTerm />}
-        {activeTab === 'analyse' && <Analyse />}
+        {activeTab === 'analyse' && (
+          <Analyse
+            demoRequested={demoRequested}
+            onDemoHandled={() => setDemoRequested(false)}
+          />
+        )}
         {activeTab === 'learn' && <Learn />}
       </div>
 

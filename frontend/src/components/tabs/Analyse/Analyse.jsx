@@ -3,7 +3,7 @@ import PortfolioInput from './PortfolioInput'
 import PitfallDetector from './PitfallDetector'
 import './Analyse.css'
 
-function Analyse() {
+function Analyse({ demoRequested, onDemoHandled }) {
   const [analysis, setAnalysis] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -72,7 +72,12 @@ function Analyse() {
       {error && <div className="error-message">{error}</div>}
 
       {/* Portfolio Input */}
-      <PortfolioInput onPortfolioLoaded={handlePortfolioLoaded} onAnalyze={handleAnalyze} />
+      <PortfolioInput
+        onPortfolioLoaded={handlePortfolioLoaded}
+        onAnalyze={handleAnalyze}
+        autoLoadSample={demoRequested}
+        onAutoLoadHandled={onDemoHandled}
+      />
 
       {/* Manual Analyze Button */}
       {portfolioLoaded && (
