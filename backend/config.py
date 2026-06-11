@@ -7,6 +7,8 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
+from storage_paths import data_path
+
 
 @dataclass
 class Config:
@@ -52,7 +54,7 @@ class Config:
             MAX_WORKERS=int(os.getenv("MAX_WORKERS", "4")),
             REQUEST_TIMEOUT=int(os.getenv("REQUEST_TIMEOUT", "120")),
             CORS_ORIGINS=os.getenv("CORS_ORIGINS", "*"),
-            SIGNALS_FILE=os.getenv("SIGNALS_FILE", "signals.json"),
+            SIGNALS_FILE=os.getenv("SIGNALS_FILE", data_path("signals.json")),
             MACRO_CONFIG_FILE=os.getenv("MACRO_CONFIG_FILE", "macro_config.json"),
         )
 

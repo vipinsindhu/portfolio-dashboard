@@ -11,7 +11,9 @@ from datetime import datetime
 import csv
 from io import StringIO
 
-PORTFOLIO_FILE = "portfolio.json"
+from storage_paths import data_path
+
+PORTFOLIO_FILE = data_path("portfolio.json")
 
 
 @dataclass

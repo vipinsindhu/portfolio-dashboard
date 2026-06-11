@@ -64,9 +64,10 @@ except ImportError:
 
     class DummyConfig:
         def __init__(self):
+            from storage_paths import data_path
             self.DATABASE_URL = "sqlite:///portfolio.db"
             self.CORS_ORIGINS = "*"
-            self.SIGNALS_FILE = "signals.json"
+            self.SIGNALS_FILE = data_path("signals.json")
             self.MACRO_CONFIG_FILE = "macro_config.json"
 
     def get_config():

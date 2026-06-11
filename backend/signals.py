@@ -121,9 +121,11 @@ COMPANY_DIVIDEND_YIELDS = {
     "QQQ": 0.006, "AGG": 0.04, "BND": 0.042
 }
 
-# Signals storage file
-SIGNALS_FILE = "signals.json"
-MACRO_CACHE_FILE = "macro_cache.json"
+# Signals storage file (lives on the persistent volume when DATA_DIR is set)
+from storage_paths import data_path
+
+SIGNALS_FILE = data_path("signals.json")
+MACRO_CACHE_FILE = data_path("macro_cache.json")
 
 
 def load_signals():
