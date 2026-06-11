@@ -55,3 +55,21 @@ class TestGenerateSignalsIfStale:
 
         assert generate_signals_if_stale(max_age_minutes=15) is True
         assert called == [1]
+
+
+class TestMockSignalGeneration:
+    def test_handles_candidates_without_company_name(self):
+        """Regression: bare mock-fundamentals candidates (no company_name)
+        crashed signal generation with KeyError, leaving live signals stale."""
+        from signals import generate_realistic_mock_signals
+
+        candidates = [
+            {"ticker": "ZZZZ", "sector": "Unknown", "current_price": 100},
+            {"ticker": "AAPL", "company_name": "Apple Inc", "sector": "Technology",
+             "current_price": 205, "pe_ratio": 28.5, "dividend_yield": 0.004,
+             "52_week_high": 220},
+        ]
+        signals = generate_realistic_mock_signals(candidates, count=2)
+        assert len(signals) == 2
+        assert all(s["rationale"] for s in signals)
+        assert "ZZZZ" in signals[0]["rationale"]

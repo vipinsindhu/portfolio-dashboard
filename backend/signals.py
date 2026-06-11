@@ -261,6 +261,7 @@ def get_mock_fundamentals(ticker):
         return data
     return {
         "ticker": ticker,
+        "company_name": COMPANY_NAMES.get(ticker, ticker),
         "sector": TICKER_SECTOR_MAP.get(ticker, "Unknown"),
         "current_price": 100
     }
@@ -447,12 +448,13 @@ def generate_realistic_mock_signals(candidates, count=5):
         price = candidate.get("current_price", 100)
         high = candidate.get("52_week_high", price * 1.2)
 
+        company = candidate.get("company_name") or candidate.get("ticker", "This company")
         if direction == "buy":
-            rationale = f"{candidate['company_name']} trading at P/E of {pe:.1f}. Strong fundamentals with {dividend*100:.1f}% dividend yield. Current price of ${price:.2f} offers good entry point below 52-week high of ${high:.2f}."
+            rationale = f"{company} trading at P/E of {pe:.1f}. Strong fundamentals with {dividend*100:.1f}% dividend yield. Current price of ${price:.2f} offers good entry point below 52-week high of ${high:.2f}."
         elif direction == "hold":
-            rationale = f"{candidate['company_name']} shows stable fundamentals at P/E {pe:.1f}. With dividend yield of {dividend*100:.1f}%, suitable for long-term holders. Hold at current levels, monitor macro environment."
+            rationale = f"{company} shows stable fundamentals at P/E {pe:.1f}. With dividend yield of {dividend*100:.1f}%, suitable for long-term holders. Hold at current levels, monitor macro environment."
         else:  # avoid
-            rationale = f"{candidate['company_name']} appears overvalued at P/E {pe:.1f} relative to sector average. Limited upside potential. Consider avoiding until better entry point emerges."
+            rationale = f"{company} appears overvalued at P/E {pe:.1f} relative to sector average. Limited upside potential. Consider avoiding until better entry point emerges."
 
         signals.append({
             "id": f"{candidate['ticker']}_{datetime.now().isoformat()}",
