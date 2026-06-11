@@ -233,6 +233,17 @@ def create_app():
         signals_data = signal_store.get_latest_signals(limit)
         return jsonify(signals_data), 200
 
+    @app.route("/api/signals/accuracy", methods=["GET"])
+    def get_signals_accuracy():
+        """Rolling win-rate stats from the committed signal history"""
+        try:
+            from accuracy import load_history, compute_accuracy_stats
+            stats = compute_accuracy_stats(load_history())
+            return jsonify(stats), 200
+        except Exception as e:
+            app.logger.error(f"Error computing accuracy stats: {e}")
+            return jsonify({"error": str(e)}), 500
+
     @app.route("/api/signals/archive", methods=["GET"])
     def get_signals_archive():
         """Get signal archive (past signals)"""

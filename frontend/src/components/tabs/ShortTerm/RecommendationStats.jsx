@@ -3,6 +3,14 @@ import './RecommendationStats.css'
 
 function RecommendationStats({ stats, generatedAt, displayCounts }) {
   const [timeAgo, setTimeAgo] = useState('')
+  const [accuracy, setAccuracy] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/signals/accuracy')
+      .then(res => (res.ok ? res.json() : null))
+      .then(setAccuracy)
+      .catch(() => setAccuracy(null))
+  }, [])
 
   useEffect(() => {
     const updateTimeAgo = () => {
@@ -94,6 +102,34 @@ function RecommendationStats({ stats, generatedAt, displayCounts }) {
           <div className="stat-value time-ago">{timeAgo}</div>
           <div className="stat-hint">Updates every hour</div>
         </div>
+
+        {accuracy && (
+          <div className="stat-card accuracy-card">
+            <div className="stat-label">Track Record</div>
+            {accuracy.overall?.win_rate != null ? (
+              <>
+                <div className="stat-value">
+                  {(accuracy.recent?.win_rate ?? accuracy.overall.win_rate).toFixed(0)}
+                  <span className="stat-unit">%</span>
+                </div>
+                <div className="stat-hint">
+                  of calls correct, checked 30 days later
+                  {accuracy.recent?.evaluated > 0
+                    ? ` (${accuracy.recent.evaluated} recent)`
+                    : ` (${accuracy.overall.evaluated} all-time)`}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="stat-value collecting">📊</div>
+                <div className="stat-hint">
+                  Tracking {accuracy.pending || 0} calls — first results land 30 days
+                  after each signal. We publish the number either way.
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

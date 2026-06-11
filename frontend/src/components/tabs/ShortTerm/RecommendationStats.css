@@ -168,3 +168,8 @@
     font-size: 20px;
   }
 }
+
+/* Track Record card */
+.accuracy-card .stat-value.collecting {
+  font-size: 28px;
+}
