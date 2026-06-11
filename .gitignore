@@ -42,3 +42,4 @@ temp/
 # Docker
 docker-compose.override.yml
 container-group.yaml
+tests/e2e/node_modules/
