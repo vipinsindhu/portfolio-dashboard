@@ -24,7 +24,6 @@ from signals import (
     load_signals,
     save_signals,
     refresh_macro_data,
-    auto_generate_signals,
     fetch_macro_context,
     fetch_fundamentals,
 )
@@ -908,11 +907,11 @@ def create_app():
         replace_existing=True
     )
     scheduler.add_job(
-        auto_generate_signals,
+        generate_signals_if_stale,
         trigger="interval",
         hours=1,
         id="signal_generation",
-        name="Auto-generate signals every hour",
+        name="Hourly check; regenerate signals when older than 6h (Groq daily token budget)",
         replace_existing=True
     )
     scheduler.add_job(
@@ -945,7 +944,7 @@ def create_app():
                 id="startup_signal_refresh",
                 replace_existing=True,
             )
-            app.logger.info("[OK] Schedulers started: startup refresh (if stale) + macro refresh (1h) + signal generation (1h) + sector update (7d)")
+            app.logger.info("[OK] Schedulers started: startup refresh (if stale) + macro refresh (1h) + signal stale-check (1h, regen >6h) + sector update (7d)")
 
     return app
 

@@ -342,13 +342,20 @@ def refresh_macro_data():
         return False
 
 
-def generate_signals_if_stale(max_age_minutes=60):
+# Two LLM passes per cycle at ~6k tokens against Groq's 100k/day free
+# tier means hourly regeneration exhausts the quota mid-day. Signals are
+# weekly guidance for beginners; a 6-hour refresh is plenty, and the
+# hourly stale-check retries failed cycles within the hour.
+SIGNAL_MAX_AGE_MINUTES = 360
+
+
+def generate_signals_if_stale(max_age_minutes=SIGNAL_MAX_AGE_MINUTES):
     """
     Regenerate signals only if the stored ones are older than max_age_minutes.
 
-    Run once at startup: Railway's filesystem is ephemeral, so every deploy
-    resets signals.json to the committed copy and restarts the hourly timer.
-    Without this, signals stay stale until the process survives a full hour.
+    Run at startup and hourly: Railway's filesystem is ephemeral, so every
+    deploy resets signals.json to the committed copy and restarts the timer.
+    Without this, signals stay stale until the process survives a full cycle.
     """
     data = load_signals()
     generated_at = data.get("generated_at")
