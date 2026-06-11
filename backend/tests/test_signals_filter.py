@@ -26,14 +26,17 @@ def make_portfolio(holdings_spec):
     return Portfolio(holdings=holdings, created_at=now, updated_at=now)
 
 
-def make_signal(ticker, direction, confidence=8, sector="Technology"):
-    return {
+def make_signal(ticker, direction, confidence=8, sector="Technology", timeframe=None):
+    signal = {
         "ticker": ticker,
         "direction": direction,
         "confidence": confidence,
         "rationale": f"Test rationale for {ticker}",
         "sector": sector,
     }
+    if timeframe:
+        signal["timeframe"] = timeframe
+    return signal
 
 
 class TestOwnershipClassification:
@@ -130,6 +133,31 @@ class TestNoPortfolioBranch:
         )
 
         assert result["add"] == []
+
+
+class TestTimeframeMatching:
+    def test_recommendations_use_only_matching_timeframe(self):
+        signals = [
+            make_signal("AAPL", "buy", timeframe="long_term"),
+            make_signal("BAC", "buy", timeframe="short_term"),
+        ]
+
+        long_result = filter_signals_with_portfolio(
+            signals, None, TimeHorizon.LONG_TERM
+        )
+        short_result = filter_signals_with_portfolio(
+            signals, None, TimeHorizon.SHORT_TERM
+        )
+
+        assert {s.ticker for s in long_result["add"]} == {"AAPL"}
+        assert {s.ticker for s in short_result["add"]} == {"BAC"}
+
+    def test_untagged_legacy_signals_match_any_timeframe(self):
+        signals = [make_signal("WMT", "buy")]
+
+        for horizon in (TimeHorizon.LONG_TERM, TimeHorizon.SHORT_TERM):
+            result = filter_signals_with_portfolio(signals, None, horizon)
+            assert {s.ticker for s in result["add"]} == {"WMT"}
 
 
 class TestPitfallReconciliation:

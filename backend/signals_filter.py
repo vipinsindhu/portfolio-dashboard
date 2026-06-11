@@ -45,6 +45,12 @@ MIN_RECOMMENDATION_CONFIDENCE = 5
 POSITION_CONCENTRATION_THRESHOLD = 0.20
 
 
+def matches_timeframe(signal: Dict, timeframe: TimeHorizon) -> bool:
+    """Untagged (legacy) signals match any timeframe; tagged ones their own."""
+    tag = signal.get("timeframe")
+    return tag is None or tag == timeframe.value
+
+
 def filter_signals_with_portfolio(
     signals: List[Dict],
     portfolio: Optional[Portfolio],
@@ -55,6 +61,8 @@ def filter_signals_with_portfolio(
     Filter and contextualize signals based on user's portfolio
     Returns: {sell_reduce, hold, add}
     """
+
+    signals = [s for s in signals if matches_timeframe(s, timeframe)]
 
     if not portfolio or portfolio.holding_count == 0:
         # No portfolio - return general recommendations

@@ -9,7 +9,9 @@ import json
 
 import signals as signals_module
 from signals import (
+    auto_generate_signals,
     build_candidate_slate,
+    generate_short_term_signals,
     generate_signals,
     is_single_direction,
     parse_llm_signals,
@@ -156,3 +158,46 @@ class TestGenerateSignalsRetry:
         # Weakest candidate (T09 with the lowest quality score) made the slate
         assert "T09" in prompt
         assert "do NOT call everything a buy" in prompt
+
+
+class TestTimeframeTagging:
+    def test_long_term_signals_tagged(self, monkeypatch):
+        mixed = llm_response(["buy"] * 7 + ["avoid"] * 3)
+        TestGenerateSignalsRetry().setup_pipeline(monkeypatch, [mixed])
+
+        result = generate_signals(count=10)
+
+        assert all(s["timeframe"] == "long_term" for s in result)
+
+    def test_short_term_signals_tagged_and_prompt_is_short_term(self, monkeypatch):
+        mixed = llm_response(["buy"] * 6 + ["hold"] * 2 + ["avoid"] * 2)
+        prompts = TestGenerateSignalsRetry().setup_pipeline(monkeypatch, [mixed])
+
+        result = generate_short_term_signals(count=10)
+
+        assert all(s["timeframe"] == "short_term" for s in result)
+        assert "1-3 MONTHS" in prompts[0]
+        assert "pct_of_52_week_range" in prompts[0]
+
+    def test_auto_generate_saves_both_timeframes(self, monkeypatch):
+        monkeypatch.setattr(
+            signals_module, "fetch_signal_candidates", lambda: make_candidates(10)
+        )
+        monkeypatch.setattr(
+            signals_module, "generate_signals",
+            lambda count, candidates=None: [
+                {"ticker": "AAPL", "direction": "buy", "timeframe": "long_term"}
+            ],
+        )
+        monkeypatch.setattr(
+            signals_module, "generate_short_term_signals",
+            lambda count, candidates=None: [
+                {"ticker": "BAC", "direction": "buy", "timeframe": "short_term"}
+            ],
+        )
+        saved = {}
+        monkeypatch.setattr(signals_module, "save_signals", saved.update)
+
+        assert auto_generate_signals() is True
+        timeframes = {s["timeframe"] for s in saved["signals"]}
+        assert timeframes == {"long_term", "short_term"}

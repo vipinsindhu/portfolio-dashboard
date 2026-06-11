@@ -367,7 +367,11 @@ def auto_generate_signals():
     """Scheduled job to auto-generate signals every 60 minutes"""
     print(f"[{datetime.now().isoformat()}] Starting auto-signal generation...")
     try:
-        signals = generate_signals(count=10)
+        # Fetch candidates once, then run both timeframe passes on them
+        candidates = fetch_signal_candidates()
+        long_term = generate_signals(count=10, candidates=candidates)
+        short_term = generate_short_term_signals(count=10, candidates=candidates)
+        signals = long_term + short_term
         if not signals:
             print("❌ Failed to generate signals")
             return False
@@ -444,7 +448,7 @@ def call_groq(prompt):
         return None
 
 
-def generate_realistic_mock_signals(candidates, count=5):
+def generate_realistic_mock_signals(candidates, count=5, timeframe="long_term"):
     """Generate realistic mock signals when Groq LLM is unavailable"""
     import random
     signals = []
@@ -478,6 +482,7 @@ def generate_realistic_mock_signals(candidates, count=5):
             "rationale": rationale,
             "sector": candidate.get("sector", "Unknown"),
             "market_cap": candidate.get("market_cap"),
+            "timeframe": timeframe,
             "created_at": datetime.now().isoformat(),
             "result": None,
             "accuracy_pct": None,
@@ -566,19 +571,12 @@ RETRY_NUDGE = (
 )
 
 
-def generate_signals(count=10):
+def fetch_signal_candidates():
+    """Discover stocks and fetch fundamentals, sorted by quality (best first).
+
+    Shared by the long-term and short-term generation passes so candidates
+    are only fetched once per cycle.
     """
-    Generate stock/ETF signals using Groq cloud LLM
-    Enhanced for long-term quality stock identification
-
-    Args:
-        count: Number of signals to generate
-
-    Returns:
-        List of signal dictionaries
-    """
-
-    # Discover high-quality stocks dynamically
     print("Discovering high-quality stocks...")
     signal_candidates = discover_stocks()
 
@@ -603,14 +601,30 @@ def generate_signals(count=10):
                 ticker = future_to_ticker[future]
                 print(f"Warning: Failed to fetch fundamentals for {ticker}: {e}")
 
+    if candidates:
+        print(f"📊 Fetched fundamentals for {len(candidates)} stocks (parallel)")
+        candidates.sort(key=lambda x: x.get("quality_score", 0), reverse=True)
+
+    return candidates
+
+
+def generate_signals(count=10, candidates=None):
+    """
+    Generate long-term (5+ year) stock/ETF signals using Groq cloud LLM
+
+    Args:
+        count: Number of signals to generate
+        candidates: pre-fetched candidate list (fetched fresh when None)
+
+    Returns:
+        List of signal dictionaries tagged timeframe="long_term"
+    """
+
+    if candidates is None:
+        candidates = fetch_signal_candidates()
     if not candidates:
         print("No candidates with price data found")
         return []
-
-    print(f"📊 Fetched fundamentals for {len(candidates)} stocks (parallel)")
-
-    # Sort by quality score for better long-term selections
-    candidates.sort(key=lambda x: x.get("quality_score", 0), reverse=True)
 
     # Fetch macro context
     print("Fetching macro context...")
@@ -717,11 +731,134 @@ RULES:
             "rationale": signal.get("rationale", ""),
             "sector": candidate.get("sector", "Unknown"),
             "market_cap": candidate.get("market_cap", None),
+            "timeframe": "long_term",
             "created_at": datetime.now().isoformat(),
             "result": None,
             "accuracy_pct": None,
         }
         enhanced_signals.append(signal_obj)
+
+    return enhanced_signals
+
+
+def generate_short_term_signals(count=10, candidates=None):
+    """
+    Generate short-term (1-3 month) signals with their own LLM pass.
+
+    Reasons only over data we actually have — price vs 52-week range,
+    valuation, and macro conditions — so rationales stay honest (no
+    invented technical analysis).
+
+    Returns:
+        List of signal dictionaries tagged timeframe="short_term"
+    """
+
+    if candidates is None:
+        candidates = fetch_signal_candidates()
+    if not candidates:
+        print("No candidates with price data found")
+        return []
+
+    macro_data = fetch_macro_context()
+    macro_sentiment = get_macro_sentiment(macro_data)
+
+    slate = build_candidate_slate(candidates)
+    # Derive a position-in-range cue so the model reasons from real numbers
+    slate_for_prompt = []
+    for c in slate:
+        entry = dict(c)
+        price, high, low = c.get("current_price"), c.get("52_week_high"), c.get("52_week_low")
+        if price and high and low and high > low:
+            entry["pct_of_52_week_range"] = round((price - low) / (high - low) * 100)
+        slate_for_prompt.append(entry)
+    candidates_str = json.dumps(slate_for_prompt, indent=2)
+    print(f"📤 Sending {len(slate_for_prompt)} candidates to Groq for short-term signal generation")
+
+    print("Generating signals with Groq LLM (short-term, 1-3 month focus)...")
+    prompt = f"""You are helping regular people decide which stocks look good or risky over the NEXT 1-3 MONTHS. Rate stocks honestly and generate exactly {count} simple short-term signals.
+
+THE LIST BELOW MIXES STRONG AND WEAK COMPANIES. Not everything is a buy:
+- buy = reasonable price right now with room to recover or grow this quarter
+- hold = fine company but nothing suggests the price moves soon, or it already ran up a lot
+- avoid = stretched price or weak numbers that could fall in the next few months
+
+USE ONLY THE DATA PROVIDED. Key short-term cues:
+- pct_of_52_week_range: near 100 = at its yearly high (already ran up, less room); near 0 = at its yearly low (beaten down — bargain only if the business is solid)
+- Very high PE = priced for perfection; bad news hits these hardest
+- Market conditions below affect the next few months MORE than they affect long-term holds
+
+MARKET CONDITIONS RIGHT NOW:
+{macro_sentiment}
+
+STOCKS TO RATE:
+{candidates_str}
+
+For each stock, give:
+1. Stock symbol
+2. What to do over the next 1-3 months (buy, hold, or avoid)
+3. Confidence (1-10: 1=not sure, 10=very sure)
+4. WHY in SIMPLE WORDS (1-2 sentences) citing a specific number from the data
+
+WRITE LIKE YOU'RE TALKING TO A TEENAGER: simple words, no jargon, be clear on what to do.
+
+Examples of GOOD honest short-term ratings:
+- buy: "Bank of America sits at just 30% of its yearly price range with a low PE of 11. Solid bank at a beaten-down price - good setup for the next few months."
+- hold: "Microsoft is a great company, but it's at 95% of its yearly range. It already ran up - wait for a dip before adding."
+- avoid: "This stock trades at a PE of 70 while sitting at its yearly high. Priced for perfection - one bad earnings report and it drops. Skip it for now."
+
+Return ONLY a JSON array with no other text:
+[
+  {{
+    "ticker": "BAC",
+    "direction": "buy",
+    "confidence": 7,
+    "rationale": "Bank of America sits at just 30% of its yearly price range with a low PE of 11. Solid bank at a beaten-down price."
+  }}
+]
+
+RULES:
+- Exactly {count} signals
+- Rate HONESTLY: aim for a mix - do NOT call everything a buy
+- Every rationale must cite a specific number from the data
+- Confidence 5-10 (vary them)
+- SHORT-TERM rationale (1-3 month perspective, not "hold forever")
+- Pick from DIFFERENT industries"""
+
+    response_text = call_groq(prompt)
+
+    if not response_text:
+        print("Groq unavailable, generating realistic mock signals...")
+        return generate_realistic_mock_signals(candidates, count, timeframe="short_term")
+
+    signals = parse_llm_signals(response_text)
+    if signals is None:
+        print(f"Failed to parse Groq response: {response_text[:100]}")
+        return generate_realistic_mock_signals(candidates, count, timeframe="short_term")
+
+    if is_single_direction(signals):
+        print("Warning: LLM rated every stock the same way; retrying once for an honest mix")
+        retry_text = call_groq(prompt + RETRY_NUDGE)
+        retry_signals = parse_llm_signals(retry_text) if retry_text else None
+        if retry_signals and not is_single_direction(retry_signals):
+            signals = retry_signals
+
+    enhanced_signals = []
+    for signal in signals:
+        ticker = signal.get("ticker")
+        candidate = next((c for c in candidates if c["ticker"] == ticker), {})
+        enhanced_signals.append({
+            "id": f"{ticker}_{datetime.now().isoformat()}",
+            "ticker": ticker,
+            "direction": signal.get("direction", "hold"),
+            "confidence": signal.get("confidence", 5),
+            "rationale": signal.get("rationale", ""),
+            "sector": candidate.get("sector", "Unknown"),
+            "market_cap": candidate.get("market_cap", None),
+            "timeframe": "short_term",
+            "created_at": datetime.now().isoformat(),
+            "result": None,
+            "accuracy_pct": None,
+        })
 
     return enhanced_signals
 

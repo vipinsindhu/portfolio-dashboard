@@ -16,7 +16,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 sys.path.insert(0, os.path.dirname(__file__))
 
 from signals import (
+    fetch_signal_candidates,
     generate_signals,
+    generate_short_term_signals,
     generate_signals_if_stale,
     update_signal_accuracy,
     load_signals,
@@ -279,6 +281,12 @@ def create_app():
             all_signals = signals_response.get("data", []) if isinstance(signals_response, dict) else []
             generated_at = signals_response.get("generated_at") if isinstance(signals_response, dict) else None
 
+            # Use the short-term generation pass when available; legacy
+            # stores (no timeframe tags) fall back to the whole pool
+            short_term_pool = [s for s in all_signals if s.get("timeframe") == "short_term"]
+            if short_term_pool:
+                all_signals = short_term_pool
+
             # Filter signals
             filtered_signals = []
             for signal in all_signals:
@@ -393,6 +401,9 @@ def create_app():
             all_signals = signals_response.get("data", []) if isinstance(signals_response, dict) else []
             generated_at = signals_response.get("generated_at") if isinstance(signals_response, dict) else None
 
+            # Untagged (legacy) signals count as long-term
+            all_signals = [s for s in all_signals if s.get("timeframe") != "short_term"]
+
             # Filter signals
             filtered_signals = []
             for signal in all_signals:
@@ -503,7 +514,11 @@ def create_app():
         """Generate new signals (admin endpoint)"""
         try:
             count = request.json.get("count", 10) if request.json else 10
-            new_signals = generate_signals(count)
+            candidates = fetch_signal_candidates()
+            new_signals = (
+                generate_signals(count, candidates=candidates)
+                + generate_short_term_signals(count, candidates=candidates)
+            )
 
             if not new_signals:
                 return jsonify({"error": "Failed to generate signals"}), 500

@@ -155,3 +155,45 @@ class TestSignalEndpointRecommendations:
 
         assert "recommendations" in data
         assert {s["ticker"] for s in data["recommendations"]["sell_reduce"]} == {"XOM"}
+
+
+TAGGED_SIGNALS = [
+    {
+        "id": "AAPL_lt", "ticker": "AAPL", "direction": "buy", "confidence": 9,
+        "rationale": "test", "sector": "Technology", "timeframe": "long_term",
+    },
+    {
+        "id": "BAC_st", "ticker": "BAC", "direction": "buy", "confidence": 8,
+        "rationale": "test", "sector": "Financials", "timeframe": "short_term",
+    },
+    {
+        "id": "NVDA_st", "ticker": "NVDA", "direction": "avoid", "confidence": 7,
+        "rationale": "test", "sector": "Technology", "timeframe": "short_term",
+    },
+]
+
+
+class TestTimeframeSeparation:
+    def test_short_term_endpoint_serves_only_short_term_signals(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, TAGGED_SIGNALS)
+
+        data = client.get("/api/signals/short-term").get_json()
+
+        tickers = {s["ticker"] for s in data["signals"]}
+        assert tickers == {"BAC", "NVDA"}
+
+    def test_long_term_endpoint_excludes_short_term_signals(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, TAGGED_SIGNALS)
+
+        data = client.get("/api/signals/long-term").get_json()
+
+        tickers = {s["ticker"] for s in data["signals"]}
+        assert tickers == {"AAPL"}
+
+    def test_short_term_endpoint_falls_back_to_untagged_pool(self, client, isolate_workdir):
+        # Legacy stores have no timeframe tags; the tab must not go empty
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
+
+        data = client.get("/api/signals/short-term").get_json()
+
+        assert {s["ticker"] for s in data["signals"]} == {"AAPL", "WMT", "XOM"}

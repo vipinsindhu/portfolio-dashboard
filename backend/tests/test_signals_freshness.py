@@ -78,7 +78,13 @@ class TestMockSignalGeneration:
 class TestAutoGenerateSaves:
     def _run(self, monkeypatch, generated, existing):
         saved = {}
-        monkeypatch.setattr(signals_module, "generate_signals", lambda count=10: generated)
+        monkeypatch.setattr(signals_module, "fetch_signal_candidates", lambda: [{"ticker": "AAPL"}])
+        monkeypatch.setattr(
+            signals_module, "generate_signals", lambda count=10, candidates=None: generated
+        )
+        monkeypatch.setattr(
+            signals_module, "generate_short_term_signals", lambda count=10, candidates=None: []
+        )
         monkeypatch.setattr(signals_module, "load_signals", lambda: existing)
         monkeypatch.setattr(signals_module, "save_signals", lambda data: saved.update(data))
         result = signals_module.auto_generate_signals()
