@@ -148,126 +148,89 @@ function ShortTerm() {
         <FilterBar onFilterChange={handleFilterChange} stats={stats} />
       )}
 
-      {/* Portfolio-based Recommendations */}
-      {hasPortfolio && recommendations && (
-        <>
-          {/* Sell/Reduce */}
-          {recommendations.sell_reduce?.length > 0 && (
-            <section className="signals-section sell-reduce">
-              <h3 className="section-title">🔴 Sell/Reduce</h3>
-              <p className="section-description">
-                These holdings may be due for profit-taking in the current market
-              </p>
-              <div className="signals-grid">
-                {recommendations.sell_reduce.map((signal, idx) => (
-                  <SignalCard
-                    key={idx}
-                    signal={signal}
-                    type="sell-reduce"
-                    weight={signal.weight_in_portfolio}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Hold */}
-          {recommendations.hold?.length > 0 && (
-            <section className="signals-section hold">
-              <h3 className="section-title">⏸️ Hold</h3>
-              <p className="section-description">
-                Maintain positions; no action needed for these holdings
-              </p>
-              <div className="signals-grid">
-                {recommendations.hold.map((signal, idx) => (
-                  <SignalCard key={idx} signal={signal} type="hold" weight={signal.weight_in_portfolio} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Add */}
-          {recommendations.add?.length > 0 && (
-            <section className="signals-section add">
-              <h3 className="section-title">🟢 Add/New Positions</h3>
-              <p className="section-description">
-                These would complement your current portfolio
-              </p>
-              <div className="signals-grid">
-                {recommendations.add.map((signal, idx) => (
-                  <SignalCard key={idx} signal={signal} type="add" />
-                ))}
-              </div>
-            </section>
-          )}
-        </>
-      )}
-
-      {/* Top Signals (General or Filtered) - Deduplicated */}
+      {/* Signals organized by action: Buy → Hold → Avoid.
+          Portfolio-specific picks appear first within each section. */}
       {(() => {
-        // Remove stocks already in portfolio recommendations from general signals
         const recommendationTickers = new Set()
         if (recommendations) {
-          if (recommendations.sell_reduce) recommendations.sell_reduce.forEach(s => recommendationTickers.add(s.ticker))
-          if (recommendations.hold) recommendations.hold.forEach(s => recommendationTickers.add(s.ticker))
-          if (recommendations.add) recommendations.add.forEach(s => recommendationTickers.add(s.ticker))
+          ;['sell_reduce', 'hold', 'add'].forEach(key =>
+            (recommendations[key] || []).forEach(s => recommendationTickers.add(s.ticker))
+          )
         }
+        const generalSignals = filteredSignals.filter(s => !recommendationTickers.has(s.ticker))
 
-        const deduplicatedSignals = filteredSignals.filter(s => !recommendationTickers.has(s.ticker))
-        return deduplicatedSignals.length > 0 ? (
-        <>
-          {/* Buy Signals */}
-          {deduplicatedSignals.filter(s => s.direction === 'buy').length > 0 && (
-            <section className="signals-section buy">
-              <h3 className="section-title">🟢 Good Time to Buy</h3>
-              <p className="section-description">
-                These stocks look like good buys right now
-              </p>
-              <div className="signals-grid">
-                {deduplicatedSignals
-                  .filter(s => s.direction === 'buy')
-                  .map((signal, idx) => (
+        const buyRecs = (hasPortfolio && recommendations?.add) || []
+        const holdRecs = (hasPortfolio && recommendations?.hold) || []
+        const avoidRecs = (hasPortfolio && recommendations?.sell_reduce) || []
+
+        const buySignals = generalSignals.filter(s => s.direction === 'buy')
+        const holdSignals = generalSignals.filter(s => s.direction === 'hold')
+        const avoidSignals = generalSignals.filter(s => s.direction === 'avoid')
+
+        return (
+          <>
+            {(buyRecs.length > 0 || buySignals.length > 0) && (
+              <section className="signals-section buy">
+                <h3 className="section-title">🟢 Buy</h3>
+                <p className="section-description">
+                  Good buys right now — including new picks that would fit your portfolio
+                </p>
+                <div className="signals-grid">
+                  {buyRecs.map((signal, idx) => (
+                    <SignalCard key={`rec-${idx}`} signal={signal} type="add" />
+                  ))}
+                  {buySignals.map((signal, idx) => (
                     <SignalCardEnhanced key={idx} signal={signal} type="buy" />
                   ))}
-              </div>
-            </section>
-          )}
+                </div>
+              </section>
+            )}
 
-          {/* Hold Signals */}
-          {deduplicatedSignals.filter(s => s.direction === 'hold').length > 0 && (
-            <section className="signals-section hold">
-              <h3 className="section-title">⏸️ Wait and See</h3>
-              <p className="section-description">
-                These could be good, but wait a bit longer to decide
-              </p>
-              <div className="signals-grid">
-                {deduplicatedSignals
-                  .filter(s => s.direction === 'hold')
-                  .map((signal, idx) => (
+            {(holdRecs.length > 0 || holdSignals.length > 0) && (
+              <section className="signals-section hold">
+                <h3 className="section-title">⏸️ Hold</h3>
+                <p className="section-description">
+                  Keep what you own; wait and see before adding more
+                </p>
+                <div className="signals-grid">
+                  {holdRecs.map((signal, idx) => (
+                    <SignalCard
+                      key={`rec-${idx}`}
+                      signal={signal}
+                      type="hold"
+                      weight={signal.weight_in_portfolio}
+                    />
+                  ))}
+                  {holdSignals.map((signal, idx) => (
                     <SignalCardEnhanced key={idx} signal={signal} type="hold" />
                   ))}
-              </div>
-            </section>
-          )}
+                </div>
+              </section>
+            )}
 
-          {/* Avoid Signals */}
-          {deduplicatedSignals.filter(s => s.direction === 'avoid').length > 0 && (
-            <section className="signals-section avoid">
-              <h3 className="section-title">🔴 Skip These</h3>
-              <p className="section-description">
-                These stocks might not be good buys right now
-              </p>
-              <div className="signals-grid">
-                {deduplicatedSignals
-                  .filter(s => s.direction === 'avoid')
-                  .map((signal, idx) => (
+            {(avoidRecs.length > 0 || avoidSignals.length > 0) && (
+              <section className="signals-section avoid">
+                <h3 className="section-title">🔴 Avoid / Sell</h3>
+                <p className="section-description">
+                  Skip these for now — or consider selling if you already own them
+                </p>
+                <div className="signals-grid">
+                  {avoidRecs.map((signal, idx) => (
+                    <SignalCard
+                      key={`rec-${idx}`}
+                      signal={signal}
+                      type="sell-reduce"
+                      weight={signal.weight_in_portfolio}
+                    />
+                  ))}
+                  {avoidSignals.map((signal, idx) => (
                     <SignalCardEnhanced key={idx} signal={signal} type="avoid" />
                   ))}
-              </div>
-            </section>
-          )}
-        </>
-        ) : null
+                </div>
+              </section>
+            )}
+          </>
+        )
       })()}
 
       {/* Empty State */}
