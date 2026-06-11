@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import './RecommendationStats.css'
 
-function RecommendationStats({ stats, generatedAt }) {
+function RecommendationStats({ stats, generatedAt, displayCounts }) {
   const [timeAgo, setTimeAgo] = useState('')
 
   useEffect(() => {
@@ -39,6 +39,12 @@ function RecommendationStats({ stats, generatedAt }) {
 
   const confidenceLevel = stats.avg_confidence >= 8 ? 'high' : stats.avg_confidence >= 6 ? 'medium' : 'low'
 
+  // Prefer counts of what is actually rendered on the page (including
+  // portfolio-specific picks) over the raw market-signal stats
+  const buyCount = displayCounts ? displayCounts.buy : stats.buy_count
+  const holdCount = displayCounts ? displayCounts.hold : stats.hold_count
+  const avoidCount = displayCounts ? displayCounts.avoid : stats.avoid_count
+
   return (
     <div className="recommendation-stats">
       <div className="stats-container">
@@ -67,17 +73,17 @@ function RecommendationStats({ stats, generatedAt }) {
           <div className="direction-breakdown">
             <div className="direction-item buy">
               <span className="icon">🟢</span>
-              <span className="count">{stats.buy_count}</span>
+              <span className="count">{buyCount}</span>
               <span className="label">Buy Now</span>
             </div>
             <div className="direction-item hold">
               <span className="icon">⏸️</span>
-              <span className="count">{stats.hold_count}</span>
+              <span className="count">{holdCount}</span>
               <span className="label">Wait & See</span>
             </div>
             <div className="direction-item avoid">
               <span className="icon">🔴</span>
-              <span className="count">{stats.avoid_count}</span>
+              <span className="count">{avoidCount}</span>
               <span className="label">Skip This</span>
             </div>
           </div>

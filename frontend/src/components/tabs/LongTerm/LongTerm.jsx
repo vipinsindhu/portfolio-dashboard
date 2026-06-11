@@ -108,6 +108,33 @@ function LongTerm() {
     setFilteredSignals(filtered)
   }
 
+  // Group everything shown on the page into Buy / Hold / Avoid buckets.
+  // Portfolio-specific picks come first; general signals are deduplicated.
+  const recommendationTickers = new Set()
+  if (recommendations) {
+    ;['sell_reduce', 'hold', 'add'].forEach(key =>
+      (recommendations[key] || []).forEach(s => recommendationTickers.add(s.ticker))
+    )
+  }
+  const generalSignals = filteredSignals.filter(s => !recommendationTickers.has(s.ticker))
+
+  const buyRecs = (hasPortfolio && recommendations?.add) || []
+  const holdRecs = (hasPortfolio && recommendations?.hold) || []
+  const avoidRecs = (hasPortfolio && recommendations?.sell_reduce) || []
+
+  const buySignals = generalSignals.filter(s => s.direction === 'buy')
+  const holdSignals = generalSignals.filter(s => s.direction === 'hold')
+  const avoidSignals = generalSignals.filter(s => s.direction === 'avoid')
+
+  // Drives both the "What Should You Do?" stats box and the sections below,
+  // so the numbers always match the cards on screen
+  const displayCounts = {
+    buy: buyRecs.length + buySignals.length,
+    hold: holdRecs.length + holdSignals.length,
+    avoid: avoidRecs.length + avoidSignals.length
+  }
+  const hasAnyContent = displayCounts.buy + displayCounts.hold + displayCounts.avoid > 0
+
   if (loading && signals.length === 0) {
     return (
       <div className="long-term-container loading">
@@ -141,7 +168,13 @@ function LongTerm() {
       {error && <div className="error-message">{error}</div>}
 
       {/* Stats Display */}
-      {stats && <RecommendationStats stats={stats} generatedAt={generatedAt} />}
+      {stats && (
+        <RecommendationStats
+          stats={stats}
+          generatedAt={generatedAt}
+          displayCounts={displayCounts}
+        />
+      )}
 
       {/* Filters */}
       {signals.length > 0 && (
@@ -150,78 +183,62 @@ function LongTerm() {
 
       {/* Signals organized by action: Buy → Hold → Avoid.
           Portfolio-specific picks appear first within each section. */}
-      {(() => {
-        const recommendationTickers = new Set()
-        if (recommendations) {
-          ;['sell_reduce', 'hold', 'add'].forEach(key =>
-            (recommendations[key] || []).forEach(s => recommendationTickers.add(s.ticker))
-          )
-        }
-        const generalSignals = filteredSignals.filter(s => !recommendationTickers.has(s.ticker))
+      {displayCounts.buy > 0 && (
+        <section className="signals-section buy">
+          <h3 className="section-title">🟢 Buy</h3>
+          <p className="section-description">
+            Quality companies to buy and hold for years — including picks that fit your portfolio
+          </p>
+          <div className="signals-grid">
+            {buyRecs.map((signal, idx) => (
+              <SignalCard key={`rec-${idx}`} signal={signal} type="add" />
+            ))}
+            {buySignals.map((signal, idx) => (
+              <SignalCardEnhanced key={idx} signal={signal} type="buy" />
+            ))}
+          </div>
+        </section>
+      )}
 
-        const buyRecs = (hasPortfolio && recommendations?.add) || []
-        const holdRecs = (hasPortfolio && recommendations?.hold) || []
-        const avoidRecs = (hasPortfolio && recommendations?.sell_reduce) || []
+      {displayCounts.hold > 0 && (
+        <section className="signals-section hold">
+          <h3 className="section-title">⏸️ Hold</h3>
+          <p className="section-description">
+            Keep what you have; wait for a better price before adding
+          </p>
+          <div className="signals-grid">
+            {holdRecs.map((signal, idx) => (
+              <SignalCard key={`rec-${idx}`} signal={signal} type="hold" />
+            ))}
+            {holdSignals.map((signal, idx) => (
+              <SignalCardEnhanced key={idx} signal={signal} type="hold" />
+            ))}
+          </div>
+        </section>
+      )}
 
-        const buySignals = generalSignals.filter(s => s.direction === 'buy')
-        const holdSignals = generalSignals.filter(s => s.direction === 'hold')
-        const avoidSignals = generalSignals.filter(s => s.direction === 'avoid')
-
-        return (
-          <>
-            {(buyRecs.length > 0 || buySignals.length > 0) && (
-              <section className="signals-section buy">
-                <h3 className="section-title">🟢 Buy</h3>
-                <p className="section-description">
-                  Quality companies to buy and hold for years — including picks that fit your portfolio
-                </p>
-                <div className="signals-grid">
-                  {buyRecs.map((signal, idx) => (
-                    <SignalCard key={`rec-${idx}`} signal={signal} type="add" />
-                  ))}
-                  {buySignals.map((signal, idx) => (
-                    <SignalCardEnhanced key={idx} signal={signal} type="buy" />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {(holdRecs.length > 0 || holdSignals.length > 0) && (
-              <section className="signals-section hold">
-                <h3 className="section-title">⏸️ Hold</h3>
-                <p className="section-description">
-                  Keep what you have; wait for a better price before adding
-                </p>
-                <div className="signals-grid">
-                  {holdRecs.map((signal, idx) => (
-                    <SignalCard key={`rec-${idx}`} signal={signal} type="hold" />
-                  ))}
-                  {holdSignals.map((signal, idx) => (
-                    <SignalCardEnhanced key={idx} signal={signal} type="hold" />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {(avoidRecs.length > 0 || avoidSignals.length > 0) && (
-              <section className="signals-section avoid">
-                <h3 className="section-title">🔴 Avoid / Sell</h3>
-                <p className="section-description">
-                  Not good long-term picks right now — consider selling if you own them
-                </p>
-                <div className="signals-grid">
-                  {avoidRecs.map((signal, idx) => (
-                    <SignalCard key={`rec-${idx}`} signal={signal} type="sell-reduce" />
-                  ))}
-                  {avoidSignals.map((signal, idx) => (
-                    <SignalCardEnhanced key={idx} signal={signal} type="avoid" />
-                  ))}
-                </div>
-              </section>
-            )}
-          </>
-        )
-      })()}
+      {hasAnyContent && (
+        <section className="signals-section avoid">
+          <h3 className="section-title">🔴 Avoid / Sell</h3>
+          <p className="section-description">
+            Not good long-term picks right now — consider selling if you own them
+          </p>
+          {displayCounts.avoid > 0 ? (
+            <div className="signals-grid">
+              {avoidRecs.map((signal, idx) => (
+                <SignalCard key={`rec-${idx}`} signal={signal} type="sell-reduce" />
+              ))}
+              {avoidSignals.map((signal, idx) => (
+                <SignalCardEnhanced key={idx} signal={signal} type="avoid" />
+              ))}
+            </div>
+          ) : (
+            <p className="section-empty-note">
+              🎉 Nothing to avoid right now — all the stocks that passed our quality screen look like reasonable long-term holdings.
+            </p>
+          )}
+        </section>
+      )}
 
       {/* Empty State */}
       {filteredSignals.length === 0 && (

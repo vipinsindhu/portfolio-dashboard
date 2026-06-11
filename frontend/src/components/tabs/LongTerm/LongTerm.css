@@ -318,3 +318,14 @@
     padding: 40px 20px;
   }
 }
+
+/* Empty-state note inside a signals section */
+.section-empty-note {
+  padding: 16px;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0;
+}
