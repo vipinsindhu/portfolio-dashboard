@@ -27,7 +27,6 @@ class Config:
     REDIS_URL: Optional[str] = None
 
     # API
-    ANTHROPIC_API_KEY: str = ""
     MAX_WORKERS: int = 4
     REQUEST_TIMEOUT: int = 120
 
@@ -50,7 +49,6 @@ class Config:
             DATABASE_POOL_RECYCLE=int(os.getenv("DATABASE_POOL_RECYCLE", "3600")),
             DATABASE_ECHO=os.getenv("DATABASE_ECHO", "false").lower() == "true",
             REDIS_URL=os.getenv("REDIS_URL"),
-            ANTHROPIC_API_KEY=os.getenv("ANTHROPIC_API_KEY", ""),
             MAX_WORKERS=int(os.getenv("MAX_WORKERS", "4")),
             REQUEST_TIMEOUT=int(os.getenv("REQUEST_TIMEOUT", "120")),
             CORS_ORIGINS=os.getenv("CORS_ORIGINS", "*"),
