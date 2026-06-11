@@ -34,9 +34,9 @@ AI-powered portfolio analysis and recommendations for beginner investors. Analyz
 ## 📚 Documentation
 
 ### Getting Started
+- [Product Requirements (PRD)](docs/PRD.md) - What this product is, roadmap, decisions
 - [Getting Started Guide](docs/GETTING_STARTED.md) - Installation, setup, first run
 - [Architecture Overview](docs/technical/ARCHITECTURE.md) - System design & components
-- [Feature Overview](docs/FEATURE_ALIGNMENT.md) - What this app does
 
 ### For Users
 - [User Guide](docs/guides/USER_GUIDE.md) - How to use the dashboard
