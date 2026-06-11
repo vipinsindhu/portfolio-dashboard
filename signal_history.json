@@ -491,7 +491,127 @@
    "result": null,
    "return_pct": null,
    "evaluated_at": null
+  },
+  {
+   "id": "JNJ_2026-06-11T11:11:17.407998",
+   "ticker": "JNJ",
+   "direction": "buy",
+   "confidence": 9,
+   "sector": "Healthcare",
+   "created_at": "2026-06-11T11:11:17.408012",
+   "captured_at": "2026-06-11T11:11:46.859049",
+   "result": null,
+   "return_pct": null,
+   "evaluated_at": null
+  },
+  {
+   "id": "JPM_2026-06-11T11:11:17.408015",
+   "ticker": "JPM",
+   "direction": "buy",
+   "confidence": 8,
+   "sector": "Financials",
+   "created_at": "2026-06-11T11:11:17.408016",
+   "captured_at": "2026-06-11T11:11:46.859049",
+   "result": null,
+   "return_pct": null,
+   "evaluated_at": null
+  },
+  {
+   "id": "WMT_2026-06-11T11:11:17.408018",
+   "ticker": "WMT",
+   "direction": "buy",
+   "confidence": 8,
+   "sector": "Consumer",
+   "created_at": "2026-06-11T11:11:17.408019",
+   "captured_at": "2026-06-11T11:11:46.859049",
+   "result": null,
+   "return_pct": null,
+   "evaluated_at": null
+  },
+  {
+   "id": "MSFT_2026-06-11T11:11:17.408022",
+   "ticker": "MSFT",
+   "direction": "buy",
+   "confidence": 7,
+   "sector": "Technology",
+   "created_at": "2026-06-11T11:11:17.408023",
+   "captured_at": "2026-06-11T11:11:46.859049",
+   "result": null,
+   "return_pct": null,
+   "evaluated_at": null
+  },
+  {
+   "id": "UNH_2026-06-11T11:11:17.408025",
+   "ticker": "UNH",
+   "direction": "buy",
+   "confidence": 9,
+   "sector": "Healthcare",
+   "created_at": "2026-06-11T11:11:17.408026",
+   "captured_at": "2026-06-11T11:11:46.859049",
+   "result": null,
+   "return_pct": null,
+   "evaluated_at": null
+  },
+  {
+   "id": "BAC_2026-06-11T11:11:17.408027",
+   "ticker": "BAC",
+   "direction": "buy",
+   "confidence": 8,
+   "sector": "Financials",
+   "created_at": "2026-06-11T11:11:17.408028",
+   "captured_at": "2026-06-11T11:11:46.859049",
+   "result": null,
+   "return_pct": null,
+   "evaluated_at": null
+  },
+  {
+   "id": "PFE_2026-06-11T11:11:17.408032",
+   "ticker": "PFE",
+   "direction": "buy",
+   "confidence": 6,
+   "sector": "Pharma & Biotech",
+   "created_at": "2026-06-11T11:11:17.408033",
+   "captured_at": "2026-06-11T11:11:46.859049",
+   "result": null,
+   "return_pct": null,
+   "evaluated_at": null
+  },
+  {
+   "id": "AAPL_2026-06-11T11:11:17.408034",
+   "ticker": "AAPL",
+   "direction": "hold",
+   "confidence": 5,
+   "sector": "Technology",
+   "created_at": "2026-06-11T11:11:17.408035",
+   "captured_at": "2026-06-11T11:11:46.859049",
+   "result": null,
+   "return_pct": null,
+   "evaluated_at": null
+  },
+  {
+   "id": "BA_2026-06-11T11:11:17.408038",
+   "ticker": "BA",
+   "direction": "buy",
+   "confidence": 6,
+   "sector": "Industrials",
+   "created_at": "2026-06-11T11:11:17.408039",
+   "captured_at": "2026-06-11T11:11:46.859049",
+   "result": null,
+   "return_pct": null,
+   "evaluated_at": null
+  },
+  {
+   "id": "AGG_2026-06-11T11:11:17.408041",
+   "ticker": "AGG",
+   "direction": "buy",
+   "confidence": 7,
+   "sector": "ETF",
+   "created_at": "2026-06-11T11:11:17.408042",
+   "captured_at": "2026-06-11T11:11:46.859049",
+   "result": null,
+   "return_pct": null,
+   "evaluated_at": null
   }
  ],
- "updated_at": "2026-06-11T06:10:53.271195"
+ "updated_at": "2026-06-11T11:11:46.859315"
 }
