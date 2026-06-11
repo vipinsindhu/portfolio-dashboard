@@ -528,6 +528,44 @@ def score_company_quality(company_data):
     return min(100, max(0, score))
 
 
+def build_candidate_slate(candidates, top_n=15, bottom_n=10):
+    """Mix the strongest and weakest quality-ranked candidates.
+
+    Sending only top-quality stocks meant the LLM had nothing to rate
+    "hold" or "avoid" — every signal came back "buy". The bottom slice
+    gives it genuinely weak candidates to flag honestly.
+    Expects candidates sorted by quality score, best first.
+    """
+    if len(candidates) <= top_n + bottom_n:
+        return list(candidates)
+    return candidates[:top_n] + candidates[-bottom_n:]
+
+
+def parse_llm_signals(response_text):
+    """Extract the JSON array of signals from an LLM response, or None."""
+    import re
+    try:
+        match = re.search(r'\[.*\]', response_text, re.DOTALL)
+        if match:
+            return json.loads(match.group())
+        return json.loads(response_text)
+    except json.JSONDecodeError:
+        return None
+
+
+def is_single_direction(signals):
+    """True when every signal has the same direction (suspicious for 5+)."""
+    directions = {s.get("direction") for s in signals}
+    return len(signals) >= 5 and len(directions) == 1
+
+
+RETRY_NUDGE = (
+    "\n\nIMPORTANT: Your previous answer rated every stock the same way. "
+    "That is not an honest assessment of a list that mixes strong and weak "
+    "companies. Re-rate them: use hold and avoid where the data supports it."
+)
+
+
 def generate_signals(count=10):
     """
     Generate stock/ETF signals using Groq cloud LLM
@@ -579,28 +617,25 @@ def generate_signals(count=10):
     macro_data = fetch_macro_context()
     macro_sentiment = get_macro_sentiment(macro_data)
 
-    # Prepare data for Groq LLM - use top quality candidates
-    candidates_to_send = min(25, len(candidates))
-    candidates_str = json.dumps(candidates[:candidates_to_send], indent=2)
-    print(f"📤 Sending {candidates_to_send} candidates (quality-ranked) to Groq for signal generation")
+    # Prepare data for Groq LLM - mix strong and weak candidates so the
+    # LLM has genuine hold/avoid material, not just pre-vetted winners
+    slate = build_candidate_slate(candidates)
+    candidates_str = json.dumps(slate, indent=2)
+    print(f"📤 Sending {len(slate)} candidates (top + bottom of quality ranking) to Groq for signal generation")
 
     # Use Groq to generate signals with enhanced long-term focus
     print("Generating signals with Groq LLM (long-term quality focus)...")
-    prompt = f"""You are helping regular people find good companies to own for years. Generate exactly {count} simple stock ideas.
+    prompt = f"""You are helping regular people decide which companies to own for years — and which to skip. Rate stocks honestly and generate exactly {count} simple stock signals.
 
-FOCUS ON LONG-TERM QUALITY:
-- Companies with strong earnings and dividends
-- Businesses people trust and use regularly
-- Reasonable prices (not too expensive)
-- Stable industries that will exist in 10 years
-- Market leaders with competitive advantages
-
-REQUIREMENT: Pick from DIFFERENT industries/sectors for variety.
+THE LIST BELOW MIXES STRONG AND WEAK COMPANIES (ranked by fundamental quality, best first). Not everything is a buy:
+- buy = strong business at a reasonable price (good PE, dividends, stability)
+- hold = good business but the price is stretched or growth is slowing — fine to keep, don't rush to add
+- avoid = real problems in the data: very high PE, no dividend with weak growth, shrinking business
 
 MARKET CONDITIONS RIGHT NOW:
 {macro_sentiment}
 
-STOCKS TO CONSIDER (ranked by fundamental quality):
+STOCKS TO RATE:
 {candidates_str}
 
 For each stock, give:
@@ -610,22 +645,23 @@ For each stock, give:
 4. WHY in SIMPLE WORDS (1-2 sentences):
    - Easy reason a 10th grader would understand
    - Why this matters for long-term holding
-   - What a beginner should do
+   - For an AVOID: name the specific number or fact that worries you
 
 LONG-TERM INVESTING TIPS TO USE:
 - Strong dividends = good for staying invested
-- Low PE ratio = reasonable price
+- Low PE ratio = reasonable price; PE above 50 = paying a lot for hope
 - Big market cap = stable/established company
 - Market conditions matter, but matter LESS for long-term holds
 
 WRITE LIKE YOU'RE TALKING TO A TEENAGER:
 - Simple words only, no jargon
 - Explain the business idea simply
-- Say why it matters for 5+ year holds
 - Be clear on what to do
 
-Example of GOOD long-term thinking:
-"Walmart is a store everyone uses. It pays dividends (free money) every quarter. The price is reasonable. This is the kind of company to buy and hold for years. Good time to buy a little at a time."
+Examples of GOOD honest ratings:
+- buy: "Walmart is a store everyone uses. It pays dividends (free money) every quarter. The price is reasonable. This is the kind of company to buy and hold for years."
+- hold: "Costco is a great business, but the price is high right now (PE of 50). If you own it, keep it. If you don't, wait for a better price."
+- avoid: "This company trades at a PE of 80 and pays no dividend. You're paying a premium price for an unproven story. Skip it until the numbers improve."
 
 Return ONLY a JSON array with no other text:
 [
@@ -639,8 +675,9 @@ Return ONLY a JSON array with no other text:
 
 RULES:
 - Exactly {count} signals
-- Focus on QUALITY companies (good PE, dividends, stability)
-- Confidence 5-10 (vary them, 7+ for quality stocks)
+- Rate HONESTLY: aim for a mix — if the data shows weak companies, say avoid; do NOT call everything a buy
+- An avoid rationale must cite the specific risk from the data
+- Confidence 5-10 (vary them)
 - SIMPLE rationale - no fancy words
 - LONG-TERM rationale (5+ year perspective)
 - Pick from DIFFERENT industries"""
@@ -651,18 +688,20 @@ RULES:
         print("Groq unavailable, generating realistic mock signals...")
         return generate_realistic_mock_signals(candidates, count)
 
-    # Parse response
-    try:
-        # Try to find JSON in response
-        import re
-        match = re.search(r'\[.*\]', response_text, re.DOTALL)
-        if match:
-            signals = json.loads(match.group())
-        else:
-            signals = json.loads(response_text)
-    except json.JSONDecodeError:
+    signals = parse_llm_signals(response_text)
+    if signals is None:
         print(f"Failed to parse Groq response: {response_text[:100]}")
         return generate_realistic_mock_signals(candidates, count)
+
+    # All-one-direction output means the model ignored the honest-mix
+    # instruction; nudge it once, keep the original answer if the retry
+    # doesn't improve things
+    if is_single_direction(signals):
+        print("Warning: LLM rated every stock the same way; retrying once for an honest mix")
+        retry_text = call_groq(prompt + RETRY_NUDGE)
+        retry_signals = parse_llm_signals(retry_text) if retry_text else None
+        if retry_signals and not is_single_direction(retry_signals):
+            signals = retry_signals
 
     # Enhance signals with sector and market cap info
     enhanced_signals = []

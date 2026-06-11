@@ -99,3 +99,4 @@ The shared-portfolio model is fine for demo, broken for real use (two simultaneo
 | 2026-06-11 | **P0-1 shipped:** 30-day accuracy tracking (history committed daily via GitHub Actions; win rules: buy=up, avoid=down, hold=±5%; first results ~2026-07-11) |
 | 2026-06-11 | Stale-signal fix: startup job regenerates signals when stored ones are >60m old (deploys were resetting the hourly timer + data) |
 | 2026-06-11 | **P0-2 shipped:** classifier fixed (case-insensitive ownership; no ACCUMULATE on >20% positions; dead short-term scorer that returned empty recommendations removed; recommendations now actually embedded in signals responses — `dict(dataclass)` bug) |
+| 2026-06-11 | **Balanced generation:** LLM now sees a mixed slate (top 15 + bottom 10 by quality) with an honesty-first prompt and a one-shot retry when it rates everything the same — hold/avoid signals were structurally impossible before (quality screen + buy-only example) |
