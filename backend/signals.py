@@ -368,12 +368,25 @@ def auto_generate_signals():
     print(f"[{datetime.now().isoformat()}] Starting auto-signal generation...")
     try:
         signals = generate_signals(count=10)
-        if signals:
-            print(f"✅ Auto-generated {len(signals)} signals with fresh market data")
-            return True
-        else:
+        if not signals:
             print("❌ Failed to generate signals")
             return False
+
+        # Never silently replace real LLM signals with mock fallback data —
+        # stale-but-real beats fresh-but-fake (see docs/PRD.md, trust pillar)
+        if any(s.get("source") == "mock" for s in signals):
+            existing = load_signals()
+            if existing.get("signals"):
+                print("⚠️ LLM unavailable; generated mock fallback signals — keeping existing real signals instead")
+                return False
+            print("⚠️ LLM unavailable and no stored signals; saving mock fallback so the app isn't empty")
+
+        save_signals({
+            "signals": signals,
+            "generated_at": datetime.utcnow().isoformat(),
+        })
+        print(f"✅ Auto-generated and saved {len(signals)} signals with fresh market data")
+        return True
     except Exception as e:
         print(f"❌ Signal auto-generation failed: {e}")
         return False
@@ -461,6 +474,7 @@ def generate_realistic_mock_signals(candidates, count=5):
             "ticker": candidate["ticker"],
             "direction": direction,
             "confidence": confidence,
+            "source": "mock",
             "rationale": rationale,
             "sector": candidate.get("sector", "Unknown"),
             "market_cap": candidate.get("market_cap"),

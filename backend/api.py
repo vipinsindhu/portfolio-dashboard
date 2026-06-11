@@ -508,6 +508,14 @@ def create_app():
             if not new_signals:
                 return jsonify({"error": "Failed to generate signals"}), 500
 
+            # Refuse to overwrite real signals with mock fallback data
+            if any(s.get("source") == "mock" for s in new_signals):
+                existing = load_signals()
+                if existing.get("signals"):
+                    return jsonify({
+                        "error": "LLM unavailable (check GROQ_API_KEY); refusing to overwrite real signals with mock data"
+                    }), 503
+
             # Save to storage (database or file)
             success = signal_store.save_signals(new_signals)
             if not success:

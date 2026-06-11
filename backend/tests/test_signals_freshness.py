@@ -73,3 +73,51 @@ class TestMockSignalGeneration:
         assert len(signals) == 2
         assert all(s["rationale"] for s in signals)
         assert "ZZZZ" in signals[0]["rationale"]
+
+
+class TestAutoGenerateSaves:
+    def _run(self, monkeypatch, generated, existing):
+        saved = {}
+        monkeypatch.setattr(signals_module, "generate_signals", lambda count=10: generated)
+        monkeypatch.setattr(signals_module, "load_signals", lambda: existing)
+        monkeypatch.setattr(signals_module, "save_signals", lambda data: saved.update(data))
+        result = signals_module.auto_generate_signals()
+        return result, saved
+
+    def test_saves_real_signals(self, monkeypatch):
+        real = [{"id": "a", "ticker": "AAPL", "direction": "buy"}]
+        result, saved = self._run(monkeypatch, real, {"signals": []})
+        assert result is True
+        assert saved["signals"] == real
+        assert saved["generated_at"]
+
+    def test_mock_signals_do_not_overwrite_real_ones(self, monkeypatch):
+        mock = [{"id": "m", "ticker": "AAPL", "direction": "buy", "source": "mock"}]
+        existing = {"signals": [{"id": "real", "ticker": "MSFT", "direction": "hold"}]}
+        result, saved = self._run(monkeypatch, mock, existing)
+        assert result is False
+        assert saved == {}
+
+    def test_mock_signals_saved_when_store_empty(self, monkeypatch):
+        mock = [{"id": "m", "ticker": "AAPL", "direction": "buy", "source": "mock"}]
+        result, saved = self._run(monkeypatch, mock, {"signals": []})
+        assert result is True
+        assert saved["signals"] == mock
+
+    def test_generation_failure_returns_false(self, monkeypatch):
+        result, saved = self._run(monkeypatch, [], {"signals": []})
+        assert result is False
+        assert saved == {}
+
+
+class TestAccuracySkipsMockSignals:
+    def test_mock_signals_not_captured(self):
+        from accuracy import merge_signals_into_history
+
+        history = {"signals": []}
+        added = merge_signals_into_history(history, [
+            {"id": "r1", "ticker": "AAPL", "direction": "buy"},
+            {"id": "m1", "ticker": "MSFT", "direction": "buy", "source": "mock"},
+        ], "t")
+        assert added == 1
+        assert history["signals"][0]["id"] == "r1"

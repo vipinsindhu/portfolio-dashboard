@@ -60,6 +60,8 @@ def merge_signals_into_history(history, signals, captured_at=None):
         sid = s.get("id")
         if not sid or sid in known or not s.get("ticker") or not s.get("direction"):
             continue
+        if s.get("source") == "mock":
+            continue  # never score mock fallback signals as if they were real calls
         history["signals"].append({
             "id": sid,
             "ticker": s["ticker"],
