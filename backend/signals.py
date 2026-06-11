@@ -382,19 +382,43 @@ def auto_generate_signals():
         candidates = fetch_signal_candidates()
         long_term = generate_signals(count=10, candidates=candidates)
         short_term = generate_short_term_signals(count=10, candidates=candidates)
-        signals = long_term + short_term
-        if not signals:
-            print("❌ Failed to generate signals")
-            return False
 
         # Never silently replace real LLM signals with mock fallback data —
-        # stale-but-real beats fresh-but-fake (see docs/PRD.md, trust pillar)
-        if any(s.get("source") == "mock" for s in signals):
-            existing = load_signals()
-            if existing.get("signals"):
+        # stale-but-real beats fresh-but-fake (see docs/PRD.md, trust pillar).
+        # Each timeframe pass succeeds or keeps its existing signals
+        # independently: discarding a successful pass because the other one
+        # hit a rate limit burns tokens for nothing and stalls recovery.
+        real_long = [s for s in long_term if s.get("source") != "mock"]
+        real_short = [s for s in short_term if s.get("source") != "mock"]
+        existing = load_signals().get("signals", [])
+
+        if not real_long and not real_short:
+            if existing:
                 print("⚠️ LLM unavailable; generated mock fallback signals — keeping existing real signals instead")
                 return False
+            mocks = long_term + short_term
+            if not mocks:
+                print("❌ Failed to generate signals")
+                return False
             print("⚠️ LLM unavailable and no stored signals; saving mock fallback so the app isn't empty")
+            save_signals({
+                "signals": mocks,
+                "generated_at": datetime.utcnow().isoformat(),
+            })
+            return True
+
+        # Untagged legacy signals count as long_term
+        signals = real_long or [
+            s for s in existing
+            if (s.get("timeframe") or "long_term") == "long_term" and s.get("source") != "mock"
+        ]
+        signals = signals + (real_short or [
+            s for s in existing
+            if s.get("timeframe") == "short_term" and s.get("source") != "mock"
+        ])
+        if not real_long or not real_short:
+            failed = "long-term" if not real_long else "short-term"
+            print(f"⚠️ {failed} pass unavailable; kept existing signals for that timeframe")
 
         save_signals({
             "signals": signals,

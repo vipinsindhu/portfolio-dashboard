@@ -115,6 +115,30 @@ class TestAutoGenerateSaves:
         assert result is False
         assert saved == {}
 
+    def test_failed_short_term_pass_keeps_existing_and_saves_real_long_term(self, monkeypatch):
+        """A rate-limited pass must not discard the other pass's success."""
+        new_long = [{"id": "L2", "ticker": "AAPL", "direction": "buy", "timeframe": "long_term"}]
+        mock_short = [{"id": "S2", "ticker": "BAC", "direction": "buy", "timeframe": "short_term", "source": "mock"}]
+        existing = {"signals": [
+            {"id": "L1", "ticker": "MSFT", "direction": "hold", "timeframe": "long_term"},
+            {"id": "S1", "ticker": "JPM", "direction": "buy", "timeframe": "short_term"},
+        ]}
+
+        saved = {}
+        monkeypatch.setattr(signals_module, "fetch_signal_candidates", lambda: [{"ticker": "AAPL"}])
+        monkeypatch.setattr(
+            signals_module, "generate_signals", lambda count=10, candidates=None: new_long
+        )
+        monkeypatch.setattr(
+            signals_module, "generate_short_term_signals", lambda count=10, candidates=None: mock_short
+        )
+        monkeypatch.setattr(signals_module, "load_signals", lambda: existing)
+        monkeypatch.setattr(signals_module, "save_signals", lambda data: saved.update(data))
+
+        assert signals_module.auto_generate_signals() is True
+        ids = [s["id"] for s in saved["signals"]]
+        assert ids == ["L2", "S1"]  # fresh long-term, kept short-term, no mocks
+
 
 class TestAccuracySkipsMockSignals:
     def test_mock_signals_not_captured(self):
