@@ -26,31 +26,36 @@ function App() {
           className={`tab-button ${activeTab === 'welcome' ? 'active' : ''}`}
           onClick={() => setActiveTab('welcome')}
         >
-          🏠 Home
+          <span className="tab-icon" aria-hidden="true">🏠</span>
+          <span className="tab-label">Home</span>
         </button>
         <button
           className={`tab-button ${activeTab === 'short-term' ? 'active' : ''}`}
           onClick={() => setActiveTab('short-term')}
         >
-          💡 This Week
+          <span className="tab-icon" aria-hidden="true">💡</span>
+          <span className="tab-label">This Week</span>
         </button>
         <button
           className={`tab-button ${activeTab === 'long-term' ? 'active' : ''}`}
           onClick={() => setActiveTab('long-term')}
         >
-          🎯 Build Wealth
+          <span className="tab-icon" aria-hidden="true">🎯</span>
+          <span className="tab-label">Build Wealth</span>
         </button>
         <button
           className={`tab-button ${activeTab === 'analyse' ? 'active' : ''}`}
           onClick={() => setActiveTab('analyse')}
         >
-          📊 My Stocks
+          <span className="tab-icon" aria-hidden="true">📊</span>
+          <span className="tab-label">My Stocks</span>
         </button>
         <button
           className={`tab-button ${activeTab === 'learn' ? 'active' : ''}`}
           onClick={() => setActiveTab('learn')}
         >
-          📚 Learn
+          <span className="tab-icon" aria-hidden="true">📚</span>
+          <span className="tab-label">Learn</span>
         </button>
       </div>
 

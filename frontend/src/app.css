@@ -24,6 +24,9 @@
 }
 
 .tab-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 12px 18px;
   border: none;
   background: none;
@@ -67,14 +70,52 @@
   min-height: calc(100vh - 120px);
 }
 
-/* Responsive */
+/* Responsive: fixed bottom navigation on phones and portrait tablets */
 @media (max-width: 768px) {
   .tab-bar {
-    padding: 0 16px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 0;
+    /* keep the bar clear of the iOS home indicator */
+    padding-bottom: env(safe-area-inset-bottom);
+    border-bottom: none;
+    border-top: 1px solid var(--border-color);
+    overflow: visible;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
   }
 
   .tab-button {
-    padding: 14px 16px;
-    font-size: 13px;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px 4px 10px;
+    font-size: 11px;
+  }
+
+  .tab-icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .tab-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* active indicator moves to the top edge of the bottom bar */
+  .tab-button.active::after {
+    top: 0;
+    bottom: auto;
+    border-radius: 0 0 3px 3px;
+  }
+
+  .app-content {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
 }
