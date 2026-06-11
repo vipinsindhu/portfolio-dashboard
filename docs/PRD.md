@@ -65,7 +65,7 @@ The original PRD scoped a **paid signal-subscription product** (weekly email dig
 ### P0 — Trust & correctness (next 2–3 weeks)
 The product's only moat is being *right and honest*. These close the gap between what we show and what's true.
 
-1. **Accuracy tracking, end to end.** Daily job compares each signal's direction vs. actual 30-day price movement; rolling 4-week win rate by timeframe and sector, shown in-app ("This month: 64% of Buy calls were up 30 days later"). Plumbing exists; needs cron + UI card. *This is the single highest-credibility feature we can ship.*
+1. ~~**Accuracy tracking, end to end.**~~ ✅ **Shipped 2026-06-11.** Daily GitHub Actions job captures signals into committed `signal_history.json` and scores 30-day outcomes via yfinance; `/api/signals/accuracy` + "Track Record" card in-app. First scored cohort matures ~2026-07-11.
 2. **Fix the recommendation classifier.** "Add" must exclude owned tickers; "sell/reduce" must only contain owned tickers; reconcile with the pitfall detector so we never simultaneously say "add NVDA" and "NVDA is dangerously concentrated."
 3. **Re-wire the Signal Archive.** Backend exists; surface past weeks' signals (and, once #1 lands, their outcomes) — likely as a section within This Week rather than a sixth tab.
 
@@ -96,3 +96,5 @@ The shared-portfolio model is fine for demo, broken for real use (two simultaneo
 | 2026-06-10 | Azure fully retired; secrets removed from repo; tests + CI added |
 | 2026-06-11 | **PRD re-scoped: free educational hybrid; monetization dropped** |
 | 2026-06-11 | Buy/Hold/Avoid unified sections; stats box counts displayed cards |
+| 2026-06-11 | **P0-1 shipped:** 30-day accuracy tracking (history committed daily via GitHub Actions; win rules: buy=up, avoid=down, hold=±5%; first results ~2026-07-11) |
+| 2026-06-11 | Stale-signal fix: startup job regenerates signals when stored ones are >60m old (deploys were resetting the hourly timer + data) |
