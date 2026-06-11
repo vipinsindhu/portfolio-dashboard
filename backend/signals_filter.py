@@ -36,87 +36,13 @@ class FilteredSignal:
     recommendation_type: str = ""  # "add", "hold", "reduce", "sell"
 
 
-def filter_signals_by_timeframe(
-    signals: List[Dict],
-    timeframe: TimeHorizon,
-    market_conditions: Optional[Dict] = None
-) -> List[FilteredSignal]:
-    """
-    Filter signals based on investment timeframe
-    Applies different logic for short-term vs long-term
-    """
+# Minimum confidence for a signal to surface as a general recommendation
+MIN_RECOMMENDATION_CONFIDENCE = 5
 
-    if timeframe == TimeHorizon.SHORT_TERM:
-        return filter_short_term_signals(signals, market_conditions)
-    else:
-        return filter_long_term_signals(signals, market_conditions)
-
-
-def filter_short_term_signals(
-    signals: List[Dict],
-    market_conditions: Optional[Dict] = None
-) -> List[FilteredSignal]:
-    """
-    Short-term (1-3 month) signal filtering
-    Focuses on: momentum, technical strength, market timing
-    """
-
-    filtered = []
-
-    # Get current market conditions
-    vix = market_conditions.get("vix", 18.5) if market_conditions else 18.5
-    fed_rate = market_conditions.get("fed_rate", 5.25) if market_conditions else 5.25
-
-    for signal in signals:
-        # Score for short-term viability
-        score = calculate_short_term_score(signal, vix, fed_rate)
-
-        if score >= 6:  # High confidence for short-term
-            filtered.append(FilteredSignal(
-                ticker=signal.get("ticker"),
-                direction=signal.get("direction"),
-                confidence=signal.get("confidence", 5),
-                rationale=signal.get("rationale", ""),
-                original_rationale=signal.get("rationale", ""),
-                portfolio_context=f"Market VIX: {vix:.1f} | Fed Rate: {fed_rate:.2f}%",
-                recommendation_type=map_direction_to_action(signal.get("direction"), "short")
-            ))
-
-    return filtered
-
-
-def filter_long_term_signals(
-    signals: List[Dict],
-    market_conditions: Optional[Dict] = None
-) -> List[FilteredSignal]:
-    """
-    Long-term (1+ year) signal filtering
-    Focuses on: fundamentals, valuation, dividend yield, business quality
-
-    No sector filtering - long-term investors should see all quality opportunities
-    Quality is determined by confidence score from signal generation system
-    """
-
-    filtered = []
-
-    for signal in signals:
-        # Long-term signals prioritize fundamentals
-        # Less affected by short-term volatility
-        # Confidence score already filters for quality from generation system
-        if signal.get("confidence", 0) >= 5:  # Lower bar for long-term
-            filtered.append(FilteredSignal(
-                ticker=signal.get("ticker"),
-                direction=signal.get("direction"),
-                confidence=signal.get("confidence", 5),
-                rationale=signal.get("rationale", ""),
-                original_rationale=signal.get("rationale", ""),
-                portfolio_context="Fundamentals-focused long-term signal",
-                recommendation_type=map_direction_to_action(
-                    signal.get("direction"), "long"
-                )
-            ))
-
-    return filtered
+# Single-position weight above which we stop suggesting "accumulate".
+# Mirrors the position_weight red_flag_threshold in lessons.json so
+# recommendations never contradict the pitfall detector.
+POSITION_CONCENTRATION_THRESHOLD = 0.20
 
 
 def filter_signals_with_portfolio(
@@ -133,18 +59,20 @@ def filter_signals_with_portfolio(
     if not portfolio or portfolio.holding_count == 0:
         # No portfolio - return general recommendations
         return {
-            "sell_reduce": filter_signals_by_direction(signals, "avoid", timeframe, market_conditions),
-            "hold": filter_signals_by_direction(signals, "hold", timeframe, market_conditions),
-            "add": filter_signals_by_direction(signals, "buy", timeframe, market_conditions),
+            "sell_reduce": filter_signals_by_direction(signals, "avoid"),
+            "hold": filter_signals_by_direction(signals, "hold"),
+            "add": filter_signals_by_direction(signals, "buy"),
             "portfolio_value": 0
         }
 
-    # Portfolio exists - create contextualized recommendations
-    portfolio_symbols = set(h.symbol for h in portfolio.holdings)
+    # Portfolio exists - create contextualized recommendations.
+    # Ownership matching must be case-insensitive (holdings may be stored
+    # in any case depending on how they were entered).
+    portfolio_symbols = set(h.symbol.upper() for h in portfolio.holdings)
 
     # Signals for existing holdings
-    holdings_signals = [s for s in signals if s.get("ticker") in portfolio_symbols]
-    new_recommendations = [s for s in signals if s.get("ticker") not in portfolio_symbols]
+    holdings_signals = [s for s in signals if s.get("ticker", "").upper() in portfolio_symbols]
+    new_recommendations = [s for s in signals if s.get("ticker", "").upper() not in portfolio_symbols]
 
     # Contextualize holdings signals
     sell_reduce = []
@@ -164,10 +92,18 @@ def filter_signals_with_portfolio(
                     signal, holding, weight, "hold"
                 ))
             elif signal.get("direction") == "buy":
-                # Existing holding with buy signal = hold/accumulate
-                hold_list.append(add_portfolio_context(
-                    signal, holding, weight, "accumulate"
-                ))
+                # Existing holding with buy signal = hold/accumulate,
+                # unless the position is already over-concentrated — then
+                # never advise adding more (keeps recommendations consistent
+                # with the pitfall detector).
+                if weight > POSITION_CONCENTRATION_THRESHOLD:
+                    hold_list.append(add_portfolio_context(
+                        signal, holding, weight, "hold_concentrated"
+                    ))
+                else:
+                    hold_list.append(add_portfolio_context(
+                        signal, holding, weight, "accumulate"
+                    ))
 
     # Filter new recommendations
     add_recommendations = [
@@ -204,6 +140,16 @@ def add_portfolio_context(
 
     elif action == "accumulate":
         new_rationale += f"\n\nPortfolio Action: ACCUMULATE - Add to this position at any weakness"
+
+    elif action == "hold_concentrated":
+        new_rationale += (
+            f"\n\nPortfolio Action: HOLD - This stock looks good, but it is already "
+            f"{weight:.0%} of your portfolio (over the "
+            f"{POSITION_CONCENTRATION_THRESHOLD:.0%} concentration guideline). "
+            f"Don't add more - consider trimming to reduce risk."
+        )
+        # Surfaces as a plain HOLD in the UI
+        action = "hold"
 
     elif action == "hold":
         new_rationale += f"\n\nPortfolio Action: HOLD - Maintain current position"
@@ -254,31 +200,6 @@ def would_improve_portfolio(signal: Dict, portfolio: Portfolio) -> bool:
     return False
 
 
-def calculate_short_term_score(signal: Dict, vix: float, fed_rate: float) -> float:
-    """Calculate score for short-term viability"""
-
-    score = 0
-
-    # Base confidence
-    score += signal.get("confidence", 5) / 10
-
-    # Adjust for market conditions
-    if signal.get("direction") == "buy":
-        # Prefer buys when VIX is rising (uncertain market = opportunities)
-        if vix > 20:
-            score += 1
-        # Avoid buys when rates are very high
-        if fed_rate > 5.5:
-            score -= 0.5
-
-    elif signal.get("direction") == "avoid":
-        # Avoid signals matter more when VIX is low (complacency)
-        if vix < 15:
-            score += 1
-
-    return score
-
-
 def map_direction_to_action(direction: str, strategy: str) -> str:
     """Map signal direction to portfolio action"""
 
@@ -307,14 +228,19 @@ def is_quality_sector_long_term(sector: Optional[str]) -> bool:
 def filter_signals_by_direction(
     signals: List[Dict],
     direction: str,
-    timeframe: TimeHorizon,
-    market_conditions: Optional[Dict] = None
 ) -> List[FilteredSignal]:
-    """Filter signals by direction and timeframe"""
+    """General (no-portfolio) recommendations: confidence-screened signals of one direction"""
 
-    filtered_signals = [s for s in signals if s.get("direction") == direction]
-
-    if timeframe == TimeHorizon.SHORT_TERM:
-        return filter_short_term_signals(filtered_signals, market_conditions)
-    else:
-        return filter_long_term_signals(filtered_signals, market_conditions)
+    return [
+        FilteredSignal(
+            ticker=s.get("ticker"),
+            direction=s.get("direction"),
+            confidence=s.get("confidence", 5),
+            rationale=s.get("rationale", ""),
+            original_rationale=s.get("rationale", ""),
+            recommendation_type=map_direction_to_action(s.get("direction"), "long"),
+        )
+        for s in signals
+        if s.get("direction") == direction
+        and s.get("confidence", 0) >= MIN_RECOMMENDATION_CONFIDENCE
+    ]

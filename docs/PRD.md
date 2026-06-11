@@ -66,7 +66,7 @@ The original PRD scoped a **paid signal-subscription product** (weekly email dig
 The product's only moat is being *right and honest*. These close the gap between what we show and what's true.
 
 1. ~~**Accuracy tracking, end to end.**~~ ✅ **Shipped 2026-06-11.** Daily GitHub Actions job captures signals into committed `signal_history.json` and scores 30-day outcomes via yfinance; `/api/signals/accuracy` + "Track Record" card in-app. First scored cohort matures ~2026-07-11.
-2. **Fix the recommendation classifier.** "Add" must exclude owned tickers; "sell/reduce" must only contain owned tickers; reconcile with the pitfall detector so we never simultaneously say "add NVDA" and "NVDA is dangerously concentrated."
+2. ~~**Fix the recommendation classifier.**~~ ✅ **Shipped 2026-06-11.** Ownership matching is now case-insensitive (lowercase holdings no longer leak owned stocks into "add" or drop avoid signals); buy signals on positions >20% weight say HOLD with a concentration warning instead of ACCUMULATE, reconciling with the pitfall detector; contract pinned by `backend/tests/test_signals_filter.py`.
 3. **Re-wire the Signal Archive.** Backend exists; surface past weeks' signals (and, once #1 lands, their outcomes) — likely as a section within This Week rather than a sixth tab.
 
 ### P1 — Per-user portfolios (3–4 weeks after P0)
@@ -98,3 +98,4 @@ The shared-portfolio model is fine for demo, broken for real use (two simultaneo
 | 2026-06-11 | Buy/Hold/Avoid unified sections; stats box counts displayed cards |
 | 2026-06-11 | **P0-1 shipped:** 30-day accuracy tracking (history committed daily via GitHub Actions; win rules: buy=up, avoid=down, hold=±5%; first results ~2026-07-11) |
 | 2026-06-11 | Stale-signal fix: startup job regenerates signals when stored ones are >60m old (deploys were resetting the hourly timer + data) |
+| 2026-06-11 | **P0-2 shipped:** classifier fixed (case-insensitive ownership; no ACCUMULATE on >20% positions; dead short-term scorer that returned empty recommendations removed; recommendations now actually embedded in signals responses — `dict(dataclass)` bug) |

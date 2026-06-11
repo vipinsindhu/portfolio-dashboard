@@ -6,6 +6,7 @@ Supports both file-based (development) and database-backed (production) storage
 
 import os
 import sys
+from dataclasses import asdict
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from datetime import datetime, timedelta
@@ -47,7 +48,6 @@ import importlib
 importlib.reload(analysis)
 from analysis import analyze_portfolio
 from signals_filter import (
-    filter_signals_by_timeframe,
     filter_signals_with_portfolio,
     TimeHorizon,
 )
@@ -331,14 +331,14 @@ def create_app():
                     # Get recommendations for this timeframe
                     recs = filter_signals_with_portfolio(all_signals, portfolio, TimeHorizon.SHORT_TERM, {})
                     recommendations = {
-                        "sell_reduce": [dict(s) for s in recs.get("sell_reduce", [])],
-                        "hold": [dict(s) for s in recs.get("hold", [])],
-                        "add": [dict(s) for s in recs.get("add", [])],
+                        "sell_reduce": [asdict(s) for s in recs.get("sell_reduce", [])],
+                        "hold": [asdict(s) for s in recs.get("hold", [])],
+                        "add": [asdict(s) for s in recs.get("add", [])],
                         "portfolio_value": recs.get("portfolio_value", 0),
                         "portfolio_holdings": recs.get("portfolio_holdings", 0)
                     }
-            except:
-                pass
+            except Exception as e:
+                app.logger.warning(f"Could not build portfolio recommendations: {e}")
 
             response_data = {
                 "signals": top_signals,
@@ -445,14 +445,14 @@ def create_app():
                     # Get recommendations for this timeframe
                     recs = filter_signals_with_portfolio(all_signals, portfolio, TimeHorizon.LONG_TERM, {})
                     recommendations = {
-                        "sell_reduce": [dict(s) for s in recs.get("sell_reduce", [])],
-                        "hold": [dict(s) for s in recs.get("hold", [])],
-                        "add": [dict(s) for s in recs.get("add", [])],
+                        "sell_reduce": [asdict(s) for s in recs.get("sell_reduce", [])],
+                        "hold": [asdict(s) for s in recs.get("hold", [])],
+                        "add": [asdict(s) for s in recs.get("add", [])],
                         "portfolio_value": recs.get("portfolio_value", 0),
                         "portfolio_holdings": recs.get("portfolio_holdings", 0)
                     }
-            except:
-                pass
+            except Exception as e:
+                app.logger.warning(f"Could not build portfolio recommendations: {e}")
 
             response_data = {
                 "signals": top_signals,

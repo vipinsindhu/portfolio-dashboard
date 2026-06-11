@@ -101,3 +101,57 @@ class TestPortfolioAnalysis:
             "concentration_metrics", "recommendations", "summary",
         ):
             assert key in data, f"missing key: {key}"
+
+
+def write_signals_file(tmp_path, signals):
+    (tmp_path / "signals.json").write_text(
+        json.dumps({"signals": signals, "generated_at": "2026-06-11T00:00:00"})
+    )
+
+
+SAMPLE_SIGNALS = [
+    {
+        "id": "AAPL_1", "ticker": "AAPL", "direction": "buy", "confidence": 9,
+        "rationale": "test", "sector": "Technology",
+    },
+    {
+        "id": "WMT_1", "ticker": "WMT", "direction": "buy", "confidence": 8,
+        "rationale": "test", "sector": "Consumer",
+    },
+    {
+        "id": "XOM_1", "ticker": "XOM", "direction": "avoid", "confidence": 7,
+        "rationale": "test", "sector": "Energy",
+    },
+]
+
+
+class TestSignalEndpointRecommendations:
+    def test_short_term_includes_recommendations_with_portfolio(
+        self, client, isolate_workdir
+    ):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
+        upload_sample(client)
+
+        data = client.get("/api/signals/short-term").get_json()
+
+        assert "recommendations" in data
+        recs = data["recommendations"]
+        # AAPL and XOM are owned (sample portfolio); WMT is not.
+        add_tickers = {s["ticker"] for s in recs["add"]}
+        sell_tickers = {s["ticker"] for s in recs["sell_reduce"]}
+        hold_tickers = {s["ticker"] for s in recs["hold"]}
+        assert "WMT" in add_tickers
+        assert add_tickers.isdisjoint({"AAPL", "XOM"})
+        assert sell_tickers == {"XOM"}
+        assert "AAPL" in hold_tickers
+
+    def test_long_term_includes_recommendations_with_portfolio(
+        self, client, isolate_workdir
+    ):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
+        upload_sample(client)
+
+        data = client.get("/api/signals/long-term").get_json()
+
+        assert "recommendations" in data
+        assert {s["ticker"] for s in data["recommendations"]["sell_reduce"]} == {"XOM"}
