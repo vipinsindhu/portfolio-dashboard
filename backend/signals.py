@@ -339,6 +339,29 @@ def refresh_macro_data():
         return False
 
 
+def generate_signals_if_stale(max_age_minutes=60):
+    """
+    Regenerate signals only if the stored ones are older than max_age_minutes.
+
+    Run once at startup: Railway's filesystem is ephemeral, so every deploy
+    resets signals.json to the committed copy and restarts the hourly timer.
+    Without this, signals stay stale until the process survives a full hour.
+    """
+    data = load_signals()
+    generated_at = data.get("generated_at")
+    if generated_at:
+        try:
+            age = datetime.utcnow() - datetime.fromisoformat(generated_at)
+            if age < timedelta(minutes=max_age_minutes):
+                print(f"[Signals] Stored signals are {age} old (< {max_age_minutes}m); skipping regeneration")
+                return False
+        except (ValueError, TypeError):
+            pass  # unparseable timestamp -> treat as stale
+
+    print(f"[Signals] Stored signals stale (generated_at={generated_at}); regenerating now")
+    return auto_generate_signals()
+
+
 def auto_generate_signals():
     """Scheduled job to auto-generate signals every 60 minutes"""
     print(f"[{datetime.now().isoformat()}] Starting auto-signal generation...")

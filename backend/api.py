@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from signals import (
     generate_signals,
+    generate_signals_if_stale,
     update_signal_accuracy,
     load_signals,
     save_signals,
@@ -911,9 +912,17 @@ def create_app():
     @app.before_request
     def start_scheduler():
         """Start scheduler on first request if not already running"""
-        if not scheduler.running:
+        if not scheduler.running and not app.config.get("TESTING"):
             scheduler.start()
-            app.logger.info("[OK] Schedulers started: macro refresh (1h) + signal generation (1h) + sector update (7d)")
+            # Deploys reset both the stored signals and the hourly timer, so
+            # regenerate immediately (in the scheduler's thread pool, not this
+            # request) whenever the committed signals are already stale.
+            scheduler.add_job(
+                generate_signals_if_stale,
+                id="startup_signal_refresh",
+                replace_existing=True,
+            )
+            app.logger.info("[OK] Schedulers started: startup refresh (if stale) + macro refresh (1h) + signal generation (1h) + sector update (7d)")
 
     return app
 
