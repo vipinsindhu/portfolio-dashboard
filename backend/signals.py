@@ -255,15 +255,17 @@ def get_mock_fundamentals(ticker):
         "VOO": {"ticker": "VOO", "company_name": "Vanguard S&P 500 ETF", "sector": "ETF", "market_cap": None, "pe_ratio": None, "dividend_yield": 0.015, "52_week_high": 545, "52_week_low": 420, "current_price": 520},
         "AGG": {"ticker": "AGG", "company_name": "iShares Core U.S. Aggregate Bond ETF", "sector": "ETF", "market_cap": None, "pe_ratio": None, "dividend_yield": 0.045, "52_week_high": 110, "52_week_low": 100, "current_price": 105},
     }
-    # Return mock data or fallback with sector from TICKER_SECTOR_MAP
+    # Return mock data or fallback with sector from TICKER_SECTOR_MAP.
+    # Tagged so signal generation can avoid rating placeholder numbers.
     data = mock_data.get(ticker)
     if data:
-        return data
+        return {**data, "fundamentals_source": "mock"}
     return {
         "ticker": ticker,
         "company_name": COMPANY_NAMES.get(ticker, ticker),
         "sector": TICKER_SECTOR_MAP.get(ticker, "Unknown"),
-        "current_price": 100
+        "current_price": 100,
+        "fundamentals_source": "mock",
     }
 
 
@@ -603,9 +605,30 @@ def fetch_signal_candidates():
 
     if candidates:
         print(f"📊 Fetched fundamentals for {len(candidates)} stocks (parallel)")
+
+        # Don't rate placeholder numbers as if they were real market data —
+        # mock-fundamentals candidates produced live avoid signals citing
+        # "current price is 100". Keep them only when APIs are so degraded
+        # that we'd otherwise have nothing to work with.
+        real = [c for c in candidates if c.get("fundamentals_source") != "mock"]
+        if len(real) >= 10:
+            if len(real) < len(candidates):
+                print(f"Excluding {len(candidates) - len(real)} candidates with placeholder fundamentals")
+            candidates = real
+
         candidates.sort(key=lambda x: x.get("quality_score", 0), reverse=True)
 
     return candidates
+
+
+# Internal bookkeeping fields confuse the LLM and leak into rationales
+# ("quality score of 45") if sent along with the market data
+INTERNAL_CANDIDATE_FIELDS = {"quality_score", "fundamentals_source"}
+
+
+def candidate_prompt_fields(candidate):
+    """Candidate dict with internal fields stripped, safe to show the LLM."""
+    return {k: v for k, v in candidate.items() if k not in INTERNAL_CANDIDATE_FIELDS}
 
 
 def generate_signals(count=10, candidates=None):
@@ -634,7 +657,7 @@ def generate_signals(count=10, candidates=None):
     # Prepare data for Groq LLM - mix strong and weak candidates so the
     # LLM has genuine hold/avoid material, not just pre-vetted winners
     slate = build_candidate_slate(candidates)
-    candidates_str = json.dumps(slate, indent=2)
+    candidates_str = json.dumps([candidate_prompt_fields(c) for c in slate], indent=2)
     print(f"📤 Sending {len(slate)} candidates (top + bottom of quality ranking) to Groq for signal generation")
 
     # Use Groq to generate signals with enhanced long-term focus
@@ -766,7 +789,7 @@ def generate_short_term_signals(count=10, candidates=None):
     # Derive a position-in-range cue so the model reasons from real numbers
     slate_for_prompt = []
     for c in slate:
-        entry = dict(c)
+        entry = candidate_prompt_fields(c)
         price, high, low = c.get("current_price"), c.get("52_week_high"), c.get("52_week_low")
         if price and high and low and high > low:
             entry["pct_of_52_week_range"] = round((price - low) / (high - low) * 100)

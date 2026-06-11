@@ -11,8 +11,11 @@ import signals as signals_module
 from signals import (
     auto_generate_signals,
     build_candidate_slate,
+    candidate_prompt_fields,
+    fetch_signal_candidates,
     generate_short_term_signals,
     generate_signals,
+    get_mock_fundamentals,
     is_single_direction,
     parse_llm_signals,
 )
@@ -158,6 +161,68 @@ class TestGenerateSignalsRetry:
         # Weakest candidate (T09 with the lowest quality score) made the slate
         assert "T09" in prompt
         assert "do NOT call everything a buy" in prompt
+
+
+class TestPlaceholderFundamentals:
+    def test_mock_fundamentals_are_tagged(self):
+        assert get_mock_fundamentals("AAPL")["fundamentals_source"] == "mock"
+        assert get_mock_fundamentals("ZZZZ")["fundamentals_source"] == "mock"
+
+    def test_candidates_with_placeholder_data_excluded_when_enough_real(self, monkeypatch):
+        real = {f"R{i:02d}": dict(make_candidates(1)[0], ticker=f"R{i:02d}") for i in range(12)}
+        tickers = list(real) + ["FAKE1", "FAKE2"]
+
+        def fake_fetch(ticker):
+            if ticker in real:
+                return dict(real[ticker])
+            return {"ticker": ticker, "current_price": 100, "fundamentals_source": "mock"}
+
+        monkeypatch.setattr(signals_module, "discover_stocks", lambda: tickers)
+        monkeypatch.setattr(signals_module, "fetch_fundamentals", fake_fetch)
+
+        candidates = fetch_signal_candidates()
+
+        result_tickers = {c["ticker"] for c in candidates}
+        assert "FAKE1" not in result_tickers
+        assert len(candidates) == 12
+
+    def test_placeholder_candidates_kept_when_apis_degraded(self, monkeypatch):
+        # Fewer than 10 real candidates: keep mocks so the app isn't empty
+        tickers = ["R00", "FAKE1", "FAKE2"]
+
+        def fake_fetch(ticker):
+            if ticker == "R00":
+                return dict(make_candidates(1)[0], ticker="R00")
+            return {"ticker": ticker, "current_price": 100, "fundamentals_source": "mock"}
+
+        monkeypatch.setattr(signals_module, "discover_stocks", lambda: tickers)
+        monkeypatch.setattr(signals_module, "fetch_fundamentals", fake_fetch)
+
+        candidates = fetch_signal_candidates()
+
+        assert {c["ticker"] for c in candidates} == {"R00", "FAKE1", "FAKE2"}
+
+    def test_internal_fields_stripped_from_prompt_payload(self):
+        candidate = {
+            "ticker": "AAPL",
+            "pe_ratio": 28.5,
+            "quality_score": 85,
+            "fundamentals_source": "mock",
+        }
+        cleaned = candidate_prompt_fields(candidate)
+        assert "quality_score" not in cleaned
+        assert "fundamentals_source" not in cleaned
+        assert cleaned["pe_ratio"] == 28.5
+
+    def test_prompts_do_not_contain_quality_score(self, monkeypatch):
+        mixed = llm_response(["buy"] * 7 + ["avoid"] * 3)
+        prompts = TestGenerateSignalsRetry().setup_pipeline(monkeypatch, [mixed])
+
+        generate_signals(count=10)
+        generate_short_term_signals(count=10)
+
+        for prompt in prompts:
+            assert "quality_score" not in prompt
 
 
 class TestTimeframeTagging:
