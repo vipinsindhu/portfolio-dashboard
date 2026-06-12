@@ -82,9 +82,12 @@
     /* keep the bar clear of the iOS home indicator */
     padding-bottom: env(safe-area-inset-bottom);
     border-bottom: none;
-    border-top: 1px solid var(--border-color);
+    /* tinted surface + stronger edge/shadow so the bar never blends into
+       the white page (was invisible in bright light) */
+    background: #f7f8fb;
+    border-top: 1px solid #c9ccd6;
     overflow: visible;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.14);
   }
 
   .tab-button {
@@ -94,7 +97,14 @@
     justify-content: center;
     gap: 2px;
     padding: 8px 4px 10px;
-    font-size: 11px;
+    font-size: 12px;
+    color: #4b5563;
+  }
+
+  .tab-button.active {
+    color: #4456c7;
+    background: rgba(85, 104, 211, 0.12);
+    border-radius: 10px;
   }
 
   .tab-icon {
