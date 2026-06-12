@@ -3,6 +3,11 @@
 .env.local
 .env.*.local
 
+# Personal financial data — never commit (app creates it via upload;
+# Railway serves from the DATA_DIR volume)
+backend/portfolio.json
+backend/portfolio.json.bak
+
 # Dependencies
 node_modules/
 __pycache__/
