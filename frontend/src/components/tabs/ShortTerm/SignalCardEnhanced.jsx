@@ -103,6 +103,27 @@ function SignalCardEnhanced({ signal, type = 'general' }) {
         </div>
       </div>
 
+      {/* Short-term cues: momentum, catalysts, range position */}
+      {(signal.return_13w_pct != null || signal.days_until_earnings != null || signal.pct_of_52_week_range != null) && (
+        <div className="signal-cues">
+          {signal.return_13w_pct != null && (
+            <span className={`cue-badge ${signal.return_13w_pct >= 0 ? 'positive' : 'negative'}`}>
+              {signal.return_13w_pct >= 0 ? '📈' : '📉'} {signal.return_13w_pct > 0 ? '+' : ''}{signal.return_13w_pct}% in 3mo
+            </span>
+          )}
+          {signal.days_until_earnings != null && (
+            <span className="cue-badge earnings">
+              📅 Earnings in {signal.days_until_earnings}d
+            </span>
+          )}
+          {signal.pct_of_52_week_range != null && (
+            <span className="cue-badge range">
+              🎯 {signal.pct_of_52_week_range}% of yearly range
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Rationale */}
       <div className="rationale-section">
         <p className={`rationale-text ${isExpanded ? 'expanded' : 'collapsed'}`}>

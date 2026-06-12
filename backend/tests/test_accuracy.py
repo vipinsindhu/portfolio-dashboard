@@ -137,6 +137,82 @@ class TestEvaluatePending:
         assert history["signals"][0]["return_pct"] == -10.0
 
 
+class TestRelativeClassification:
+    @pytest.mark.parametrize("direction,return_pct,benchmark,expected", [
+        ("buy", 5.0, 2.0, "win"),     # beat SPY
+        ("buy", 5.0, 8.0, "loss"),    # up, but lagged SPY
+        ("buy", -2.0, -6.0, "win"),   # down less than SPY
+        ("avoid", -1.0, 3.0, "win"),  # lagged SPY as predicted
+        ("avoid", 9.0, 3.0, "loss"),  # beat SPY despite avoid
+        ("hold", 4.0, 1.0, "win"),    # tracked SPY within 5 points
+        ("hold", 10.0, 1.0, "loss"),
+    ])
+    def test_relative_rules(self, direction, return_pct, benchmark, expected):
+        assert classify_outcome(direction, return_pct, benchmark) == expected
+
+
+class TestLongTermEvaluation:
+    def make_fetcher(self, stock_prices, spy_prices):
+        def fetcher(ticker, start, end):
+            return spy_prices if ticker == "SPY" else stock_prices
+        return fetcher
+
+    def test_long_term_not_due_at_30_days(self):
+        history = {"signals": [make_entry(35, timeframe="long_term")]}
+        count = evaluate_pending(
+            history, self.make_fetcher((100.0, 110.0), (100.0, 105.0)), now=NOW
+        )
+        assert count == 0
+        assert history["signals"][0]["result"] is None
+
+    def test_long_term_scored_vs_spy_at_90_days(self):
+        # Stock +10%, SPY +5% -> buy beats the market -> win
+        history = {"signals": [make_entry(95, timeframe="long_term")]}
+        count = evaluate_pending(
+            history, self.make_fetcher((100.0, 110.0), (100.0, 105.0)), now=NOW
+        )
+        assert count == 1
+        entry = history["signals"][0]
+        assert entry["result"] == "win"
+        assert entry["return_pct"] == 10.0
+        assert entry["benchmark_return_pct"] == 5.0
+
+    def test_long_term_buy_up_but_lagging_spy_is_loss(self):
+        # Stock +3%, SPY +8% -> "buy" underperformed the market
+        history = {"signals": [make_entry(95, timeframe="long_term")]}
+        evaluate_pending(
+            history, self.make_fetcher((100.0, 103.0), (100.0, 108.0)), now=NOW
+        )
+        assert history["signals"][0]["result"] == "loss"
+
+    def test_long_term_without_benchmark_stays_pending(self):
+        history = {"signals": [make_entry(95, timeframe="long_term")]}
+        count = evaluate_pending(
+            history, self.make_fetcher((100.0, 110.0), None), now=NOW
+        )
+        assert count == 0
+        assert history["signals"][0]["result"] is None
+
+    def test_short_term_still_absolute_at_30_days(self):
+        # Stock +2%, would lag a hot market - but short-term is absolute
+        history = {"signals": [make_entry(35, timeframe="short_term")]}
+        evaluate_pending(
+            history, self.make_fetcher((100.0, 102.0), (100.0, 110.0)), now=NOW
+        )
+        entry = history["signals"][0]
+        assert entry["result"] == "win"
+        assert "benchmark_return_pct" not in entry
+
+
+class TestMergeTimeframe:
+    def test_timeframe_captured(self):
+        history = {"signals": []}
+        merge_signals_into_history(
+            history, [make_signal(timeframe="short_term")], "t"
+        )
+        assert history["signals"][0]["timeframe"] == "short_term"
+
+
 class TestStats:
     def test_empty_history(self):
         stats = compute_accuracy_stats({"signals": []}, now=NOW)

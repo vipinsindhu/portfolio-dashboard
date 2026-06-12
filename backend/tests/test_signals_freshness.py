@@ -1,60 +1,101 @@
-"""Tests for startup signal-staleness refresh logic."""
+"""Tests for per-timeframe signal-staleness refresh logic."""
 
 from datetime import datetime, timedelta
 
 import signals as signals_module
-from signals import generate_signals_if_stale
+from signals import generate_signals_if_stale, stale_timeframes
 
 
-def set_stored_signals(monkeypatch, generated_at):
-    monkeypatch.setattr(
-        signals_module, "load_signals",
-        lambda: {"signals": [], "generated_at": generated_at},
-    )
+def make_stored(short_age_minutes=None, long_age_minutes=None):
+    """Stored signals with one signal per timeframe at the given ages."""
+    now = datetime.utcnow()
+    signals = []
+    if short_age_minutes is not None:
+        signals.append({
+            "id": "s", "ticker": "BAC", "direction": "buy", "timeframe": "short_term",
+            "created_at": (now - timedelta(minutes=short_age_minutes)).isoformat(),
+        })
+    if long_age_minutes is not None:
+        signals.append({
+            "id": "l", "ticker": "JNJ", "direction": "buy", "timeframe": "long_term",
+            "created_at": (now - timedelta(minutes=long_age_minutes)).isoformat(),
+        })
+    return {"signals": signals, "generated_at": now.isoformat()}
+
+
+class TestStaleTimeframes:
+    def test_both_fresh(self):
+        data = make_stored(short_age_minutes=30, long_age_minutes=30)
+        assert stale_timeframes(data) == []
+
+    def test_short_term_goes_stale_after_6h(self):
+        data = make_stored(short_age_minutes=400, long_age_minutes=400)
+        assert stale_timeframes(data) == ["short_term"]
+
+    def test_long_term_goes_stale_after_24h(self):
+        data = make_stored(short_age_minutes=100, long_age_minutes=1500)
+        assert stale_timeframes(data) == ["long_term"]
+
+    def test_missing_timeframe_is_stale(self):
+        # A failed pass leaves no signals for its timeframe -> retry hourly
+        data = make_stored(long_age_minutes=30)
+        assert stale_timeframes(data) == ["short_term"]
+
+    def test_empty_store_is_fully_stale(self):
+        assert sorted(stale_timeframes({"signals": []})) == ["long_term", "short_term"]
+
+    def test_untagged_legacy_signals_count_as_long_term(self):
+        now = datetime.utcnow()
+        data = {"signals": [{
+            "id": "x", "ticker": "AAPL", "direction": "buy",
+            "created_at": now.isoformat(),
+        }]}
+        assert stale_timeframes(data) == ["short_term"]
+
+    def test_mock_signals_do_not_count_as_fresh(self):
+        now = datetime.utcnow()
+        data = {"signals": [{
+            "id": "m", "ticker": "AAPL", "direction": "buy", "timeframe": "short_term",
+            "source": "mock", "created_at": now.isoformat(),
+        }]}
+        assert sorted(stale_timeframes(data)) == ["long_term", "short_term"]
+
+    def test_unparseable_created_at_ignored(self):
+        data = {"signals": [{
+            "id": "x", "ticker": "AAPL", "direction": "buy", "timeframe": "long_term",
+            "created_at": "not-a-date",
+        }]}
+        assert sorted(stale_timeframes(data)) == ["long_term", "short_term"]
 
 
 class TestGenerateSignalsIfStale:
-    def test_skips_when_fresh(self, monkeypatch):
-        set_stored_signals(monkeypatch, datetime.utcnow().isoformat())
+    def test_skips_when_all_fresh(self, monkeypatch):
+        monkeypatch.setattr(
+            signals_module, "load_signals",
+            lambda: make_stored(short_age_minutes=30, long_age_minutes=30),
+        )
         called = []
-        monkeypatch.setattr(signals_module, "auto_generate_signals", lambda: called.append(1) or True)
+        monkeypatch.setattr(
+            signals_module, "auto_generate_signals",
+            lambda timeframes: called.append(timeframes) or True,
+        )
 
-        assert generate_signals_if_stale(max_age_minutes=60) is False
+        assert generate_signals_if_stale() is False
         assert called == []
 
-    def test_regenerates_when_stale(self, monkeypatch):
-        stale = (datetime.utcnow() - timedelta(hours=2)).isoformat()
-        set_stored_signals(monkeypatch, stale)
+    def test_regenerates_only_stale_timeframes(self, monkeypatch):
+        monkeypatch.setattr(
+            signals_module, "load_signals",
+            lambda: make_stored(short_age_minutes=400, long_age_minutes=100),
+        )
         called = []
-        monkeypatch.setattr(signals_module, "auto_generate_signals", lambda: called.append(1) or True)
+        monkeypatch.setattr(
+            signals_module, "auto_generate_signals",
+            lambda timeframes: called.append(timeframes) or True,
+        )
 
-        assert generate_signals_if_stale(max_age_minutes=60) is True
-        assert called == [1]
-
-    def test_regenerates_when_no_timestamp(self, monkeypatch):
-        set_stored_signals(monkeypatch, None)
-        called = []
-        monkeypatch.setattr(signals_module, "auto_generate_signals", lambda: called.append(1) or True)
-
-        generate_signals_if_stale()
-        assert called == [1]
-
-    def test_regenerates_when_timestamp_unparseable(self, monkeypatch):
-        set_stored_signals(monkeypatch, "not-a-date")
-        called = []
-        monkeypatch.setattr(signals_module, "auto_generate_signals", lambda: called.append(1) or True)
-
-        generate_signals_if_stale()
-        assert called == [1]
-
-    def test_respects_custom_max_age(self, monkeypatch):
-        thirty_min_old = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
-        set_stored_signals(monkeypatch, thirty_min_old)
-        called = []
-        monkeypatch.setattr(signals_module, "auto_generate_signals", lambda: called.append(1) or True)
-
-        assert generate_signals_if_stale(max_age_minutes=15) is True
-        assert called == [1]
+        assert generate_signals_if_stale() is True
+        assert called == [["short_term"]]
 
 
 class TestMockSignalGeneration:

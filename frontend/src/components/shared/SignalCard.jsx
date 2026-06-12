@@ -57,6 +57,19 @@ function SignalCard({ signal, type = 'general', weight = null }) {
         </div>
       )}
 
+      {(signal.pe_ratio != null || signal.dividend_yield > 0) && (
+        <div className="fundamentals-row">
+          {signal.pe_ratio != null && (
+            <span className="fundamental-badge">P/E {Number(signal.pe_ratio).toFixed(1)}</span>
+          )}
+          {signal.dividend_yield > 0 && (
+            <span className="fundamental-badge dividend">
+              💰 {(signal.dividend_yield * 100).toFixed(1)}% dividend
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="signal-rationale">
         <p>{signal.rationale}</p>
       </div>

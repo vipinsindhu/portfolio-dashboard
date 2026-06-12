@@ -3,12 +3,16 @@ Signal accuracy tracking.
 
 Signals are captured into an append-only history file (signal_history.json,
 committed to the repo by the daily GitHub Actions workflow, which is what
-makes it survive Railway's ephemeral filesystem). Once a signal is 30 days
-old it is evaluated against actual price movement:
+makes it survive Railway's ephemeral filesystem). Evaluation matches each
+signal's stated horizon:
 
-- buy   wins if the 30-day return is positive
-- avoid wins if the 30-day return is negative
-- hold  wins if the 30-day return stays within +/-HOLD_WIN_BAND_PCT
+- short_term (and legacy untagged) entries: scored at 30 days, absolute —
+  buy wins if the return is positive, avoid if negative, hold if within
+  +/-HOLD_WIN_BAND_PCT.
+- long_term entries: scored at 90 days RELATIVE TO SPY (the honest long-term
+  claim is "beats the market", not "goes up") — buy wins if the stock beat
+  SPY over the window, avoid wins if it lagged SPY, hold wins if it tracked
+  SPY within +/-HOLD_WIN_BAND_PCT points.
 
 Run as a script (daily, via .github/workflows/accuracy.yml):
     python backend/accuracy.py [--base-url https://... ] [--history path]
@@ -24,10 +28,16 @@ from datetime import datetime, timedelta
 
 HISTORY_FILE = "signal_history.json"
 DEFAULT_BASE_URL = "https://portfolio-builder.up.railway.app"
-EVALUATION_WINDOW_DAYS = 30
+EVALUATION_WINDOW_DAYS = 30        # short_term and legacy entries
+LONG_TERM_WINDOW_DAYS = 90         # long_term entries, scored vs the market
+BENCHMARK_TICKER = "SPY"
 HOLD_WIN_BAND_PCT = 5.0
 # Give up on entries we still can't price this long after they become due
 EVALUATION_RETRY_DAYS = 30
+
+
+def evaluation_window_days(entry):
+    return LONG_TERM_WINDOW_DAYS if entry.get("timeframe") == "long_term" else EVALUATION_WINDOW_DAYS
 
 
 # ---------- storage ----------
@@ -68,6 +78,7 @@ def merge_signals_into_history(history, signals, captured_at=None):
             "direction": s["direction"],
             "confidence": s.get("confidence"),
             "sector": s.get("sector"),
+            "timeframe": s.get("timeframe"),
             "created_at": s.get("created_at") or captured_at,
             "captured_at": captured_at,
             "result": None,
@@ -80,7 +91,18 @@ def merge_signals_into_history(history, signals, captured_at=None):
     return added
 
 
-def classify_outcome(direction, return_pct):
+def classify_outcome(direction, return_pct, benchmark_return_pct=None):
+    """Absolute rules for short-term; relative-to-benchmark for long-term."""
+    if benchmark_return_pct is not None:
+        excess = return_pct - benchmark_return_pct
+        if direction == "buy":
+            return "win" if excess > 0 else "loss"
+        if direction == "avoid":
+            return "win" if excess < 0 else "loss"
+        if direction == "hold":
+            return "win" if abs(excess) <= HOLD_WIN_BAND_PCT else "loss"
+        return None
+
     if direction == "buy":
         return "win" if return_pct > 0 else "loss"
     if direction == "avoid":
@@ -92,13 +114,14 @@ def classify_outcome(direction, return_pct):
 
 def evaluate_pending(history, price_fetcher, now=None):
     """
-    Evaluate entries that are at least EVALUATION_WINDOW_DAYS old.
+    Evaluate entries whose timeframe-specific window has elapsed.
 
     price_fetcher(ticker, start_date, end_date) -> (entry_price, exit_price)
     or None when prices are unavailable. Returns number evaluated.
     """
     now = now or datetime.utcnow()
     evaluated = 0
+    benchmark_cache = {}
 
     for entry in history["signals"]:
         if entry["result"] is not None:
@@ -110,7 +133,7 @@ def evaluate_pending(history, price_fetcher, now=None):
             entry["result"] = "invalid"
             continue
 
-        due_at = created + timedelta(days=EVALUATION_WINDOW_DAYS)
+        due_at = created + timedelta(days=evaluation_window_days(entry))
         if now < due_at:
             continue  # not due yet
 
@@ -126,10 +149,29 @@ def evaluate_pending(history, price_fetcher, now=None):
                 entry["result"] = "unavailable"
             continue
 
+        # Long-term entries are scored against the market over the same window
+        benchmark_return_pct = None
+        if entry.get("timeframe") == "long_term":
+            cache_key = (created.date().isoformat(), due_at.date().isoformat())
+            if cache_key not in benchmark_cache:
+                try:
+                    benchmark_cache[cache_key] = price_fetcher(BENCHMARK_TICKER, created, due_at)
+                except Exception as e:
+                    print(f"[Accuracy] Benchmark fetch failed: {e}")
+                    benchmark_cache[cache_key] = None
+            benchmark = benchmark_cache[cache_key]
+            if not benchmark or not benchmark[0]:
+                # can't honestly score long-term without the benchmark; retry
+                if now > due_at + timedelta(days=EVALUATION_RETRY_DAYS):
+                    entry["result"] = "unavailable"
+                continue
+            benchmark_return_pct = (benchmark[1] - benchmark[0]) / benchmark[0] * 100
+            entry["benchmark_return_pct"] = round(benchmark_return_pct, 2)
+
         entry_price, exit_price = prices
         return_pct = (exit_price - entry_price) / entry_price * 100
         entry["return_pct"] = round(return_pct, 2)
-        entry["result"] = classify_outcome(entry["direction"], return_pct)
+        entry["result"] = classify_outcome(entry["direction"], return_pct, benchmark_return_pct)
         entry["evaluated_at"] = now.isoformat()
         evaluated += 1
 
@@ -162,6 +204,12 @@ def compute_accuracy_stats(history, now=None, window_weeks=4):
             [e for e in entries if e["direction"] == direction]
         )
 
+    by_timeframe = {}
+    for timeframe in ("short_term", "long_term"):
+        by_timeframe[timeframe] = summarize(
+            [e for e in entries if e.get("timeframe") == timeframe]
+        )
+
     pending = len([e for e in entries if e["result"] is None])
     captured_dates = [e.get("captured_at") for e in entries if e.get("captured_at")]
 
@@ -170,6 +218,7 @@ def compute_accuracy_stats(history, now=None, window_weeks=4):
         "recent": summarize(recent),
         "overall": summarize(entries),
         "by_direction": by_direction,
+        "by_timeframe": by_timeframe,
         "pending": pending,
         "tracked_total": len(entries),
         "tracking_since": min(captured_dates) if captured_dates else None,

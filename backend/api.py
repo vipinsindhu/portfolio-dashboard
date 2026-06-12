@@ -912,7 +912,7 @@ def create_app():
         trigger="interval",
         hours=1,
         id="signal_generation",
-        name="Hourly check; regenerate signals when older than 6h (Groq daily token budget)",
+        name="Hourly check; regenerate stale timeframes (short-term >6h, long-term >24h)",
         replace_existing=True
     )
     scheduler.add_job(
@@ -945,7 +945,7 @@ def create_app():
                 id="startup_signal_refresh",
                 replace_existing=True,
             )
-            app.logger.info("[OK] Schedulers started: startup refresh (if stale) + macro refresh (1h) + signal stale-check (1h, regen >6h) + sector update (7d)")
+            app.logger.info("[OK] Schedulers started: startup refresh (if stale) + macro refresh (1h) + signal stale-check (1h; short>6h, long>24h) + sector update (7d)")
 
     return app
 

@@ -419,44 +419,73 @@ def refresh_macro_data():
         return False
 
 
-# Two LLM passes per cycle at ~6k tokens against Groq's 100k/day free
-# tier means hourly regeneration exhausts the quota mid-day. Signals are
-# weekly guidance for beginners; a 6-hour refresh is plenty, and the
-# hourly stale-check retries failed cycles within the hour.
-SIGNAL_MAX_AGE_MINUTES = 360
+# Groq's free tier is 100k tokens/day and each pass costs ~3.5k, so the
+# refresh cadence is a token budget. Long-term picks are fundamentals-driven
+# and shouldn't churn (daily is plenty); short-term reacts to momentum and
+# macro (6h). The hourly stale-check below retries a failed pass within the
+# hour instead of waiting out a full cycle.
+TIMEFRAME_MAX_AGE_MINUTES = {
+    "short_term": 360,    # 6h
+    "long_term": 1440,    # 24h
+}
 
 
-def generate_signals_if_stale(max_age_minutes=SIGNAL_MAX_AGE_MINUTES):
+def stale_timeframes(data=None, now=None):
+    """Which timeframes need regeneration, judged per-signal from created_at.
+
+    A timeframe with no stored real signals is stale by definition (this is
+    what makes a failed pass retry on the next hourly check). Untagged
+    legacy signals count as long_term.
     """
-    Regenerate signals only if the stored ones are older than max_age_minutes.
+    if data is None:
+        data = load_signals()
+    now = now or datetime.utcnow()
+    signals = data.get("signals", [])
 
-    Run at startup and hourly: Railway's filesystem is ephemeral, so every
-    deploy resets signals.json to the committed copy and restarts the timer.
-    Without this, signals stay stale until the process survives a full cycle.
+    stale = []
+    for timeframe, max_age in TIMEFRAME_MAX_AGE_MINUTES.items():
+        newest = None
+        for s in signals:
+            if (s.get("timeframe") or "long_term") != timeframe:
+                continue
+            if s.get("source") == "mock":
+                continue
+            try:
+                created = datetime.fromisoformat(s["created_at"])
+            except (KeyError, ValueError, TypeError):
+                continue
+            if newest is None or created > newest:
+                newest = created
+        if newest is None or (now - newest) > timedelta(minutes=max_age):
+            stale.append(timeframe)
+    return stale
+
+
+def generate_signals_if_stale():
     """
-    data = load_signals()
-    generated_at = data.get("generated_at")
-    if generated_at:
-        try:
-            age = datetime.utcnow() - datetime.fromisoformat(generated_at)
-            if age < timedelta(minutes=max_age_minutes):
-                print(f"[Signals] Stored signals are {age} old (< {max_age_minutes}m); skipping regeneration")
-                return False
-        except (ValueError, TypeError):
-            pass  # unparseable timestamp -> treat as stale
+    Regenerate only the timeframes whose stored signals are too old.
 
-    print(f"[Signals] Stored signals stale (generated_at={generated_at}); regenerating now")
-    return auto_generate_signals()
+    Run at startup and hourly: Railway's filesystem is ephemeral, so a cold
+    start boots from the committed/seeded copy, and a rate-limited pass
+    leaves its timeframe stale until a retry succeeds.
+    """
+    stale = stale_timeframes()
+    if not stale:
+        print("[Signals] All timeframes fresh; skipping regeneration")
+        return False
+
+    print(f"[Signals] Stale timeframes: {', '.join(stale)}; regenerating now")
+    return auto_generate_signals(timeframes=stale)
 
 
-def auto_generate_signals():
-    """Scheduled job to auto-generate signals every 60 minutes"""
-    print(f"[{datetime.now().isoformat()}] Starting auto-signal generation...")
+def auto_generate_signals(timeframes=("long_term", "short_term")):
+    """Regenerate the requested timeframe passes (scheduled hourly stale-check)"""
+    print(f"[{datetime.now().isoformat()}] Starting auto-signal generation for: {', '.join(timeframes)}")
     try:
-        # Fetch candidates once, then run both timeframe passes on them
+        # Fetch candidates once, then run the requested passes on them
         candidates = fetch_signal_candidates()
-        long_term = generate_signals(count=10, candidates=candidates)
-        short_term = generate_short_term_signals(count=10, candidates=candidates)
+        long_term = generate_signals(count=10, candidates=candidates) if "long_term" in timeframes else []
+        short_term = generate_short_term_signals(count=10, candidates=candidates) if "short_term" in timeframes else []
 
         # Never silently replace real LLM signals with mock fallback data —
         # stale-but-real beats fresh-but-fake (see docs/PRD.md, trust pillar).
@@ -491,9 +520,9 @@ def auto_generate_signals():
             s for s in existing
             if s.get("timeframe") == "short_term" and s.get("source") != "mock"
         ])
-        if not real_long or not real_short:
-            failed = "long-term" if not real_long else "short-term"
-            print(f"⚠️ {failed} pass unavailable; kept existing signals for that timeframe")
+        for timeframe, real in (("long_term", real_long), ("short_term", real_short)):
+            if timeframe in timeframes and not real:
+                print(f"⚠️ {timeframe} pass unavailable; kept existing signals for that timeframe")
 
         save_signals({
             "signals": signals,
@@ -889,6 +918,8 @@ RULES:
             "rationale": signal.get("rationale", ""),
             "sector": candidate.get("sector", "Unknown"),
             "market_cap": candidate.get("market_cap", None),
+            "pe_ratio": candidate.get("pe_ratio"),
+            "dividend_yield": candidate.get("dividend_yield"),
             "timeframe": "long_term",
             "created_at": datetime.now().isoformat(),
             "result": None,
@@ -1025,6 +1056,12 @@ RULES:
     for signal in signals:
         ticker = signal.get("ticker")
         candidate = next((c for c in candidates if c["ticker"] == ticker), {})
+        price, high, low = (
+            candidate.get("current_price"), candidate.get("52_week_high"), candidate.get("52_week_low")
+        )
+        pct_of_range = None
+        if price and high and low and high > low:
+            pct_of_range = round((price - low) / (high - low) * 100)
         enhanced_signals.append({
             "id": f"{ticker}_{datetime.now().isoformat()}",
             "ticker": ticker,
@@ -1033,6 +1070,9 @@ RULES:
             "rationale": signal.get("rationale", ""),
             "sector": candidate.get("sector", "Unknown"),
             "market_cap": candidate.get("market_cap", None),
+            "return_13w_pct": candidate.get("return_13w_pct"),
+            "days_until_earnings": candidate.get("days_until_earnings"),
+            "pct_of_52_week_range": pct_of_range,
             "timeframe": "short_term",
             "created_at": datetime.now().isoformat(),
             "result": None,
