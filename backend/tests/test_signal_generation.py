@@ -7,11 +7,16 @@ signals were structurally impossible.
 
 import json
 
+from datetime import date
+
 import signals as signals_module
 from signals import (
     auto_generate_signals,
     build_candidate_slate,
+    build_short_term_slate,
     candidate_prompt_fields,
+    extract_days_until_earnings,
+    extract_price_metrics,
     fetch_signal_candidates,
     generate_short_term_signals,
     generate_signals,
@@ -106,6 +111,7 @@ class TestGenerateSignalsRetry:
         monkeypatch.setattr(
             signals_module, "fetch_fundamentals", lambda t: dict(candidates[t])
         )
+        monkeypatch.setattr(signals_module, "fetch_short_term_metrics", lambda t: {})
         monkeypatch.setattr(signals_module, "fetch_macro_context", lambda: {})
         monkeypatch.setattr(
             signals_module, "get_macro_sentiment", lambda macro: "neutral"
@@ -225,6 +231,66 @@ class TestPlaceholderFundamentals:
             assert "quality_score" not in prompt
 
 
+class TestShortTermMetricsExtraction:
+    def test_extract_price_metrics_maps_and_rounds(self):
+        payload = {"metric": {
+            "5DayPriceReturnDaily": 2.345,
+            "13WeekPriceReturnDaily": -11.87,
+            "26WeekPriceReturnDaily": 4.0,
+            "beta": 1.234,
+            "52WeekHigh": 200,  # not mapped
+        }}
+        out = extract_price_metrics(payload)
+        assert out == {
+            "return_5d_pct": 2.3,
+            "return_13w_pct": -11.9,
+            "return_26w_pct": 4.0,
+            "beta": 1.23,
+        }
+
+    def test_extract_price_metrics_ignores_missing_and_non_numeric(self):
+        assert extract_price_metrics({"metric": {"beta": "N/A"}}) == {}
+        assert extract_price_metrics({}) == {}
+        assert extract_price_metrics(None) == {}
+
+    def test_days_until_earnings_nearest_future_date(self):
+        today = date(2026, 6, 11)
+        payload = {"earningsCalendar": [
+            {"date": "2026-07-20"},
+            {"date": "2026-06-25"},
+            {"date": "2026-06-01"},  # past — ignored
+            {"date": "bogus"},
+        ]}
+        assert extract_days_until_earnings(payload, today) == 14
+
+    def test_days_until_earnings_none_when_no_upcoming(self):
+        today = date(2026, 6, 11)
+        assert extract_days_until_earnings({"earningsCalendar": []}, today) is None
+        assert extract_days_until_earnings(None, today) is None
+
+
+class TestBuildShortTermSlate:
+    def test_selects_dips_movers_and_quality_anchors(self):
+        candidates = make_candidates(40)
+        # Give each a 13-week return: T00 best (+40) down to T39 worst (-38)
+        for i, c in enumerate(candidates):
+            c["return_13w_pct"] = 40 - i * 2
+
+        slate = build_short_term_slate(candidates)
+        tickers = {c["ticker"] for c in slate}
+
+        assert "T39" in tickers  # biggest loser (dip/avoid material)
+        assert "T00" in tickers  # strongest mover and quality anchor
+        assert "T08" in tickers  # quality anchor
+        assert "T20" not in tickers  # middle of the pack excluded
+        assert len(slate) <= 25
+        assert len(tickers) == len(slate)  # deduplicated
+
+    def test_falls_back_to_quality_slate_without_momentum_data(self):
+        candidates = make_candidates(40)  # no return_13w_pct fields
+        assert build_short_term_slate(candidates) == build_candidate_slate(candidates)
+
+
 class TestTimeframeTagging:
     def test_long_term_signals_tagged(self, monkeypatch):
         mixed = llm_response(["buy"] * 7 + ["avoid"] * 3)
@@ -243,6 +309,21 @@ class TestTimeframeTagging:
         assert all(s["timeframe"] == "short_term" for s in result)
         assert "1-3 MONTHS" in prompts[0]
         assert "pct_of_52_week_range" in prompts[0]
+
+    def test_short_term_prompt_carries_momentum_and_earnings_cues(self, monkeypatch):
+        mixed = llm_response(["buy"] * 6 + ["hold"] * 2 + ["avoid"] * 2)
+        prompts = TestGenerateSignalsRetry().setup_pipeline(monkeypatch, [mixed])
+        monkeypatch.setattr(
+            signals_module, "fetch_short_term_metrics",
+            lambda t: {"return_13w_pct": -12.5, "return_5d_pct": 1.2, "beta": 1.4, "days_until_earnings": 9},
+        )
+
+        generate_short_term_signals(count=10)
+
+        prompt = prompts[0]
+        assert '"return_13w_pct": -12.5' in prompt
+        assert '"days_until_earnings": 9' in prompt
+        assert "beta" in prompt
 
     def test_auto_generate_saves_both_timeframes(self, monkeypatch):
         monkeypatch.setattr(

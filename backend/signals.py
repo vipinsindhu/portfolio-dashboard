@@ -239,6 +239,81 @@ def fetch_fundamentals(ticker):
     return get_mock_fundamentals(ticker)
 
 
+def extract_price_metrics(payload):
+    """Pull short-term price cues out of a Finnhub /stock/metric response."""
+    metric = (payload or {}).get("metric") or {}
+    out = {}
+    mapping = {
+        "5DayPriceReturnDaily": "return_5d_pct",
+        "13WeekPriceReturnDaily": "return_13w_pct",
+        "26WeekPriceReturnDaily": "return_26w_pct",
+        "beta": "beta",
+    }
+    for source, dest in mapping.items():
+        value = metric.get(source)
+        if isinstance(value, (int, float)):
+            out[dest] = round(value, 2 if dest == "beta" else 1)
+    return out
+
+
+def extract_days_until_earnings(payload, today):
+    """Days until the next earnings report from a Finnhub earnings calendar response."""
+    upcoming = []
+    for event in (payload or {}).get("earningsCalendar") or []:
+        try:
+            event_date = datetime.fromisoformat(event.get("date", "")).date()
+        except (ValueError, TypeError):
+            continue
+        if event_date >= today:
+            upcoming.append(event_date)
+    if not upcoming:
+        return None
+    return (min(upcoming) - today).days
+
+
+def fetch_short_term_metrics(ticker):
+    """Fetch momentum/catalyst cues for the short-term pass (Finnhub free tier).
+
+    Returns {} on any failure — the short-term pass degrades gracefully to
+    valuation + 52-week-range reasoning when these cues are unavailable.
+    """
+    if not FINNHUB_API_KEY:
+        return {}
+
+    out = {}
+    try:
+        response = requests.get(
+            f"{FINNHUB_BASE}/stock/metric",
+            params={"symbol": ticker, "metric": "all", "token": FINNHUB_API_KEY},
+            timeout=5,
+        )
+        if response.status_code == 200:
+            out.update(extract_price_metrics(response.json()))
+    except requests.exceptions.RequestException:
+        pass
+
+    try:
+        today = datetime.utcnow().date()
+        response = requests.get(
+            f"{FINNHUB_BASE}/calendar/earnings",
+            params={
+                "symbol": ticker,
+                "from": today.isoformat(),
+                "to": (today + timedelta(days=45)).isoformat(),
+                "token": FINNHUB_API_KEY,
+            },
+            timeout=5,
+        )
+        if response.status_code == 200:
+            days = extract_days_until_earnings(response.json(), today)
+            if days is not None:
+                out["days_until_earnings"] = days
+    except requests.exceptions.RequestException:
+        pass
+
+    return out
+
+
 def get_mock_fundamentals(ticker):
     """Get mock fundamentals as fallback"""
     mock_data = {
@@ -581,6 +656,33 @@ def build_candidate_slate(candidates, top_n=15, bottom_n=10):
     return candidates[:top_n] + candidates[-bottom_n:]
 
 
+def build_short_term_slate(candidates, max_size=25):
+    """Select short-term candidates on momentum grounds, not just quality.
+
+    Mixes the biggest 13-week losers (recovery or avoid material), the
+    strongest movers (momentum), and quality anchors — so the short-term
+    pass rates a genuinely different set of stocks than the long-term one.
+    Falls back to the quality slate when momentum data is unavailable.
+    Expects candidates sorted by quality score, best first.
+    """
+    with_momentum = [c for c in candidates if isinstance(c.get("return_13w_pct"), (int, float))]
+    if len(with_momentum) < 10:
+        return build_candidate_slate(candidates)
+
+    by_return = sorted(with_momentum, key=lambda c: c["return_13w_pct"])
+    dips = by_return[:8]
+    movers = by_return[-8:]
+    quality_anchors = candidates[:9]
+
+    slate, seen = [], set()
+    for candidate in quality_anchors + dips + movers:
+        ticker = candidate.get("ticker")
+        if ticker and ticker not in seen:
+            seen.add(ticker)
+            slate.append(candidate)
+    return slate[:max_size]
+
+
 def parse_llm_signals(response_text):
     """Extract the JSON array of signals from an LLM response, or None."""
     import re
@@ -818,7 +920,24 @@ def generate_short_term_signals(count=10, candidates=None):
     macro_data = fetch_macro_context()
     macro_sentiment = get_macro_sentiment(macro_data)
 
-    slate = build_candidate_slate(candidates)
+    # Attach momentum/catalyst cues (13-week return, beta, earnings date) to
+    # the strongest candidates, then select the slate on momentum grounds so
+    # short-term rates a different set of stocks than long-term. Capped at 40
+    # tickers and 3 workers to stay friendly to Finnhub's free-tier rate limit.
+    metric_targets = candidates[:40]
+    print(f"Fetching short-term metrics for {len(metric_targets)} candidates...")
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        future_to_candidate = {
+            executor.submit(fetch_short_term_metrics, c["ticker"]): c
+            for c in metric_targets
+        }
+        for future in as_completed(future_to_candidate):
+            try:
+                future_to_candidate[future].update(future.result())
+            except Exception:
+                pass
+
+    slate = build_short_term_slate(candidates)
     # Derive a position-in-range cue so the model reasons from real numbers
     slate_for_prompt = []
     for c in slate:
@@ -839,6 +958,10 @@ THE LIST BELOW MIXES STRONG AND WEAK COMPANIES. Not everything is a buy:
 - avoid = stretched price or weak numbers that could fall in the next few months
 
 USE ONLY THE DATA PROVIDED. Key short-term cues:
+- return_13w_pct: price change over the last 3 months. Big negative = beaten down (bargain only if the business is solid); big positive = strong momentum (but check it isn't overextended)
+- return_5d_pct: what the stock did this week — recent direction
+- days_until_earnings: earnings report coming up = expect a price swing soon; risky for expensive stocks, an opportunity for cheap solid ones
+- beta: above 1 = moves more than the market; in a shaky market, high-beta stocks fall harder
 - pct_of_52_week_range: near 100 = at its yearly high (already ran up, less room); near 0 = at its yearly low (beaten down — bargain only if the business is solid)
 - Very high PE = priced for perfection; bad news hits these hardest
 - Market conditions below affect the next few months MORE than they affect long-term holds
@@ -858,9 +981,9 @@ For each stock, give:
 WRITE LIKE YOU'RE TALKING TO A TEENAGER: simple words, no jargon, be clear on what to do.
 
 Examples of GOOD honest short-term ratings:
-- buy: "Bank of America sits at just 30% of its yearly price range with a low PE of 11. Solid bank at a beaten-down price - good setup for the next few months."
-- hold: "Microsoft is a great company, but it's at 95% of its yearly range. It already ran up - wait for a dip before adding."
-- avoid: "This stock trades at a PE of 70 while sitting at its yearly high. Priced for perfection - one bad earnings report and it drops. Skip it for now."
+- buy: "Bank of America is down 12% over the last 3 months but still earns well (PE of 11). Beaten-down solid bank - good setup for a recovery in the next few months."
+- hold: "Microsoft is a great company, but it's up 18% in 3 months and sits at 95% of its yearly range. It already ran up - wait for a dip before adding."
+- avoid: "This stock trades at a PE of 70 with earnings in 12 days. Priced for perfection - one disappointing report and it drops hard. Skip it until after earnings."
 
 Return ONLY a JSON array with no other text:
 [
