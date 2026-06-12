@@ -173,6 +173,67 @@ TAGGED_SIGNALS = [
 ]
 
 
+SAMPLE_HISTORY = {
+    "signals": [
+        {
+            "id": "AAPL_old", "ticker": "AAPL", "direction": "buy", "confidence": 8,
+            "sector": "Technology", "timeframe": "short_term",
+            "created_at": "2026-05-01T00:00:00", "captured_at": "2026-05-01T00:00:00",
+            "result": "win", "return_pct": 6.2, "evaluated_at": "2026-06-01T00:00:00",
+        },
+        {
+            "id": "XOM_old", "ticker": "XOM", "direction": "avoid", "confidence": 7,
+            "sector": "Energy", "timeframe": "long_term",
+            "created_at": "2026-03-01T00:00:00", "captured_at": "2026-03-01T00:00:00",
+            "result": "loss", "return_pct": 4.0, "benchmark_return_pct": 2.0,
+            "evaluated_at": "2026-06-01T00:00:00",
+        },
+        {
+            "id": "JNJ_new", "ticker": "JNJ", "direction": "hold", "confidence": 6,
+            "sector": "Healthcare", "timeframe": "short_term",
+            "created_at": "2026-06-10T00:00:00", "captured_at": "2026-06-10T00:00:00",
+            "result": None, "return_pct": None, "evaluated_at": None,
+        },
+    ],
+    "updated_at": "2026-06-11T00:00:00",
+}
+
+
+class TestSignalHistory:
+    def write_history(self, tmp_path):
+        (tmp_path / "signal_history.json").write_text(json.dumps(SAMPLE_HISTORY))
+
+    def test_returns_entries_newest_first_with_stats(self, client, isolate_workdir):
+        self.write_history(isolate_workdir)
+
+        data = client.get("/api/signals/history").get_json()
+
+        assert [e["id"] for e in data["entries"]] == ["JNJ_new", "AAPL_old", "XOM_old"]
+        assert data["total"] == 3
+        assert data["stats"]["overall"]["evaluated"] == 2
+
+    def test_filters_by_result_pending(self, client, isolate_workdir):
+        self.write_history(isolate_workdir)
+
+        data = client.get("/api/signals/history?result=pending").get_json()
+
+        assert [e["id"] for e in data["entries"]] == ["JNJ_new"]
+
+    def test_filters_by_timeframe_and_direction(self, client, isolate_workdir):
+        self.write_history(isolate_workdir)
+
+        data = client.get("/api/signals/history?timeframe=long_term").get_json()
+        assert [e["id"] for e in data["entries"]] == ["XOM_old"]
+
+        data = client.get("/api/signals/history?direction=buy").get_json()
+        assert [e["id"] for e in data["entries"]] == ["AAPL_old"]
+
+    def test_empty_history_is_not_an_error(self, client, isolate_workdir):
+        response = client.get("/api/signals/history")
+        assert response.status_code == 200
+        assert response.get_json()["entries"] == []
+
+
 class TestTimeframeSeparation:
     def test_short_term_endpoint_serves_only_short_term_signals(self, client, isolate_workdir):
         write_signals_file(isolate_workdir, TAGGED_SIGNALS)

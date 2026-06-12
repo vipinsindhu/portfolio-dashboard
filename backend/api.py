@@ -247,6 +247,50 @@ def create_app():
             app.logger.error(f"Error computing accuracy stats: {e}")
             return jsonify({"error": str(e)}), 500
 
+    @app.route("/api/signals/history", methods=["GET"])
+    def get_signal_history():
+        """Pre-registered track record: past calls from signal_history.json
+        with their evaluated outcomes (win/loss/pending).
+
+        Query parameters:
+        - timeframe: short_term | long_term (untagged legacy counts as long_term)
+        - direction: buy | hold | avoid
+        - result: win | loss | pending
+        - limit: max entries, newest first (default 200)
+        """
+        try:
+            from accuracy import load_history, compute_accuracy_stats
+
+            timeframe = request.args.get("timeframe")
+            direction = request.args.get("direction")
+            result = request.args.get("result")
+            limit = request.args.get("limit", 200, type=int)
+
+            history = load_history()
+            entries = history.get("signals", [])
+
+            if timeframe:
+                entries = [e for e in entries if (e.get("timeframe") or "long_term") == timeframe]
+            if direction:
+                entries = [e for e in entries if e.get("direction") == direction]
+            if result == "pending":
+                entries = [e for e in entries if e.get("result") is None]
+            elif result:
+                entries = [e for e in entries if e.get("result") == result]
+
+            entries = sorted(
+                entries, key=lambda e: e.get("created_at") or "", reverse=True
+            )[:limit]
+
+            return jsonify({
+                "entries": entries,
+                "total": len(entries),
+                "stats": compute_accuracy_stats(history),
+            }), 200
+        except Exception as e:
+            app.logger.error(f"Error getting signal history: {e}")
+            return jsonify({"error": str(e)}), 500
+
     @app.route("/api/signals/archive", methods=["GET"])
     def get_signals_archive():
         """Get signal archive (past signals)"""
@@ -501,7 +545,7 @@ def create_app():
     def get_signal_detail(signal_id):
         """Get detailed view of a specific signal"""
         # Reject requests for special endpoints
-        if signal_id in ["long-term", "short-term", "archive", "generate", "accuracy"]:
+        if signal_id in ["long-term", "short-term", "archive", "generate", "accuracy", "history"]:
             return jsonify({"error": "Endpoint not found"}), 404
 
         signal = signal_store.get_signal_by_id(signal_id)

@@ -1,0 +1,145 @@
+.track-record {
+  margin-top: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.track-record-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 4px 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.toggle-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.toggle-subtitle {
+  grid-column: 1 / 3;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.toggle-chevron {
+  grid-row: 1;
+  grid-column: 3;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.track-record-body {
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.track-record-note {
+  padding: 12px 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.track-record-summary {
+  margin: 14px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(85, 104, 211, 0.08);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.week-label {
+  margin: 16px 0 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.track-record-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.track-record-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.85rem;
+}
+
+.track-record-row:last-child {
+  border-bottom: none;
+}
+
+.direction-chip {
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.row-ticker {
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 52px;
+}
+
+.row-timeframe,
+.row-confidence {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.outcome {
+  margin-left: auto;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.outcome em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.outcome.win {
+  color: #16a34a;
+}
+
+.outcome.loss {
+  color: #dc2626;
+}
+
+.outcome.pending,
+.outcome.na {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .track-record-row {
+    font-size: 0.8rem;
+  }
+
+  .outcome {
+    flex-basis: 100%;
+    margin-left: 60px;
+  }
+}

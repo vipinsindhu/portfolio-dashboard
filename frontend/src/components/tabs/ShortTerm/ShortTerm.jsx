@@ -3,6 +3,7 @@ import SignalCard from '../../shared/SignalCard'
 import RecommendationStats from './RecommendationStats'
 import FilterBar from './FilterBar'
 import SignalCardEnhanced from './SignalCardEnhanced'
+import TrackRecord from './TrackRecord'
 import { usePortfolioRecommendations } from '../../../hooks/usePortfolioRecommendations'
 import './ShortTerm.css'
 
@@ -257,6 +258,9 @@ function ShortTerm() {
           <p className="empty-hint">Try changing your filters or check back later</p>
         </div>
       )}
+
+      {/* Past calls and their scored outcomes (pre-registered track record) */}
+      <TrackRecord />
 
       {/* Call to Action */}
       {!hasPortfolio && signals.length > 0 && (
