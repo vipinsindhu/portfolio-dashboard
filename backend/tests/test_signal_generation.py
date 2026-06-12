@@ -238,7 +238,8 @@ class TestShortTermMetricsExtraction:
             "13WeekPriceReturnDaily": -11.87,
             "26WeekPriceReturnDaily": 4.0,
             "beta": 1.234,
-            "52WeekHigh": 200,  # not mapped
+            "52WeekHigh": 211.553,
+            "52WeekLow": 142.1,
         }}
         out = extract_price_metrics(payload)
         assert out == {
@@ -246,6 +247,8 @@ class TestShortTermMetricsExtraction:
             "return_13w_pct": -11.9,
             "return_26w_pct": 4.0,
             "beta": 1.23,
+            "52_week_high": 211.55,
+            "52_week_low": 142.1,
         }
 
     def test_extract_price_metrics_ignores_missing_and_non_numeric(self):

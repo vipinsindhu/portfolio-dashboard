@@ -248,11 +248,15 @@ def extract_price_metrics(payload):
         "13WeekPriceReturnDaily": "return_13w_pct",
         "26WeekPriceReturnDaily": "return_26w_pct",
         "beta": "beta",
+        # Finnhub /quote has no 52-week fields; these fill the gap so the
+        # pct_of_52_week_range cue can be computed
+        "52WeekHigh": "52_week_high",
+        "52WeekLow": "52_week_low",
     }
     for source, dest in mapping.items():
         value = metric.get(source)
         if isinstance(value, (int, float)):
-            out[dest] = round(value, 2 if dest == "beta" else 1)
+            out[dest] = round(value, 2 if dest in ("beta", "52_week_high", "52_week_low") else 1)
     return out
 
 
