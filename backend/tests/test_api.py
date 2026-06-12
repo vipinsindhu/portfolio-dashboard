@@ -24,6 +24,13 @@ class TestHealth:
         assert response.status_code == 200
 
 
+class TestFrontendCaching:
+    def test_index_html_always_revalidates(self, client):
+        response = client.get("/")
+        if response.status_code == 200:  # dist present in this checkout
+            assert response.headers.get("Cache-Control") == "no-cache"
+
+
 class TestPortfolioUpload:
     def test_valid_csv_returns_201_with_holdings(self, client):
         response = upload_sample(client)

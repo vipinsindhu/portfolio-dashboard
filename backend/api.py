@@ -187,7 +187,10 @@ def create_app():
             return jsonify({"error": "Asset not found"}), 404
 
         try:
-            return send_from_directory(assets_dir, filename)
+            response = send_from_directory(assets_dir, filename)
+            # Vite fingerprints asset filenames, so they are safe to cache forever
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            return response
         except Exception as e:
             app.logger.error(f"Error serving asset {filename}: {e}")
             return jsonify({"error": str(e)}), 500
@@ -204,8 +207,15 @@ def create_app():
 
         full_path = os.path.join(app.frontend_dist, path)
         if os.path.isfile(full_path) and not path.endswith(".html"):
-            return send_from_directory(app.frontend_dist, path)
-        return send_from_directory(app.frontend_dist, "index.html")
+            response = send_from_directory(app.frontend_dist, path)
+            # Unfingerprinted files (manifest, icons): cache briefly
+            response.headers["Cache-Control"] = "public, max-age=3600"
+            return response
+        # index.html must always revalidate, otherwise phones keep showing
+        # stale UI for days after a deploy
+        response = send_from_directory(app.frontend_dist, "index.html")
+        response.headers["Cache-Control"] = "no-cache"
+        return response
 
     # ============= MACRO ENDPOINTS =============
 
