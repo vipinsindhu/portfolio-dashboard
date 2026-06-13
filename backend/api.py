@@ -974,14 +974,23 @@ def create_app():
             return jsonify({
                 "has_portfolio": True,
                 "analysis": {
-                    "diversification_score": result_analysis.diversification_score,
-                    "sector_breakdown":      result_analysis.sector_breakdown,
-                    "pitfalls":              [asdict(p) for p in result_analysis.pitfalls],
-                    "strengths":             result_analysis.strengths,
+                    "status":                "success",
+                    "pitfalls": [
+                        {
+                            "lesson_id":        p.lesson_id,
+                            "lesson_title":     p.lesson_title,
+                            "severity":         p.severity,
+                            "message":          p.message,
+                            "recommendation":   p.recommendation,
+                            "affected_holdings": p.affected_holdings,
+                        }
+                        for p in result_analysis.pitfalls
+                    ],
+                    "risk_metrics":          result_analysis.risk_metrics,
+                    "sector_allocation":     result_analysis.sector_allocation,
+                    "concentration_metrics": result_analysis.concentration_metrics,
                     "recommendations":       result_analysis.recommendations,
                     "summary":               result_analysis.summary,
-                    "risk_metrics":          getattr(result_analysis, "risk_metrics", {}),
-                    "sector_allocation":     getattr(result_analysis, "sector_allocation", {}),
                     "holding_count":         portfolio.holding_count,
                     "portfolio_value":       portfolio.total_current_value,
                 },

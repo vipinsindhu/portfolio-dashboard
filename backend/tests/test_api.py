@@ -358,6 +358,85 @@ class TestStats:
         assert data["sector_count"] == 0
 
 
+class TestPortfolioFull:
+    def test_no_portfolio_returns_has_portfolio_false(self, client):
+        data = client.get("/api/portfolio/full").get_json()
+        assert data == {"has_portfolio": False}
+
+    def test_with_portfolio_returns_top_level_keys(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
+        upload_sample(client)
+
+        data = client.get("/api/portfolio/full").get_json()
+
+        assert data["has_portfolio"] is True
+        for key in ("analysis", "long_term", "short_term"):
+            assert key in data, f"missing top-level key: {key}"
+
+    def test_analysis_block_matches_existing_endpoint_shape(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
+        upload_sample(client)
+
+        analysis = client.get("/api/portfolio/full").get_json()["analysis"]
+
+        for key in ("pitfalls", "risk_metrics", "sector_allocation",
+                    "concentration_metrics", "recommendations", "summary",
+                    "holding_count", "portfolio_value"):
+            assert key in analysis, f"analysis missing key: {key}"
+        assert analysis["holding_count"] == 6
+        # demo portfolio has a known concentration pitfall (NVDA ~27%)
+        assert any(p["severity"] == "critical" for p in analysis["pitfalls"])
+
+    def test_recommendations_buckets_present(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
+        upload_sample(client)
+
+        data = client.get("/api/portfolio/full").get_json()
+
+        for timeframe in ("long_term", "short_term"):
+            for bucket in ("sell_reduce", "hold", "add"):
+                assert bucket in data[timeframe], f"{timeframe} missing bucket {bucket}"
+
+    def test_signals_bucketed_correctly_for_owned_stocks(self, client, isolate_workdir):
+        # Sample portfolio owns AAPL and XOM; signals say buy AAPL, avoid XOM, buy WMT.
+        # XOM must land in sell_reduce; AAPL in hold (owned+buy); WMT in add.
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
+        upload_sample(client)
+
+        data = client.get("/api/portfolio/full").get_json()
+        lt = data["long_term"]
+
+        sell_tickers = {s["ticker"] for s in lt["sell_reduce"]}
+        hold_tickers = {s["ticker"] for s in lt["hold"]}
+        add_tickers  = {s["ticker"] for s in lt["add"]}
+
+        assert "XOM" in sell_tickers
+        assert "AAPL" in hold_tickers
+        assert "WMT" in add_tickers
+
+    def test_timeframe_filtering_applied_to_tagged_signals(self, client, isolate_workdir):
+        # AAPL tagged long_term, BAC tagged short_term; they must appear in the
+        # correct timeframe bucket and not bleed across.
+        write_signals_file(isolate_workdir, TAGGED_SIGNALS)
+        upload_sample(client)
+
+        data = client.get("/api/portfolio/full").get_json()
+
+        lt_tickers = (
+            {s["ticker"] for s in data["long_term"]["sell_reduce"]}
+            | {s["ticker"] for s in data["long_term"]["hold"]}
+            | {s["ticker"] for s in data["long_term"]["add"]}
+        )
+        st_tickers = (
+            {s["ticker"] for s in data["short_term"]["sell_reduce"]}
+            | {s["ticker"] for s in data["short_term"]["hold"]}
+            | {s["ticker"] for s in data["short_term"]["add"]}
+        )
+        # AAPL is LT-tagged; BAC/NVDA are ST-tagged
+        assert lt_tickers.isdisjoint({"BAC", "NVDA"})
+        assert st_tickers.isdisjoint({"AAPL"})
+
+
 class TestGenerateEndpoint:
     def test_returns_202_and_runs_generation_in_background(self, client, monkeypatch):
         # Generation takes minutes; the endpoint must not run it in-request
