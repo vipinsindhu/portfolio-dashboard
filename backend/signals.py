@@ -13,11 +13,10 @@ from groq import Groq
 import yfinance as yf
 from stock_discovery import discover_stocks, TICKER_SECTOR_MAP
 from analysis import get_sector_for_stock
-from sector_config import normalize_sector
+from finnhub_client import fetch_profile, FINNHUB_API_KEY, FINNHUB_BASE
 
 # Environment configuration
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 FRED_API_KEY = os.getenv("FRED_API_KEY", "")  # Optional, FRED has generous free tier
 
 # Lazy-initialize Groq client (only when needed, not at import time)
@@ -32,7 +31,6 @@ def get_groq_client():
     return groq_client
 
 # API endpoints
-FINNHUB_BASE = "https://finnhub.io/api/v1"
 FRED_BASE = "https://api.stlouisfed.org/fred"
 
 # Signal candidates pool - stocks/ETFs to consider
@@ -299,51 +297,33 @@ _METRIC_PAYLOAD_CACHE = {}  # ticker -> (fetched_at, payload)
 _EARNINGS_CACHE = {}  # ticker -> (fetched_at, days_until_earnings_or_None)
 METRIC_CACHE_MAX_AGE = timedelta(hours=1)
 
-_PROFILE_CACHE: dict = {}  # ticker -> {sector, market_cap, company_name}; per-process lifetime
-
-
 def _fetch_finnhub_profile(ticker: str) -> dict:
-    """Sector, market_cap, company_name for a ticker — one API call at most.
+    """Sector, market_cap, company_name for a ticker.
 
-    Checks static maps first; only calls Finnhub /stock/profile2 when data is
-    missing. Cached in-process so parallel fundamentals fetches in the same
-    generation cycle never duplicate the same request.
+    Checks static maps first; fills any gaps from the shared finnhub_client
+    cache (one /stock/profile2 call per ticker across both analysis and signal
+    generation paths).
     """
-    if ticker in _PROFILE_CACHE:
-        return _PROFILE_CACHE[ticker]
-
     result = {
         "sector": COMPANY_SECTORS.get(ticker) or TICKER_SECTOR_MAP.get(ticker) or "",
         "market_cap": COMPANY_MARKET_CAPS.get(ticker, 0),
         "company_name": COMPANY_NAMES.get(ticker, ""),
     }
 
-    if FINNHUB_API_KEY and (not result["sector"] or not result["market_cap"]):
-        try:
-            r = requests.get(
-                f"{FINNHUB_BASE}/stock/profile2",
-                params={"symbol": ticker, "token": FINNHUB_API_KEY},
-                timeout=5,
-            )
-            if r.status_code == 200:
-                data = r.json()
-                mc = data.get("marketCapitalization")
-                raw_sector = (data.get("finnhubIndustry") or "").strip()
-                if not result["sector"] and raw_sector:
-                    result["sector"] = normalize_sector(raw_sector)
-                if not result["market_cap"] and mc:
-                    result["market_cap"] = int(mc * 1_000_000)
-                if not result["company_name"]:
-                    result["company_name"] = data.get("name") or ""
-        except Exception:
-            pass
+    if not result["sector"] or not result["market_cap"]:
+        profile = fetch_profile(ticker)
+        if not result["sector"]:
+            result["sector"] = profile["sector"]
+        if not result["market_cap"]:
+            result["market_cap"] = profile["market_cap"]
+        if not result["company_name"]:
+            result["company_name"] = profile["company_name"]
 
     if not result["sector"]:
         result["sector"] = "Other"
     if not result["company_name"]:
         result["company_name"] = ticker
 
-    _PROFILE_CACHE[ticker] = result
     return result
 
 
@@ -411,9 +391,9 @@ def fetch_short_term_metrics(ticker):
             )
             if response.status_code == 200:
                 days = extract_days_until_earnings(response.json(), today)
+                _EARNINGS_CACHE[ticker] = (datetime.utcnow(), days)
         except requests.exceptions.RequestException:
             pass
-        _EARNINGS_CACHE[ticker] = (datetime.utcnow(), days)
 
     if days is not None:
         out["days_until_earnings"] = days
@@ -447,7 +427,7 @@ def get_mock_fundamentals(ticker):
     return {
         "ticker": ticker,
         "company_name": COMPANY_NAMES.get(ticker, ticker),
-        "sector": get_sector_for_stock(ticker, TICKER_SECTOR_MAP),
+        "sector": COMPANY_SECTORS.get(ticker) or TICKER_SECTOR_MAP.get(ticker) or "Other",
         "current_price": 100,
         "fundamentals_source": "mock",
     }
@@ -505,11 +485,9 @@ def fetch_macro_context(use_cache=True):
             if obs:
                 macro_data["treasury_10y"] = float(obs[-1].get("value", 4.2))
 
+        save_macro_cache(macro_data)
     except Exception as e:
         print(f"Error fetching macro from FRED (using cache/defaults): {e}")
-
-    # Cache whatever we have (live data or defaults) so the next call uses cache
-    save_macro_cache(macro_data)
 
     return macro_data
 

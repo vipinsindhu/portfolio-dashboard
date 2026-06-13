@@ -7,11 +7,10 @@ from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 import json
 import os
-import requests
 from portfolio import Portfolio, Holding, get_sector_weights, get_top_n_concentration
 from educational import LESSONS
 from storage_paths import data_path
-from sector_config import normalize_sector
+from finnhub_client import fetch_profile
 
 
 # Sector cache file for dynamic lookups
@@ -19,8 +18,6 @@ _BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 SECTOR_CACHE_FILE = data_path("sector_cache.json")
 SECTOR_MAP_FILE = os.path.join(_BACKEND_DIR, "sector_map.json")
 INDEX_DECOMPOSITION_CACHE_FILE = os.path.join(_BACKEND_DIR, "index_decomposition_cache.json")
-FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
-FINNHUB_BASE = "https://finnhub.io/api/v1"
 
 
 def load_sector_map_from_file() -> Dict[str, str]:
@@ -39,19 +36,29 @@ def load_sector_map_from_file() -> Dict[str, str]:
     return {}
 
 
+_sector_cache_mem: Optional[Dict[str, str]] = None
+
+
 def load_sector_cache() -> Dict[str, str]:
-    """Load cached sector mappings from file"""
-    if os.path.exists(SECTOR_CACHE_FILE):
-        try:
-            with open(SECTOR_CACHE_FILE, "r") as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"Error loading sector cache: {e}")
-    return {}
+    """Load cached sector mappings from file (result memoised for the process lifetime)."""
+    global _sector_cache_mem
+    if _sector_cache_mem is None:
+        if os.path.exists(SECTOR_CACHE_FILE):
+            try:
+                with open(SECTOR_CACHE_FILE, "r") as f:
+                    _sector_cache_mem = json.load(f)
+            except Exception as e:
+                print(f"Error loading sector cache: {e}")
+                _sector_cache_mem = {}
+        else:
+            _sector_cache_mem = {}
+    return _sector_cache_mem
 
 
 def save_sector_cache(cache: Dict[str, str]):
-    """Save sector cache to file"""
+    """Save sector cache to file and update the in-process copy."""
+    global _sector_cache_mem
+    _sector_cache_mem = cache
     try:
         with open(SECTOR_CACHE_FILE, "w") as f:
             json.dump(cache, f, indent=2)
@@ -60,41 +67,28 @@ def save_sector_cache(cache: Dict[str, str]):
 
 
 def fetch_sector_from_finnhub(symbol: str) -> Optional[str]:
-    """Fetch sector from Finnhub API for unknown stocks"""
-    if not FINNHUB_API_KEY:
-        return None
+    """Fetch sector for a symbol via the shared Finnhub profile cache."""
+    sector = fetch_profile(symbol).get("sector")
+    return sector or None
 
-    try:
-        # Try company profile endpoint
-        profile_url = f"{FINNHUB_BASE}/stock/profile2"
-        response = requests.get(
-            profile_url,
-            params={"symbol": symbol, "token": FINNHUB_API_KEY},
-            timeout=5
-        )
 
-        if response.status_code == 200:
-            data = response.json()
-            raw = data.get("finnhubIndustry")
-            if raw:
-                sector = normalize_sector(raw)
-                print(f"[Sector Cache] Found sector for {symbol}: {sector}")
-                return sector
-    except Exception as e:
-        print(f"[Sector Cache] Error fetching {symbol} from Finnhub: {e}")
-
-    return None
+_index_decomp_cache_mem: Optional[Dict] = None
 
 
 def load_index_decomposition_cache() -> Dict:
-    """Load cached index fund decompositions"""
-    if os.path.exists(INDEX_DECOMPOSITION_CACHE_FILE):
-        try:
-            with open(INDEX_DECOMPOSITION_CACHE_FILE, "r") as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"[Index Decomposer] Error loading decomposition cache: {e}")
-    return {}
+    """Load cached index fund decompositions (result memoised for the process lifetime)."""
+    global _index_decomp_cache_mem
+    if _index_decomp_cache_mem is None:
+        if os.path.exists(INDEX_DECOMPOSITION_CACHE_FILE):
+            try:
+                with open(INDEX_DECOMPOSITION_CACHE_FILE, "r") as f:
+                    _index_decomp_cache_mem = json.load(f)
+            except Exception as e:
+                print(f"[Index Decomposer] Error loading decomposition cache: {e}")
+                _index_decomp_cache_mem = {}
+        else:
+            _index_decomp_cache_mem = {}
+    return _index_decomp_cache_mem
 
 
 def get_index_decomposition(symbol: str) -> Optional[Dict[str, float]]:
@@ -203,44 +197,6 @@ def _initialize_sector_map():
 # Initialize sector map when module loads
 _initialize_sector_map()
 
-
-def get_hybrid_sector_weights(portfolio: Portfolio, static_sector_map: Dict[str, str]) -> Dict[str, float]:
-    """
-    Calculate sector weights using hybrid lookup with index fund decomposition:
-    1. Check if holding is an index fund - if yes, decompose into constituent sectors
-    2. Otherwise use standard sector lookup:
-       a. Static map for known stocks
-       b. Cache for previously looked up stocks
-       c. Finnhub for new unknown stocks
-       d. "Other" as fallback
-    """
-    sector_values = {}
-
-    for holding in portfolio.holdings:
-        # Check if this is an index fund with decomposed sectors
-        decomposition = get_index_decomposition(holding.symbol)
-
-        if decomposition:
-            # This is an index fund - allocate its value across decomposed sectors
-            print(f"[Analysis] Decomposing index fund {holding.symbol} into {len(decomposition)} sectors")
-            for sector, sector_weight in decomposition.items():
-                if sector not in sector_values:
-                    sector_values[sector] = 0
-                # Multiply holding's value by the sector's weight within the index
-                sector_values[sector] += holding.current_value * sector_weight
-        else:
-            # Regular stock - use standard sector lookup
-            sector = get_sector_for_stock(holding.symbol, static_sector_map)
-
-            if sector not in sector_values:
-                sector_values[sector] = 0
-            sector_values[sector] += holding.current_value
-
-    total = sum(sector_values.values())
-    return {
-        sector: (value / total) if total > 0 else 0
-        for sector, value in sector_values.items()
-    }
 
 
 def get_sector_weights_with_holdings(portfolio: Portfolio, static_sector_map: Dict) -> Tuple[Dict[str, float], Dict[str, List[Dict]]]:

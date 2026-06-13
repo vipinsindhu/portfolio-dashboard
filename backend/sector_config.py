@@ -126,9 +126,9 @@ _ALIASES: dict[str, str] = {
 def normalize_sector(raw: str | None) -> str:
     """Return the canonical sector for any raw sector string.
 
-    Canonical strings pass through unchanged.  Aliases are mapped.
-    Anything else is returned as-is so novel Finnhub values are preserved
-    rather than silently dropped to "Other".
+    Canonical strings pass through unchanged.  Known aliases are mapped.
+    Anything else returns "Other" — add an entry to _ALIASES to map new
+    Finnhub industry strings to the correct canonical bucket.
     """
     if not raw:
         return "Other"
@@ -137,6 +137,4 @@ def normalize_sector(raw: str | None) -> str:
     mapped = _ALIASES.get(raw.lower())
     if mapped:
         return mapped
-    # Not in canonical set and no alias — return title-cased original so at
-    # least the capitalisation is consistent.
-    return raw.strip().title()
+    return "Other"

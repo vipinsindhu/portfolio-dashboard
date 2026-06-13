@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Dict, List, Tuple
 
 from index_decomposer import decompose_all_indices
+from sector_config import normalize_sector
 
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 FINNHUB_BASE = "https://finnhub.io/api/v1"
@@ -101,7 +102,7 @@ def fetch_sector_from_finnhub(symbol: str) -> Tuple[str, bool]:
             data = response.json()
             sector = data.get("finnhubIndustry")
             if sector:
-                sector = sector.title() if isinstance(sector, str) else None
+                sector = normalize_sector(sector) if isinstance(sector, str) else None
                 return sector, True
     except Exception as e:
         print(f"[Sector Updater] Error fetching {symbol}: {e}")

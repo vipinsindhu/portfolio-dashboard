@@ -122,7 +122,7 @@ function ResearchDetail({ ticker, onBack, onRecommendation }) {
                 <span>
                   {stock.sector === 'Technology'
                     ? 'Growth multiple compression ongoing'
-                    : stock.sector === 'Financial Services'
+                    : stock.sector === 'Financials'
                     ? 'Elevated rates boost NIMs'
                     : stock.sector === 'Healthcare'
                     ? 'Defensive positioning in higher rate environment'

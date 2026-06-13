@@ -52,3 +52,24 @@ def client():
     app.config["TESTING"] = True
     with app.test_client() as test_client:
         yield test_client
+
+
+@pytest.fixture(autouse=True)
+def reset_module_caches():
+    """Reset all module-level in-process caches between tests.
+
+    analysis._sector_cache_mem / _index_decomp_cache_mem bypass the temp
+    workdir that isolate_workdir sets up — without this reset a value written
+    in test A leaks into test B even though B runs in a different tmp_path.
+    """
+    yield
+    import sys
+    mods = sys.modules
+    if "analysis" in mods:
+        mods["analysis"]._sector_cache_mem = None
+        mods["analysis"]._index_decomp_cache_mem = None
+    if "finnhub_client" in mods:
+        mods["finnhub_client"]._PROFILE_CACHE.clear()
+    if "signals" in mods:
+        mods["signals"]._EARNINGS_CACHE.clear()
+        mods["signals"]._METRIC_PAYLOAD_CACHE.clear()

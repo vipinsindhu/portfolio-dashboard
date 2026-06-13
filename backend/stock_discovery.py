@@ -21,13 +21,6 @@ ALPHA_VANTAGE_BASE = "https://www.alphavantage.co"
 # Cache file for discovered stocks
 STOCK_DISCOVERY_CACHE = "stock_discovery_cache.json"
 
-# Quality filters
-QUALITY_FILTERS = {
-    "min_market_cap": 10_000_000_000,  # $10B minimum
-    "min_daily_volume": 1_000_000,      # 1M shares/day minimum
-    "min_price": 10,                    # $10 minimum (avoid penny stocks)
-}
-
 # Popular ETFs to always include
 POPULAR_ETFS = [
     # Stock ETFs
@@ -40,38 +33,6 @@ POPULAR_ETFS = [
     ("AGG", "iShares Core Aggregate Bond ETF", "Index"),
     ("BND", "Vanguard Total Bond Market ETF", "Index"),
 ]
-
-# Sector mappings for better categorization
-SECTOR_MAPPINGS = {
-    # Original 9 sectors
-    "Technology": "Technology",
-    "Healthcare": "Healthcare",
-    "Financials": "Financials",
-    "Industrials": "Industrials",
-    "Consumer Cyclical": "Retail & E-commerce",
-    "Consumer Defensive": "Food & Beverage",
-    "Energy": "Energy",
-    "Utilities": "Utilities",
-    "Real Estate": "Real Estate",
-    "Materials": "Materials",
-
-    # New 8 sectors
-    "Semiconductors": "Semiconductors",
-    "Semiconductor Equipment": "Semiconductors",
-    "Telecommunications": "Telecommunications",
-    "Communication Services": "Telecommunications",
-    "Aerospace & Defense": "Defense & Aerospace",
-    "Banks": "Banking",
-    "Specialty Finance": "Banking",
-    "Insurance": "Insurance",
-    "Pharmaceutical": "Pharma & Biotech",
-    "Biotechnology": "Pharma & Biotech",
-    "Retail": "Retail & E-commerce",
-    "Internet Retail": "Retail & E-commerce",
-    "Food Products": "Food & Beverage",
-    "Beverages": "Food & Beverage",
-    "Restaurants": "Food & Beverage",
-}
 
 
 def load_cache():
@@ -262,65 +223,6 @@ def get_major_stocks_from_finnhub():
         print(f"Error fetching from Finnhub: {e}")
         return []
 
-
-def filter_quality_stocks(stocks):
-    """
-    Filter stocks by quality metrics
-    - Market cap > $10 billion
-    - Daily volume > 1 million
-    - Price > $10
-    """
-    quality_stocks = []
-
-    for stock in stocks:
-        try:
-            # Extract data
-            ticker = stock.get("symbol", "")
-            market_cap = stock.get("marketCap", 0) or 0
-            volume = stock.get("volume", 0) or 0
-            price = stock.get("last", 0) or 0
-            sector = SECTOR_MAPPINGS.get(stock.get("finnhubIndustry", ""), "Other")
-
-            # Apply quality filters
-            if (market_cap >= QUALITY_FILTERS["min_market_cap"] and
-                volume >= QUALITY_FILTERS["min_daily_volume"] and
-                price >= QUALITY_FILTERS["min_price"]):
-
-                quality_stocks.append({
-                    "ticker": ticker,
-                    "name": stock.get("description", ticker),
-                    "sector": sector,
-                    "market_cap": market_cap,
-                    "price": price,
-                    "volume": volume
-                })
-        except Exception as e:
-            print(f"Error processing stock: {e}")
-            continue
-
-    print(f"Filtered to {len(quality_stocks)} quality stocks")
-    return quality_stocks
-
-
-def select_top_per_sector(stocks, top_n=5):
-    """Select top N stocks per sector by market cap"""
-    by_sector = {}
-
-    # Group by sector
-    for stock in stocks:
-        sector = stock.get("sector", "Other")
-        if sector not in by_sector:
-            by_sector[sector] = []
-        by_sector[sector].append(stock)
-
-    # Select top N from each sector
-    selected = []
-    for sector, sector_stocks in by_sector.items():
-        # Sort by market cap descending
-        sorted_stocks = sorted(sector_stocks, key=lambda x: x.get("market_cap", 0), reverse=True)
-        selected.extend(sorted_stocks[:top_n])
-
-    return selected
 
 
 def _format_stocks(stocks):
