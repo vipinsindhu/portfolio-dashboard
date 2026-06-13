@@ -179,7 +179,7 @@ function PortfolioInput({ autoLoadSample, onAutoLoadHandled }) {
     } finally {
       setLoading(false)
     }
-  }, [calculatePortfolioStats, onPortfolioLoaded, onAnalyze])
+  }, [calculatePortfolioStats, updateHoldings])
 
   // Auto-load the sample when arriving via the Welcome page's "Try a Demo" CTA
   const autoLoadTriggered = useRef(false)
