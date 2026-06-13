@@ -316,3 +316,44 @@ class TestTimeframeSchemaFields:
         assert short_signal["catalyst"] == "Down 12% in 3 months"
         assert short_signal["expected_window"] == "1-3 months"
         assert short_signal["invalidation"] == "If it keeps falling."
+
+
+class TestGenerateEndpoint:
+    def test_returns_202_and_runs_generation_in_background(self, client, monkeypatch):
+        # Generation takes minutes; the endpoint must not run it in-request
+        # (the worker's 30s timeout used to 500 every call)
+        import threading
+
+        import api as api_module
+
+        done = threading.Event()
+        monkeypatch.setattr(api_module, "auto_generate_signals", lambda: done.set())
+
+        response = client.post("/api/signals/generate")
+
+        assert response.status_code == 202
+        assert response.get_json()["status"] == "started"
+        assert done.wait(timeout=5), "background generation never ran"
+
+    def test_concurrent_generation_rejected(self, client, monkeypatch):
+        import threading
+
+        import api as api_module
+
+        started = threading.Event()
+        release = threading.Event()
+
+        def slow_generation():
+            started.set()
+            release.wait(timeout=5)
+
+        monkeypatch.setattr(api_module, "auto_generate_signals", slow_generation)
+
+        first = client.post("/api/signals/generate")
+        assert first.status_code == 202
+        assert started.wait(timeout=5)
+
+        second = client.post("/api/signals/generate")
+        release.set()
+        assert second.status_code == 409
+        assert second.get_json()["status"] == "already_running"

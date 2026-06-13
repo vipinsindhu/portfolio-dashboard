@@ -6,6 +6,7 @@ Supports both file-based (development) and database-backed (production) storage
 
 import os
 import sys
+import threading
 from dataclasses import asdict
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
@@ -16,6 +17,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 sys.path.insert(0, os.path.dirname(__file__))
 
 from signals import (
+    auto_generate_signals,
     fetch_signal_candidates,
     generate_signals,
     generate_short_term_signals,
@@ -563,42 +565,36 @@ def create_app():
             return jsonify({"error": "Signal not found"}), 404
         return jsonify(signal), 200
 
+    # Generation takes minutes (stock discovery, ~100 market-data fetches,
+    # two LLM passes) — far past the HTTP worker's 30s request timeout — so
+    # the endpoint kicks it off in a background thread and returns at once.
+    generation_state = {"running": False, "lock": threading.Lock()}
+
     @app.route("/api/signals/generate", methods=["POST"])
     def generate_new_signals():
-        """Generate new signals (admin endpoint)"""
-        try:
-            count = request.json.get("count", 10) if request.json else 10
-            candidates = fetch_signal_candidates()
-            new_signals = (
-                generate_signals(count, candidates=candidates)
-                + generate_short_term_signals(count, candidates=candidates)
-            )
+        """Trigger background signal regeneration (admin endpoint).
 
-            if not new_signals:
-                return jsonify({"error": "Failed to generate signals"}), 500
+        Delegates to auto_generate_signals, which keeps existing real
+        signals when a pass fails and never overwrites them with mocks.
+        """
+        with generation_state["lock"]:
+            if generation_state["running"]:
+                return jsonify({"status": "already_running"}), 409
+            generation_state["running"] = True
 
-            # Refuse to overwrite real signals with mock fallback data
-            if any(s.get("source") == "mock" for s in new_signals):
-                existing = load_signals()
-                if existing.get("signals"):
-                    return jsonify({
-                        "error": "LLM unavailable (check GROQ_API_KEY); refusing to overwrite real signals with mock data"
-                    }), 503
+        def run():
+            try:
+                auto_generate_signals()
+            except Exception as e:
+                app.logger.error(f"Background signal generation failed: {e}")
+            finally:
+                generation_state["running"] = False
 
-            # Save to storage (database or file)
-            success = signal_store.save_signals(new_signals)
-            if not success:
-                return jsonify({"error": "Failed to save signals"}), 500
-
-            return jsonify({
-                "status": "success",
-                "signals_generated": len(new_signals),
-                "signals": new_signals
-            }), 201
-
-        except Exception as e:
-            app.logger.error(f"Error generating signals: {e}")
-            return jsonify({"error": str(e)}), 500
+        threading.Thread(target=run, daemon=True).start()
+        return jsonify({
+            "status": "started",
+            "note": "Generation runs in the background; watch generated_at on /api/signals/short-term to see it land.",
+        }), 202
 
     @app.route("/api/signals/accuracy", methods=["POST"])
     def update_accuracy():
