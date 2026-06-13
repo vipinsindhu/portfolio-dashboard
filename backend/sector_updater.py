@@ -13,7 +13,8 @@ from index_decomposer import decompose_all_indices
 
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 FINNHUB_BASE = "https://finnhub.io/api/v1"
-SECTOR_MAP_FILE = "sector_map.json"
+_BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+SECTOR_MAP_FILE = os.path.join(_BACKEND_DIR, "sector_map.json")
 SECTOR_UPDATE_LOG_FILE = "sector_update_history.json"
 SECTOR_CACHE_FILE = "sector_cache.json"
 

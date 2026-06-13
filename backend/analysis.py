@@ -14,9 +14,10 @@ from storage_paths import data_path
 
 
 # Sector cache file for dynamic lookups
+_BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 SECTOR_CACHE_FILE = data_path("sector_cache.json")
-SECTOR_MAP_FILE = "sector_map.json"
-INDEX_DECOMPOSITION_CACHE_FILE = "index_decomposition_cache.json"
+SECTOR_MAP_FILE = os.path.join(_BACKEND_DIR, "sector_map.json")
+INDEX_DECOMPOSITION_CACHE_FILE = os.path.join(_BACKEND_DIR, "index_decomposition_cache.json")
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 FINNHUB_BASE = "https://finnhub.io/api/v1"
 
