@@ -154,7 +154,7 @@ def get_stocks_from_alpha_vantage():
                             stocks.append({
                                 "symbol": ticker,
                                 "description": name,
-                                "finnhubIndustry": TICKER_SECTOR_MAP.get(ticker, "Unknown")
+                                "finnhubIndustry": TICKER_SECTOR_MAP.get(ticker, "")
                             })
                     except Exception as e:
                         continue
@@ -329,7 +329,7 @@ def _format_stocks(stocks):
         {
             "ticker": stock.get("symbol", ""),
             "name": stock.get("description", ""),
-            "sector": stock.get("finnhubIndustry", "Unknown"),
+            "sector": stock.get("finnhubIndustry", ""),
             "market_cap": 0,
             "price": 0,
             "volume": 0
@@ -380,7 +380,7 @@ def discover_stocks():
             {
                 "symbol": ticker,
                 "description": ticker,
-                "finnhubIndustry": TICKER_SECTOR_MAP.get(ticker, "Unknown")
+                "finnhubIndustry": TICKER_SECTOR_MAP.get(ticker, "")
             }
             for ticker in fallback_tickers
         ]

@@ -211,19 +211,12 @@ def fetch_fundamentals(ticker):
                 quote = quote_response.json()
 
                 if quote.get("c"):  # Current price exists
-                    sector = COMPANY_SECTORS.get(ticker)
-                    if not sector:
-                        sector = get_sector_for_stock(ticker, TICKER_SECTOR_MAP)
-
                     profile = _fetch_finnhub_profile(ticker)
-                    market_cap = profile.get("market_cap") or COMPANY_MARKET_CAPS.get(ticker, 0)
-                    company_name = profile.get("company_name") or COMPANY_NAMES.get(ticker, ticker)
-
                     return {
                         "ticker": ticker,
-                        "company_name": company_name,
-                        "sector": sector,
-                        "market_cap": market_cap,
+                        "company_name": profile["company_name"],
+                        "sector": profile["sector"],
+                        "market_cap": profile["market_cap"],
                         "pe_ratio": quote.get("pe"),
                         "dividend_yield": COMPANY_DIVIDEND_YIELDS.get(ticker, 0),
                         "52_week_high": quote.get("h52", None),
@@ -304,19 +297,26 @@ def extract_days_until_earnings(payload, today):
 _METRIC_PAYLOAD_CACHE = {}  # ticker -> (fetched_at, payload)
 METRIC_CACHE_MAX_AGE = timedelta(hours=1)
 
-_PROFILE_CACHE: dict = {}  # ticker -> {market_cap, company_name}; reset each process lifetime
+_PROFILE_CACHE: dict = {}  # ticker -> {sector, market_cap, company_name}; per-process lifetime
 
 
 def _fetch_finnhub_profile(ticker: str) -> dict:
-    """Fetch market cap and company name from Finnhub /stock/profile2.
+    """Sector, market_cap, company_name for a ticker — one API call at most.
 
-    Cached in-process so parallel fundamentals fetches don't duplicate calls.
-    Finnhub returns marketCapitalization in millions; we convert to dollars.
+    Checks static maps first; only calls Finnhub /stock/profile2 when data is
+    missing. Cached in-process so parallel fundamentals fetches in the same
+    generation cycle never duplicate the same request.
     """
     if ticker in _PROFILE_CACHE:
         return _PROFILE_CACHE[ticker]
-    result: dict = {}
-    if FINNHUB_API_KEY:
+
+    result = {
+        "sector": COMPANY_SECTORS.get(ticker) or TICKER_SECTOR_MAP.get(ticker) or "",
+        "market_cap": COMPANY_MARKET_CAPS.get(ticker, 0),
+        "company_name": COMPANY_NAMES.get(ticker, ""),
+    }
+
+    if FINNHUB_API_KEY and (not result["sector"] or not result["market_cap"]):
         try:
             r = requests.get(
                 f"{FINNHUB_BASE}/stock/profile2",
@@ -326,12 +326,21 @@ def _fetch_finnhub_profile(ticker: str) -> dict:
             if r.status_code == 200:
                 data = r.json()
                 mc = data.get("marketCapitalization")
-                result = {
-                    "market_cap": int(mc * 1_000_000) if mc else 0,
-                    "company_name": data.get("name") or "",
-                }
+                raw_sector = (data.get("finnhubIndustry") or "").strip()
+                if not result["sector"] and raw_sector:
+                    result["sector"] = raw_sector.title()
+                if not result["market_cap"] and mc:
+                    result["market_cap"] = int(mc * 1_000_000)
+                if not result["company_name"]:
+                    result["company_name"] = data.get("name") or ""
         except Exception:
             pass
+
+    if not result["sector"]:
+        result["sector"] = "Other"
+    if not result["company_name"]:
+        result["company_name"] = ticker
+
     _PROFILE_CACHE[ticker] = result
     return result
 
