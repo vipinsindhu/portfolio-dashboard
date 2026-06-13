@@ -10,10 +10,11 @@ import os
 import requests
 from portfolio import Portfolio, Holding, get_sector_weights, get_top_n_concentration
 from educational import LESSONS
+from storage_paths import data_path
 
 
 # Sector cache file for dynamic lookups
-SECTOR_CACHE_FILE = "sector_cache.json"
+SECTOR_CACHE_FILE = data_path("sector_cache.json")
 SECTOR_MAP_FILE = "sector_map.json"
 INDEX_DECOMPOSITION_CACHE_FILE = "index_decomposition_cache.json"
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
