@@ -139,20 +139,6 @@
   .analyse-container {
     padding: 28px 20px;
   }
-
-  .empty-state {
-    padding: 50px 20px;
-  }
-
-  .manual-analyze-section {
-    padding: 20px;
-  }
-
-  .btn-large {
-    min-width: 100%;
-    padding: 12px 24px;
-    font-size: 15px;
-  }
 }
 
 /* Mobile */
@@ -163,21 +149,5 @@
 
   .analyse-header h2 {
     font-size: 22px;
-  }
-
-  .empty-state {
-    padding: 60px 24px;
-  }
-
-  .empty-icon {
-    font-size: 36px;
-  }
-
-  .manual-analyze-section {
-    padding: 16px;
-  }
-
-  .btn-large {
-    min-width: 100%;
   }
 }
