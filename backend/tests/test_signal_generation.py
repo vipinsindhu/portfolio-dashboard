@@ -188,6 +188,7 @@ class TestPlaceholderFundamentals:
                 return dict(real[ticker])
             return {"ticker": ticker, "current_price": 100, "fundamentals_source": "mock"}
 
+        monkeypatch.setattr(signals_module, "SIGNAL_CANDIDATES", [])
         monkeypatch.setattr(signals_module, "discover_stocks", lambda: tickers)
         monkeypatch.setattr(signals_module, "fetch_fundamentals", fake_fetch)
 
@@ -206,6 +207,7 @@ class TestPlaceholderFundamentals:
                 return dict(make_candidates(1)[0], ticker="R00")
             return {"ticker": ticker, "current_price": 100, "fundamentals_source": "mock"}
 
+        monkeypatch.setattr(signals_module, "SIGNAL_CANDIDATES", [])
         monkeypatch.setattr(signals_module, "discover_stocks", lambda: tickers)
         monkeypatch.setattr(signals_module, "fetch_fundamentals", fake_fetch)
 

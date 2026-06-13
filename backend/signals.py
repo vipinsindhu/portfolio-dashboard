@@ -882,17 +882,20 @@ def fetch_signal_candidates():
     are only fetched once per cycle.
     """
     print("Discovering high-quality stocks...")
-    signal_candidates = discover_stocks()
-
-    # Shuffle before slicing so each cycle covers different parts of the
-    # alphabetically-sorted Alpha Vantage / Finnhub list, not always A-stocks.
+    # Seed with the curated list so every cycle always includes well-known
+    # stocks across all sectors, then extend with any newly discovered tickers.
     import random as _random
-    _random.shuffle(signal_candidates)
+    curated = list(SIGNAL_CANDIDATES)
+    discovered = discover_stocks()
+    curated_set = set(curated)
+    extra = [t for t in discovered if t not in curated_set]
+    _random.shuffle(extra)
+    signal_candidates = curated + extra
 
     # Fetch fundamentals in parallel for better performance
-    max_candidates_to_fetch = 50
+    max_candidates_to_fetch = 60
     candidates_to_fetch = signal_candidates[:max_candidates_to_fetch]
-    print(f"Fetching fundamentals for {len(candidates_to_fetch)} of {len(signal_candidates)} discovered stocks (parallel)...")
+    print(f"Fetching fundamentals for {len(candidates_to_fetch)} candidates ({len(curated)} curated + {len(candidates_to_fetch) - len(curated)} discovered)...")
 
     candidates = []
     # Use ThreadPoolExecutor to fetch fundamentals in parallel (max 5 concurrent requests)
