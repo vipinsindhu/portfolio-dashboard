@@ -261,6 +261,7 @@ def extract_fundamental_metrics(payload):
     metric = (payload or {}).get("metric") or {}
     out = {}
     mapping = {
+        "peBasicExclExtraTTM": "pe_ratio",
         "revenueGrowth5Y": "revenue_growth_5y_pct",
         "epsGrowth5Y": "eps_growth_5y_pct",
         "netProfitMarginTTM": "net_margin_pct",

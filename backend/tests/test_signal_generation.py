@@ -414,6 +414,7 @@ class TestCleanSignalText:
 class TestFundamentalMetricsExtraction:
     def test_maps_and_rounds(self):
         payload = {"metric": {
+            "peBasicExclExtraTTM": 28.53,
             "revenueGrowth5Y": 9.512,
             "epsGrowth5Y": 12.04,
             "netProfitMarginTTM": 18.267,
@@ -423,6 +424,7 @@ class TestFundamentalMetricsExtraction:
         }}
         out = extract_fundamental_metrics(payload)
         assert out == {
+            "pe_ratio": 28.5,
             "revenue_growth_5y_pct": 9.5,
             "eps_growth_5y_pct": 12.0,
             "net_margin_pct": 18.3,
@@ -430,6 +432,10 @@ class TestFundamentalMetricsExtraction:
             "debt_to_equity": 0.45,
             "dividend_growth_5y_pct": 6.0,
         }
+
+    def test_pe_ratio_extracted_from_finnhub_metric(self):
+        out = extract_fundamental_metrics({"metric": {"peBasicExclExtraTTM": 35.0}})
+        assert out == {"pe_ratio": 35.0}
 
     def test_ignores_missing_and_non_numeric(self):
         assert extract_fundamental_metrics({"metric": {"roeTTM": "N/A"}}) == {}
