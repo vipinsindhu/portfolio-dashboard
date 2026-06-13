@@ -627,9 +627,12 @@ def call_groq(prompt):
     """Call Groq cloud LLM for signal generation"""
     try:
         client = get_groq_client()
+        # 10 signals with the per-timeframe schema (label, catalyst/invalidation
+        # or moat/what_to_watch) run well past 1024 tokens; a truncated answer
+        # fails JSON parsing and silently drops the pass to mock fallback
         message = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            max_tokens=1024,
+            max_tokens=3000,
             temperature=0.7,
             messages=[
                 {"role": "user", "content": prompt}
@@ -652,11 +655,14 @@ def generate_realistic_mock_signals(candidates, count=5, timeframe="long_term"):
         direction = random.choice(directions)
         confidence = random.randint(5, 9)
 
-        # Generate realistic rationale based on fundamentals
+        # Generate realistic rationale based on fundamentals.
+        # `or` fallbacks throughout: keys are often present but None
+        # (e.g. Finnhub /quote has no 52-week fields), and a None here
+        # crashes the f-string format specs below
         pe = candidate.get("pe_ratio") or 25
-        dividend = candidate.get("dividend_yield", 0) or 0
-        price = candidate.get("current_price", 100)
-        high = candidate.get("52_week_high", price * 1.2)
+        dividend = candidate.get("dividend_yield") or 0
+        price = candidate.get("current_price") or 100
+        high = candidate.get("52_week_high") or price * 1.2
 
         company = candidate.get("company_name") or candidate.get("ticker", "This company")
         if direction == "buy":

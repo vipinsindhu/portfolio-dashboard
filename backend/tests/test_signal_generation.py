@@ -515,6 +515,22 @@ class TestTimeframeSchemas:
         assert "invalidation" in short_prompt
         assert "moat" in long_prompt
 
+    def test_mock_signals_survive_none_valued_candidate_fields(self):
+        # Finnhub /quote candidates carry explicit None for 52-week fields;
+        # the fallback generator used to crash formatting them ("unsupported
+        # format string passed to NoneType.__format__"), killing the
+        # /api/signals/generate endpoint whenever an LLM pass failed.
+        candidates = [{
+            "ticker": "AA", "company_name": None, "sector": "Unknown",
+            "current_price": None, "pe_ratio": None, "dividend_yield": None,
+            "52_week_high": None, "52_week_low": None, "market_cap": 0,
+        }] * 5
+
+        result = generate_realistic_mock_signals(candidates, count=5)
+
+        assert len(result) == 5
+        assert all(s["rationale"] for s in result)
+
     def test_mock_signals_use_timeframe_vocabulary(self):
         candidates = make_candidates(10)
         long_mocks = generate_realistic_mock_signals(candidates, count=10)
