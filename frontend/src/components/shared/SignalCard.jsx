@@ -1,3 +1,4 @@
+import Tooltip from './Tooltip'
 import './SignalCard.css'
 
 function SignalCard({ signal, type = 'general', weight = null }) {
@@ -12,15 +13,23 @@ function SignalCard({ signal, type = 'general', weight = null }) {
         <div className="signal-ticker-section">
           <div className="ticker-info">
             <span className="ticker-symbol">{signal.ticker}</span>
-            {signal.sector && <span className="ticker-sector">{signal.sector}</span>}
+            {signal.sector && (
+              <span className="ticker-sector">
+                <Tooltip term="sector">{signal.sector}</Tooltip>
+              </span>
+            )}
           </div>
         </div>
-        <div className="signal-direction-badge">{dirLabel}</div>
+        <div className="signal-direction-badge">
+          <Tooltip term={signal.direction}>{dirLabel}</Tooltip>
+        </div>
       </div>
 
       <div className="confidence-section">
         <div className="confidence-header">
-          <span className="confidence-label">Confidence</span>
+          <span className="confidence-label">
+            <Tooltip term="confidence">Confidence</Tooltip>
+          </span>
           <span className="confidence-value">{signal.confidence}/10</span>
         </div>
         <div className="confidence-bars">
@@ -40,11 +49,13 @@ function SignalCard({ signal, type = 'general', weight = null }) {
       {(signal.pe_ratio != null || signal.dividend_yield > 0) && (
         <div className="signal-cues">
           {signal.pe_ratio != null && (
-            <span className="cue-badge">P/E {Number(signal.pe_ratio).toFixed(1)}</span>
+            <span className="cue-badge">
+              <Tooltip term="pe">P/E</Tooltip> {Number(signal.pe_ratio).toFixed(1)}
+            </span>
           )}
           {signal.dividend_yield > 0 && (
             <span className="cue-badge positive">
-              {(signal.dividend_yield * 100).toFixed(1)}% dividend
+              {(signal.dividend_yield * 100).toFixed(1)}% <Tooltip term="dividend">dividend</Tooltip>
             </span>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Tooltip from '../../shared/Tooltip'
 import './SignalCardEnhanced.css'
 
 function SignalCardEnhanced({ signal, type = 'general' }) {
@@ -81,14 +82,14 @@ function SignalCardEnhanced({ signal, type = 'general' }) {
           </div>
         </div>
         <div className="signal-direction-badge">
-          {signal.label || getDirectionLabel()}
+          <Tooltip term={signal.direction}>{signal.label || getDirectionLabel()}</Tooltip>
         </div>
       </div>
 
       {/* Confidence */}
       <div className="confidence-section">
         <div className="confidence-header">
-          <span className="confidence-label">Confidence</span>
+          <span className="confidence-label"><Tooltip term="confidence">Confidence</Tooltip></span>
           <span className={`confidence-value ${confidenceLevel}`}>
             {signal.confidence}/10
           </span>
@@ -109,27 +110,27 @@ function SignalCardEnhanced({ signal, type = 'general' }) {
         <div className="signal-cues">
           {signal.return_13w_pct != null && (
             <span className={`cue-badge ${signal.return_13w_pct >= 0 ? 'positive' : 'negative'}`}>
-              {signal.return_13w_pct >= 0 ? '📈' : '📉'} {signal.return_13w_pct > 0 ? '+' : ''}{signal.return_13w_pct}% in 3mo
+              {signal.return_13w_pct >= 0 ? '📈' : '📉'} <Tooltip term="return3m">{signal.return_13w_pct > 0 ? '+' : ''}{signal.return_13w_pct}% in 3mo</Tooltip>
             </span>
           )}
           {signal.days_until_earnings != null && (
             <span className="cue-badge earnings">
-              📅 Earnings in {signal.days_until_earnings}d
+              📅 <Tooltip term="earnings">Earnings</Tooltip> in {signal.days_until_earnings}d
             </span>
           )}
           {signal.pct_of_52_week_range != null && (
             <span className="cue-badge range">
-              🎯 {signal.pct_of_52_week_range}% of yearly range
+              🎯 <Tooltip term="range52">{signal.pct_of_52_week_range}% of yearly range</Tooltip>
             </span>
           )}
           {signal.revenue_growth_5y_pct != null && (
             <span className={`cue-badge ${signal.revenue_growth_5y_pct >= 0 ? 'positive' : 'negative'}`}>
-              📊 Sales {signal.revenue_growth_5y_pct > 0 ? '+' : ''}{signal.revenue_growth_5y_pct}%/yr (5y)
+              📊 <Tooltip term="revenue">Sales {signal.revenue_growth_5y_pct > 0 ? '+' : ''}{signal.revenue_growth_5y_pct}%/yr (5y)</Tooltip>
             </span>
           )}
           {signal.net_margin_pct != null && (
             <span className="cue-badge">
-              💰 {signal.net_margin_pct}% profit margin
+              💰 <Tooltip term="margin">{signal.net_margin_pct}% profit margin</Tooltip>
             </span>
           )}
         </div>
@@ -148,7 +149,7 @@ function SignalCardEnhanced({ signal, type = 'general' }) {
         <div className="insight-rows">
           {signal.catalyst && (
             <div className="insight-row">
-              <span className="insight-label">⚡ Catalyst</span>
+              <span className="insight-label">⚡ <Tooltip term="catalyst">Catalyst</Tooltip></span>
               <span className="insight-value">{signal.catalyst}</span>
             </div>
           )}
@@ -160,7 +161,7 @@ function SignalCardEnhanced({ signal, type = 'general' }) {
           )}
           {signal.moat && (
             <div className="insight-row">
-              <span className="insight-label">🏰 Edge</span>
+              <span className="insight-label">🏰 <Tooltip term="moat">Edge</Tooltip></span>
               <span className="insight-value">{signal.moat}</span>
             </div>
           )}
@@ -172,7 +173,7 @@ function SignalCardEnhanced({ signal, type = 'general' }) {
           )}
           {signal.invalidation && (
             <div className="insight-row invalidation">
-              <span className="insight-label">🚧 Wrong if</span>
+              <span className="insight-label">🚧 <Tooltip term="invalidation">Wrong if</Tooltip></span>
               <span className="insight-value">{signal.invalidation}</span>
             </div>
           )}
@@ -184,7 +185,7 @@ function SignalCardEnhanced({ signal, type = 'general' }) {
         <span className="time-indicator">⏱️ {timeAgo}</span>
         {winRate !== null && (
           <span className={`win-rate ${winRate >= 80 ? 'high' : winRate >= 50 ? 'medium' : 'low'}`}>
-            ✓ {winRate}% accuracy
+            ✓ {winRate}% <Tooltip term="accuracy">accuracy</Tooltip>
           </span>
         )}
       </div>
