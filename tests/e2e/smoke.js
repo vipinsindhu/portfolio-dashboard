@@ -33,7 +33,25 @@ async function main() {
   await health.waitFor({ timeout: 60000 })
   check('analysis results render', await health.isVisible())
 
-  // Scenario 3: mobile viewport shows bottom-nav tabs
+  // Scenario 3: short-term tab shows at least one Buy signal section
+  // This catches the "0 buys" regression caused by server-side portfolio injection.
+  await page.goto(BASE, { waitUntil: 'networkidle', timeout: 60000 })
+  // Click the "This Week" / short-term tab (second tab button)
+  await page.locator('.tab-button').nth(1).click()
+  // Wait for signals to load (loading spinner disappears)
+  await page.waitForFunction(
+    () => !document.querySelector('.signals-tab-loading'),
+    { timeout: 30000 }
+  )
+  const buySection = page.locator('.signals-section.buy')
+  const hasBuySection = await buySection.count() > 0
+  check('short-term tab renders a Buy section (signal endpoint is stateless)', hasBuySection)
+  if (hasBuySection) {
+    const buyCards = await buySection.locator('.signal-card-enhanced').count()
+    check(`short-term Buy section has at least 1 signal card (found ${buyCards})`, buyCards >= 1)
+  }
+
+  // Scenario 4: mobile viewport shows bottom-nav tabs
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } })
   const mPage = await mobile.newPage()
   await mPage.goto(BASE, { waitUntil: 'networkidle', timeout: 60000 })

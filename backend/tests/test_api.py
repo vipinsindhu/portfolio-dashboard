@@ -129,14 +129,81 @@ SAMPLE_SIGNALS = [
 ]
 
 
-class TestSignalEndpointRecommendations:
-    def test_short_term_returns_signals_without_portfolio(self, client, isolate_workdir):
-        write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
+SAMPLE_SIGNALS_TAGGED = [
+    {
+        "id": "META_st", "ticker": "META", "direction": "buy", "confidence": 9,
+        "rationale": "test", "sector": "Technology", "timeframe": "short_term",
+    },
+    {
+        "id": "BAC_st", "ticker": "BAC", "direction": "buy", "confidence": 8,
+        "rationale": "test", "sector": "Financials", "timeframe": "short_term",
+    },
+    {
+        "id": "XOM_st", "ticker": "XOM", "direction": "avoid", "confidence": 7,
+        "rationale": "test", "sector": "Energy", "timeframe": "short_term",
+    },
+    {
+        "id": "CELH_lt", "ticker": "CELH", "direction": "buy", "confidence": 9,
+        "rationale": "test", "sector": "Healthcare", "timeframe": "long_term",
+    },
+    {
+        "id": "PPL_lt", "ticker": "PPL", "direction": "avoid", "confidence": 8,
+        "rationale": "test", "sector": "Utilities", "timeframe": "long_term",
+    },
+]
+
+
+class TestSignalEndpointStateless:
+    """Signal endpoints must never embed portfolio recommendations.
+
+    The previous bug: /api/signals/short-term and /api/signals/long-term called
+    load_portfolio() and returned a 'recommendations' key. That caused buy signals
+    to be silently excluded from the frontend's generalSignals pool while
+    showPortfolio=False kept buyRecs empty — 0 buys displayed.
+
+    Fix (e981ba9): endpoints are now stateless. These tests pin that contract.
+    """
+
+    def test_short_term_never_returns_recommendations_key(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS_TAGGED)
+        data = client.get("/api/signals/short-term").get_json()
+        assert "recommendations" not in data, (
+            "Signal endpoint must not embed portfolio recommendations — "
+            "doing so causes buy signals to vanish when no portfolio is uploaded"
+        )
+
+    def test_long_term_never_returns_recommendations_key(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS_TAGGED)
+        data = client.get("/api/signals/long-term").get_json()
+        assert "recommendations" not in data
+
+    def test_short_term_buy_signals_visible_without_portfolio(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS_TAGGED)
+        data = client.get("/api/signals/short-term").get_json()
+        tickers = [s["ticker"] for s in data["signals"]]
+        assert "META" in tickers
+        assert "BAC" in tickers
+
+    def test_long_term_buy_signals_visible_without_portfolio(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS_TAGGED)
+        data = client.get("/api/signals/long-term").get_json()
+        tickers = [s["ticker"] for s in data["signals"]]
+        assert "CELH" in tickers
+
+    def test_short_term_stats_reflect_actual_signals(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS_TAGGED)
+        data = client.get("/api/signals/short-term").get_json()
+        stats = data["stats"]
+        assert stats["buy_count"] == 2
+        assert stats["avoid_count"] == 1
+
+    def test_short_term_returns_signals_key(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS_TAGGED)
         data = client.get("/api/signals/short-term").get_json()
         assert "signals" in data
 
-    def test_long_term_returns_signals_without_portfolio(self, client, isolate_workdir):
-        write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
+    def test_long_term_returns_signals_key(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS_TAGGED)
         data = client.get("/api/signals/long-term").get_json()
         assert "signals" in data
 

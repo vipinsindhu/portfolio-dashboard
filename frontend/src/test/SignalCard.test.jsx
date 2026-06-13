@@ -45,13 +45,20 @@ describe('SignalCard', () => {
   })
 
   test('shows P/E ratio when provided', () => {
-    render(<SignalCard signal={{ ...baseSignal, pe_ratio: 25.4 }} />)
-    expect(screen.getByText('P/E 25.4')).toBeInTheDocument()
+    // "P/E" is inside a Tooltip span; "25.4" is a sibling text node.
+    // Check the badge container's full text instead of a single text node.
+    const { container } = render(<SignalCard signal={{ ...baseSignal, pe_ratio: 25.4 }} />)
+    const badge = container.querySelector('.signal-cues .cue-badge')
+    expect(badge).not.toBeNull()
+    expect(badge.textContent.replace(/\s+/g, ' ').trim()).toBe('P/E 25.4')
   })
 
   test('shows dividend yield when > 0', () => {
-    render(<SignalCard signal={{ ...baseSignal, dividend_yield: 0.025 }} />)
-    expect(screen.getByText('2.5% dividend')).toBeInTheDocument()
+    // "dividend" is inside a Tooltip span; "2.5% " is a sibling text node.
+    const { container } = render(<SignalCard signal={{ ...baseSignal, dividend_yield: 0.025 }} />)
+    const badge = container.querySelector('.signal-cues .cue-badge.positive')
+    expect(badge).not.toBeNull()
+    expect(badge.textContent.replace(/\s+/g, ' ').trim()).toBe('2.5% dividend')
   })
 
   test('hides cue badges when neither P/E nor dividend provided', () => {
