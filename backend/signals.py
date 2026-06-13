@@ -13,6 +13,7 @@ from groq import Groq
 import yfinance as yf
 from stock_discovery import discover_stocks, TICKER_SECTOR_MAP
 from analysis import get_sector_for_stock
+from sector_config import normalize_sector
 
 # Environment configuration
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
@@ -74,19 +75,19 @@ COMPANY_NAMES = {
 
 COMPANY_SECTORS = {
     "AAPL": "Technology", "MSFT": "Technology", "GOOGL": "Technology",
-    "NVDA": "Technology", "META": "Technology", "TSLA": "Consumer Discretionary",
+    "NVDA": "Technology", "META": "Technology", "TSLA": "Consumer",
     "AVGO": "Technology", "MU": "Technology", "QCOM": "Technology", "AMD": "Technology",
     "JPM": "Financials", "BAC": "Financials", "GS": "Financials",
     "MS": "Financials", "BX": "Financials", "KKR": "Financials",
     "JNJ": "Healthcare", "UNH": "Healthcare", "PFE": "Healthcare",
     "LLY": "Healthcare", "MRK": "Healthcare", "TMO": "Healthcare",
-    "AMZN": "Consumer Discretionary", "WMT": "Consumer Staples", "MCD": "Consumer Discretionary",
-    "COST": "Consumer Staples", "NKE": "Consumer Discretionary", "TJX": "Consumer Discretionary",
+    "AMZN": "Consumer", "WMT": "Consumer", "MCD": "Consumer",
+    "COST": "Consumer", "NKE": "Consumer", "TJX": "Consumer",
     "BA": "Industrials", "GE": "Industrials", "LMT": "Industrials", "CAT": "Industrials",
     "XOM": "Energy", "CVX": "Energy", "MPC": "Energy",
     "AMT": "Real Estate", "EQIX": "Real Estate",
-    "VTI": "Index", "VOO": "Index", "SPY": "Index",
-    "QQQ": "Technology", "AGG": "Index", "BND": "Index"
+    "VTI": "Broad Market Index", "VOO": "Broad Market Index", "SPY": "Broad Market Index",
+    "QQQ": "Broad Market Index", "AGG": "Bonds", "BND": "Bonds"
 }
 
 COMPANY_MARKET_CAPS = {
@@ -329,7 +330,7 @@ def _fetch_finnhub_profile(ticker: str) -> dict:
                 mc = data.get("marketCapitalization")
                 raw_sector = (data.get("finnhubIndustry") or "").strip()
                 if not result["sector"] and raw_sector:
-                    result["sector"] = raw_sector.title()
+                    result["sector"] = normalize_sector(raw_sector)
                 if not result["market_cap"] and mc:
                     result["market_cap"] = int(mc * 1_000_000)
                 if not result["company_name"]:

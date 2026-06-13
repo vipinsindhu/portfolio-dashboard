@@ -11,6 +11,7 @@ import requests
 from portfolio import Portfolio, Holding, get_sector_weights, get_top_n_concentration
 from educational import LESSONS
 from storage_paths import data_path
+from sector_config import normalize_sector
 
 
 # Sector cache file for dynamic lookups
@@ -74,10 +75,9 @@ def fetch_sector_from_finnhub(symbol: str) -> Optional[str]:
 
         if response.status_code == 200:
             data = response.json()
-            sector = data.get("finnhubIndustry")
-            if sector:
-                # Normalize sector name
-                sector = sector.title() if isinstance(sector, str) else None
+            raw = data.get("finnhubIndustry")
+            if raw:
+                sector = normalize_sector(raw)
                 print(f"[Sector Cache] Found sector for {symbol}: {sector}")
                 return sector
     except Exception as e:

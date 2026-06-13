@@ -433,38 +433,38 @@ TICKER_SECTOR_MAP = {
     "MSFT": "Technology",
     "GOOGL": "Technology",
     "META": "Technology",
-    # Semiconductors
-    "NVDA": "Semiconductors",
-    "AMD": "Semiconductors",
-    "QCOM": "Semiconductors",
+    # Semiconductors → Technology
+    "NVDA": "Technology",
+    "AMD": "Technology",
+    "QCOM": "Technology",
     # Healthcare
     "JNJ": "Healthcare",
     "UNH": "Healthcare",
-    # Pharma & Biotech
-    "PFE": "Pharma & Biotech",
-    "ABBV": "Pharma & Biotech",
+    # Pharma & Biotech → Healthcare
+    "PFE": "Healthcare",
+    "ABBV": "Healthcare",
     # Financials
     "JPM": "Financials",
     "BAC": "Financials",
-    # Banking
-    "C": "Banking",
-    "WFC": "Banking",
-    # Insurance
-    "BRK.B": "Insurance",
-    "MET": "Insurance",
+    # Banking → Financials
+    "C": "Financials",
+    "WFC": "Financials",
+    # Insurance → Financials
+    "BRK.B": "Financials",
+    "MET": "Financials",
     # Energy
     "XOM": "Energy",
     "CVX": "Energy",
     # Industrials
     "BA": "Industrials",
     "CAT": "Industrials",
-    # Consumer Discretionary/Retail & E-commerce
-    "AMZN": "Retail & E-commerce",
-    "WMT": "Retail & E-commerce",
-    "TSLA": "Retail & E-commerce",
-    # Telecommunications
-    "VZ": "Telecommunications",
-    "T": "Telecommunications",
+    # Retail & E-commerce → Consumer
+    "AMZN": "Consumer",
+    "WMT": "Consumer",
+    "TSLA": "Consumer",
+    # Telecommunications → Utilities
+    "VZ": "Utilities",
+    "T": "Utilities",
     # Utilities
     "NEE": "Utilities",
     "SO": "Utilities",
@@ -474,21 +474,21 @@ TICKER_SECTOR_MAP = {
     # Real Estate
     "PLD": "Real Estate",
     "EQIX": "Real Estate",
-    # Defense & Aerospace
-    "LMT": "Defense & Aerospace",
-    "RTX": "Defense & Aerospace",
-    # Food & Beverage
-    "KO": "Food & Beverage",
-    "PEP": "Food & Beverage",
-    "MCD": "Food & Beverage",
-    # ETFs (Index/Multi-asset)
-    "VTI": "Index",
-    "VOO": "Index",
-    "SPY": "Index",
-    "QQQ": "Technology",
-    "IWM": "Index",
-    "AGG": "Index",
-    "BND": "Index"
+    # Defense & Aerospace → Industrials
+    "LMT": "Industrials",
+    "RTX": "Industrials",
+    # Food & Beverage → Consumer
+    "KO": "Consumer",
+    "PEP": "Consumer",
+    "MCD": "Consumer",
+    # ETFs
+    "VTI": "Broad Market Index",
+    "VOO": "Broad Market Index",
+    "SPY": "Broad Market Index",
+    "QQQ": "Broad Market Index",
+    "IWM": "Broad Market Index",
+    "AGG": "Bonds",
+    "BND": "Bonds"
 }
 
 

@@ -25,28 +25,38 @@ function FilterBar({ onFilterChange, stats }) {
       )].sort()
 
       setSectors(uniqueSectors.length > 0 ? uniqueSectors : [
+        'Broad Market Index',
         'Technology',
         'Healthcare',
         'Financials',
-        'Energy',
-        'Consumer Discretionary',
-        'Consumer Staples',
+        'Consumer',
         'Industrials',
+        'Energy',
+        'Utilities',
+        'Materials',
         'Real Estate',
-        'Utilities'
+        'Bonds',
+        'Commodities',
+        'Cryptocurrencies',
+        'International Equities',
       ])
     } catch (err) {
       // Fallback to predefined sectors if fetch fails
       setSectors([
+        'Broad Market Index',
         'Technology',
         'Healthcare',
         'Financials',
-        'Energy',
-        'Consumer Discretionary',
-        'Consumer Staples',
+        'Consumer',
         'Industrials',
+        'Energy',
+        'Utilities',
+        'Materials',
         'Real Estate',
-        'Utilities'
+        'Bonds',
+        'Commodities',
+        'Cryptocurrencies',
+        'International Equities',
       ])
     }
   }
