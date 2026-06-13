@@ -318,6 +318,46 @@ class TestTimeframeSchemaFields:
         assert short_signal["invalidation"] == "If it keeps falling."
 
 
+class TestStats:
+    def test_returns_ticker_and_sector_counts(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
+
+        data = client.get("/api/stats").get_json()
+
+        assert data["ticker_count"] == 3
+        assert data["sector_count"] == 3  # Technology, Consumer, Energy
+
+    def test_other_sector_excluded_from_count(self, client, isolate_workdir):
+        signals = SAMPLE_SIGNALS + [{
+            "id": "FOO_1", "ticker": "FOO", "direction": "hold", "confidence": 7,
+            "rationale": "test", "sector": "Other",
+        }]
+        write_signals_file(isolate_workdir, signals)
+
+        data = client.get("/api/stats").get_json()
+
+        assert data["ticker_count"] == 4   # FOO counted as a ticker
+        assert data["sector_count"] == 3   # Other not counted as a sector
+
+    def test_deduplicates_tickers_and_sectors(self, client, isolate_workdir):
+        signals = SAMPLE_SIGNALS + [{
+            "id": "AAPL_2", "ticker": "AAPL", "direction": "hold", "confidence": 6,
+            "rationale": "test", "sector": "Technology",
+        }]
+        write_signals_file(isolate_workdir, signals)
+
+        data = client.get("/api/stats").get_json()
+
+        assert data["ticker_count"] == 3   # AAPL still counted once
+        assert data["sector_count"] == 3
+
+    def test_empty_store_returns_zeros(self, client, isolate_workdir):
+        data = client.get("/api/stats").get_json()
+
+        assert data["ticker_count"] == 0
+        assert data["sector_count"] == 0
+
+
 class TestGenerateEndpoint:
     def test_returns_202_and_runs_generation_in_background(self, client, monkeypatch):
         # Generation takes minutes; the endpoint must not run it in-request
