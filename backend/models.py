@@ -3,10 +3,9 @@ Database models for SQLAlchemy ORM
 Supports signals, macro config, and future user management
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, Float, DateTime, Text, JSON, Boolean, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 Base = declarative_base()
 
@@ -22,7 +21,7 @@ class Signal(Base):
     rationale = Column(Text, nullable=False)
     sector = Column(String(50), nullable=True)
     market_cap = Column(Float, nullable=True)
-    created_at = Column(DateTime, nullable=False, index=True, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, index=True, default=lambda: datetime.now(timezone.utc))
     result = Column(String(10), nullable=True)  # win, loss
     accuracy_pct = Column(Integer, nullable=True)  # 0 or 100
 
@@ -52,7 +51,7 @@ class Signal(Base):
             rationale=data.get("rationale"),
             sector=data.get("sector"),
             market_cap=data.get("market_cap"),
-            created_at=datetime.fromisoformat(data.get("created_at")) if data.get("created_at") else datetime.utcnow(),
+            created_at=datetime.fromisoformat(data.get("created_at")) if data.get("created_at") else datetime.now(timezone.utc),
             result=data.get("result"),
             accuracy_pct=data.get("accuracy_pct"),
         )
@@ -64,7 +63,7 @@ class MacroConfig(Base):
 
     id = Column(String(50), primary_key=True, default="current")
     config_data = Column(JSON, nullable=False)  # Store macro signals and metadata
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         """Convert to dictionary"""
@@ -80,7 +79,7 @@ class GenerationTimestamp(Base):
     __tablename__ = "generation_timestamps"
 
     id = Column(String(50), primary_key=True, default="latest")
-    generated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    generated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     signal_count = Column(Integer, nullable=False, default=0)
 
     def to_dict(self):
@@ -101,8 +100,8 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     azure_ad_id = Column(String(255), unique=True, nullable=True)
     subscription_tier = Column(String(50), default="free")  # free, pro, enterprise
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 
 class Watchlist(Base):
@@ -112,7 +111,7 @@ class Watchlist(Base):
     id = Column(String(36), primary_key=True)
     user_id = Column(String(36), nullable=False, index=True)
     ticker = Column(String(10), nullable=False)
-    added_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    added_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
 
 class ResearchNote(Base):
@@ -123,7 +122,7 @@ class ResearchNote(Base):
     user_id = Column(String(36), nullable=False, index=True)
     ticker = Column(String(10), nullable=False, index=True)
     notes = Column(Text, nullable=False)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 """
 
 
