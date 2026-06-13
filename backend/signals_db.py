@@ -5,7 +5,7 @@ Supports both JSON file storage (development) and SQL database (production)
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Optional, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -39,7 +39,7 @@ class SignalStore:
                 # Fallback to JSON file
                 data = self._load_json_file()
                 data["signals"].insert(0, signal_dict)
-                data["generated_at"] = datetime.utcnow().isoformat()
+                data["generated_at"] = datetime.now(timezone.utc).isoformat()
                 self._save_json_file(data)
             return True
         except Exception as e:
@@ -61,7 +61,7 @@ class SignalStore:
                 # Fallback to JSON file
                 data = self._load_json_file()
                 data["signals"] = signals + data["signals"]
-                data["generated_at"] = datetime.utcnow().isoformat()
+                data["generated_at"] = datetime.now(timezone.utc).isoformat()
                 self._save_json_file(data)
             return True
         except Exception as e:
@@ -185,7 +185,7 @@ class SignalStore:
                 timestamp = GenerationTimestamp(id="latest", signal_count=count)
                 self.session.add(timestamp)
             else:
-                timestamp.generated_at = datetime.utcnow()
+                timestamp.generated_at = datetime.now(timezone.utc)
                 timestamp.signal_count = count
             self.session.commit()
         except Exception as e:
@@ -229,7 +229,7 @@ class MacroConfigStore:
                     self.session.add(macro)
                 else:
                     macro.config_data = config_data
-                    macro.updated_at = datetime.utcnow()
+                    macro.updated_at = datetime.now(timezone.utc)
                 self.session.commit()
             else:
                 # Fallback to JSON file

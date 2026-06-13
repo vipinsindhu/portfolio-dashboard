@@ -14,7 +14,7 @@ import json
 import os
 import sys
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(__file__))
@@ -91,7 +91,7 @@ def migrate_macro_config(session, config_data: dict) -> bool:
 
         if existing:
             existing.config_data = config_data
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = datetime.now(timezone.utc)
         else:
             macro = MacroConfig(id="current", config_data=config_data)
             session.add(macro)
