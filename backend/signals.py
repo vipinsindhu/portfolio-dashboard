@@ -884,6 +884,11 @@ def fetch_signal_candidates():
     print("Discovering high-quality stocks...")
     signal_candidates = discover_stocks()
 
+    # Shuffle before slicing so each cycle covers different parts of the
+    # alphabetically-sorted Alpha Vantage / Finnhub list, not always A-stocks.
+    import random as _random
+    _random.shuffle(signal_candidates)
+
     # Fetch fundamentals in parallel for better performance
     max_candidates_to_fetch = 50
     candidates_to_fetch = signal_candidates[:max_candidates_to_fetch]
@@ -1160,7 +1165,7 @@ def generate_short_term_signals(count=10, candidates=None, macro_data=None):
         entry = candidate_prompt_fields(c)
         price, high, low = c.get("current_price"), c.get("52_week_high"), c.get("52_week_low")
         if price and high and low and high > low:
-            entry["pct_of_52_week_range"] = round((price - low) / (high - low) * 100)
+            entry["pct_of_52_week_range"] = max(0, min(100, round((price - low) / (high - low) * 100)))
         slate_for_prompt.append(entry)
     candidates_str = json.dumps(slate_for_prompt, indent=2)
     print(f"📤 Sending {len(slate_for_prompt)} candidates to Groq for short-term signal generation")
@@ -1261,7 +1266,7 @@ RULES:
         )
         pct_of_range = None
         if price and high and low and high > low:
-            pct_of_range = round((price - low) / (high - low) * 100)
+            pct_of_range = max(0, min(100, round((price - low) / (high - low) * 100)))
         direction = signal.get("direction", "hold")
         enhanced_signals.append({
             "id": f"{ticker}_{datetime.now().isoformat()}",
