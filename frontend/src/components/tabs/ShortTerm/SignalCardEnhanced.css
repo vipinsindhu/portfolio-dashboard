@@ -200,22 +200,6 @@
   -webkit-line-clamp: unset;
 }
 
-.expand-button {
-  margin-top: 8px;
-  padding: 0;
-  background: none;
-  border: none;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--primary-color);
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.expand-button:hover {
-  color: var(--text-primary);
-  text-decoration: underline;
-}
 
 /* Meta Info */
 .meta-info {

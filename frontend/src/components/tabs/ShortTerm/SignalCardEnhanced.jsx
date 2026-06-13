@@ -140,14 +140,6 @@ function SignalCardEnhanced({ signal, type = 'general' }) {
         <p className={`rationale-text ${isExpanded ? 'expanded' : 'collapsed'}`}>
           {signal.rationale}
         </p>
-        {signal.rationale && signal.rationale.length > 150 && (
-          <button
-            className="expand-button"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? 'Show less' : 'Show more'}
-          </button>
-        )}
       </div>
 
       {/* Timeframe-specific insights: catalyst/window/invalidation (short-term),

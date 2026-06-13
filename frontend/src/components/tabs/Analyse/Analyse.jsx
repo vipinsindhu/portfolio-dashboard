@@ -8,18 +8,7 @@ import './Analyse.css'
 function Analyse({ demoRequested, onDemoHandled }) {
   const { hasPortfolio, analysis, ltRecommendations, stRecommendations, loading, reload } = usePortfolio()
 
-  const analyzeButtonRef = useRef(null)
   const analysisResultsRef = useRef(null)
-
-  // Scroll to button when portfolio first loads
-  useEffect(() => {
-    if (hasPortfolio && analyzeButtonRef.current) {
-      analyzeButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      analyzeButtonRef.current.classList.add('highlight-pulse')
-      const t = setTimeout(() => analyzeButtonRef.current?.classList.remove('highlight-pulse'), 3000)
-      return () => clearTimeout(t)
-    }
-  }, [hasPortfolio])
 
   // Scroll to results when analysis appears
   useEffect(() => {
@@ -28,8 +17,7 @@ function Analyse({ demoRequested, onDemoHandled }) {
     }
   }, [analysis])
 
-  // Merge LT and ST recommendations for the signals summary, deduplicating by ticker.
-  // LT recs take precedence over ST for the same ticker.
+  // Merge LT and ST recommendations, deduplicating by ticker (LT takes precedence)
   const signalsSummary = (() => {
     if (!ltRecommendations && !stRecommendations) return null
     const seen = new Set()
@@ -50,8 +38,8 @@ function Analyse({ demoRequested, onDemoHandled }) {
   return (
     <div className="analyse-container">
       <div className="analyse-header">
-        <h2>📊 Check Your Portfolio</h2>
-        <p>Upload your stocks to see if you're diversified enough</p>
+        <h2>Check Your Portfolio</h2>
+        <p>Upload your stocks to see risks, concentration issues, and what the AI signals say about what you own</p>
       </div>
 
       <PortfolioInput
@@ -59,35 +47,16 @@ function Analyse({ demoRequested, onDemoHandled }) {
         onAutoLoadHandled={onDemoHandled}
       />
 
-      {hasPortfolio && (
-        <div className="manual-analyze-section">
-          <button
-            ref={analyzeButtonRef}
-            className="btn-primary btn-large"
-            onClick={reload}
-            disabled={loading}
-          >
-            {loading ? '⏳ Checking...' : '🔍 Check My Portfolio'}
-          </button>
-        </div>
-      )}
-
       {loading && (
         <div className="loading-message">
-          <p>Checking your portfolio...</p>
+          <p>Checking your portfolio…</p>
         </div>
       )}
 
-      {analysis && (
-        <div ref={analysisResultsRef}>
-          <PitfallDetector analysis={analysis} />
-        </div>
-      )}
-
-      {/* Signals matched to portfolio holdings */}
+      {/* Signals matched to portfolio — shown first, more actionable than pitfalls */}
       {signalsSummary && (
-        <div className="portfolio-signals-section">
-          <h3>📡 What the Signals Say About Your Stocks</h3>
+        <div ref={analysisResultsRef} className="portfolio-signals-section">
+          <h3>What the signals say about your stocks</h3>
           <p className="portfolio-signals-intro">
             Based on current AI signals, here's what to do with the stocks you own.
           </p>
@@ -127,13 +96,19 @@ function Analyse({ demoRequested, onDemoHandled }) {
         </div>
       )}
 
-      {!hasPortfolio && !analysis && (
-        <div className="empty-state">
-          <div className="empty-state-content">
-            <div className="empty-icon">📁</div>
-            <h3>Upload Your Stocks</h3>
-            <p>Use CSV or add them manually</p>
-          </div>
+      {/* Pitfall analysis — shown below signals */}
+      {analysis && (
+        <div ref={signalsSummary ? null : analysisResultsRef}>
+          <PitfallDetector analysis={analysis} />
+        </div>
+      )}
+
+      {/* Re-run button — only shown once results exist */}
+      {hasPortfolio && analysis && (
+        <div className="rerun-section">
+          <button className="btn-secondary" onClick={reload} disabled={loading}>
+            {loading ? 'Checking…' : '↺ Re-run analysis'}
+          </button>
         </div>
       )}
     </div>

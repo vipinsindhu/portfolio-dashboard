@@ -55,7 +55,7 @@ function App() {
           onClick={() => setActiveTab('analyse')}
         >
           <span className="tab-icon" aria-hidden="true">📊</span>
-          <span className="tab-label">My Stocks</span>
+          <span className="tab-label">Analyse</span>
         </button>
         <button
           className={`tab-button ${activeTab === 'learn' ? 'active' : ''}`}

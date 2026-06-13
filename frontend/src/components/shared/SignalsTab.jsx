@@ -9,6 +9,7 @@ import './SignalsTab.css'
 function SignalsTab({ endpoint, timeframe, defaultMinConfidence, title, subtitle, children }) {
   const [signals, setSignals] = useState([])
   const [filteredSignals, setFilteredSignals] = useState([])
+  const [sectors, setSectors] = useState([])
   const [stats, setStats] = useState(null)
   const [generatedAt, setGeneratedAt] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -22,14 +23,11 @@ function SignalsTab({ endpoint, timeframe, defaultMinConfidence, title, subtitle
 
   const { hasPortfolio, ltRecommendations, stRecommendations } = usePortfolio()
   const contextRecommendations = timeframe === 'short_term' ? stRecommendations : ltRecommendations
-
-  // Prefer inline recommendations from the signal response (always fresh with signals);
-  // fall back to context (fetched once on portfolio load)
   const recommendations = signalRecommendations || contextRecommendations
 
   useEffect(() => {
     fetchData()
-    const interval = setInterval(() => fetchData(), 3600000)
+    const interval = setInterval(fetchData, 3600000)
     return () => clearInterval(interval)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -46,14 +44,17 @@ function SignalsTab({ endpoint, timeframe, defaultMinConfidence, title, subtitle
       if (!res.ok) throw new Error('Failed to fetch signals')
       const data = await res.json()
 
-      setSignals(data.signals || [])
-      setFilteredSignals(data.signals || [])
+      const allSignals = data.signals || []
+      setSignals(allSignals)
+      setFilteredSignals(allSignals)
       setStats(data.stats)
       setGeneratedAt(data.generated_at)
 
-      if (data.recommendations) {
-        setSignalRecommendations(data.recommendations)
-      }
+      // Derive available sectors from the fetched signals (no extra API call)
+      const uniqueSectors = [...new Set(allSignals.map(s => s.sector).filter(Boolean))].sort()
+      setSectors(uniqueSectors)
+
+      if (data.recommendations) setSignalRecommendations(data.recommendations)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -63,18 +64,13 @@ function SignalsTab({ endpoint, timeframe, defaultMinConfidence, title, subtitle
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters)
-    applyFilters(signals, newFilters)
-  }
-
-  const applyFilters = (all, f) => {
-    let out = all
-    if (f.direction && f.direction !== 'all') out = out.filter(s => s.direction === f.direction)
-    if (f.min_confidence) out = out.filter(s => s.confidence >= f.min_confidence)
-    if (f.sector) out = out.filter(s => s.sector === f.sector)
+    let out = signals
+    if (newFilters.direction && newFilters.direction !== 'all') out = out.filter(s => s.direction === newFilters.direction)
+    if (newFilters.min_confidence) out = out.filter(s => s.confidence >= newFilters.min_confidence)
+    if (newFilters.sector) out = out.filter(s => s.sector === newFilters.sector)
     setFilteredSignals(out)
   }
 
-  // Portfolio-specific picks come first; deduplicate from general list
   const recommendationTickers = new Set()
   if (recommendations) {
     ;['sell_reduce', 'hold', 'add'].forEach(key =>
@@ -84,8 +80,8 @@ function SignalsTab({ endpoint, timeframe, defaultMinConfidence, title, subtitle
   const generalSignals = filteredSignals.filter(s => !recommendationTickers.has(s.ticker))
 
   const showPortfolio = hasPortfolio && !!recommendations
-  const buyRecs    = showPortfolio ? (recommendations.add        || []) : []
-  const holdRecs   = showPortfolio ? (recommendations.hold       || []) : []
+  const buyRecs    = showPortfolio ? (recommendations.add         || []) : []
+  const holdRecs   = showPortfolio ? (recommendations.hold        || []) : []
   const avoidRecs  = showPortfolio ? (recommendations.sell_reduce || []) : []
 
   const buySignals   = generalSignals.filter(s => s.direction === 'buy')
@@ -102,7 +98,7 @@ function SignalsTab({ endpoint, timeframe, defaultMinConfidence, title, subtitle
   if (loading && signals.length === 0) {
     return (
       <div className="signals-tab-container signals-tab-loading">
-        <div className="loading-spinner">⏳ Loading signals...</div>
+        <div className="loading-spinner">Loading signals…</div>
       </div>
     )
   }
@@ -119,9 +115,9 @@ function SignalsTab({ endpoint, timeframe, defaultMinConfidence, title, subtitle
             className="btn-refresh"
             onClick={() => { setLoading(true); fetchData() }}
             disabled={loading}
-            title="Refresh signals manually"
+            title="Refresh signals"
           >
-            {loading ? '⏳ Refreshing...' : '🔄 Refresh'}
+            {loading ? 'Refreshing…' : '↺ Refresh'}
           </button>
         </div>
       </div>
@@ -133,7 +129,7 @@ function SignalsTab({ endpoint, timeframe, defaultMinConfidence, title, subtitle
       )}
 
       {signals.length > 0 && (
-        <FilterBar onFilterChange={handleFilterChange} stats={stats} />
+        <FilterBar onFilterChange={handleFilterChange} stats={stats} sectors={sectors} />
       )}
 
       {displayCounts.buy > 0 && (
@@ -166,7 +162,7 @@ function SignalsTab({ endpoint, timeframe, defaultMinConfidence, title, subtitle
 
       {hasAnyContent && (
         <section className="signals-section avoid">
-          <h3 className="section-title">🔴 Avoid / Sell</h3>
+          <h3 className="section-title">🔴 Avoid</h3>
           {displayCounts.avoid > 0 ? (
             <div className="signals-grid">
               {avoidRecs.map((signal, idx) => (
@@ -178,28 +174,26 @@ function SignalsTab({ endpoint, timeframe, defaultMinConfidence, title, subtitle
             </div>
           ) : (
             <p className="section-empty-note">
-              🎉 Nothing to avoid right now — all the stocks that passed our quality screen look reasonable.
+              Nothing to avoid right now — all stocks that passed our quality screen look reasonable.
             </p>
           )}
         </section>
       )}
 
-      {filteredSignals.length === 0 && (
+      {filteredSignals.length === 0 && !loading && (
         <div className="empty-state">
-          <p>😴 No signals match your filters</p>
-          <p className="empty-hint">Try changing your filters or check back later</p>
+          <p>No signals match your filters</p>
+          <p className="empty-hint">Try adjusting the filters or check back later</p>
         </div>
       )}
 
-      {/* Extra content slot: TrackRecord for ShortTerm, education card for LongTerm */}
       {children}
 
       {!showPortfolio && signals.length > 0 && (
         <div className="cta-section">
           <div className="cta-content">
-            <h4>💼 Show Us Your Stocks?</h4>
-            <p>Upload what you own and we'll personalise these picks for your portfolio</p>
-            <a href="#" className="btn-primary">Go to My Stocks tab</a>
+            <h4>See picks tailored to your stocks</h4>
+            <p>Upload your holdings in the <strong>Analyse</strong> tab and we'll personalise these signals for your portfolio</p>
           </div>
         </div>
       )}

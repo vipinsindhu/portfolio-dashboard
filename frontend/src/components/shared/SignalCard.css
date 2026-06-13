@@ -1,167 +1,174 @@
 .signal-card {
-  padding: 20px;
   background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  border-left: 4px solid;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
 }
 
 .signal-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-  background: var(--bg-primary);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
 }
 
-/* Direction Colors */
-.signal-card.buy {
-  border-left-color: #0d7d3b;
-  background: var(--bg-secondary);
-}
+.signal-card.buy   { border-top: 4px solid #22c55e; }
+.signal-card.hold  { border-top: 4px solid #5568d3; }
+.signal-card.avoid { border-top: 4px solid #ef4444; }
 
-.signal-card.hold {
-  border-left-color: #ffc107;
-  background: var(--bg-secondary);
-}
-
-.signal-card.avoid {
-  border-left-color: #dc3545;
-  background: var(--bg-secondary);
-}
+.signal-card.buy:hover   { border-color: #22c55e; box-shadow: 0 6px 14px rgba(34,197,94,0.15); }
+.signal-card.hold:hover  { border-color: #5568d3; box-shadow: 0 6px 14px rgba(85,104,211,0.15); }
+.signal-card.avoid:hover { border-color: #ef4444; box-shadow: 0 6px 14px rgba(239,68,68,0.15); }
 
 /* Header */
-.signal-header {
+.card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 
-.signal-ticker {
+.signal-ticker-section {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
 }
 
-.ticker-icon {
-  font-size: 20px;
+.ticker-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .ticker-symbol {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
-.signal-direction {
+.ticker-sector {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.signal-direction-badge {
+  padding: 5px 10px;
+  color: white;
+  border-radius: 4px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
-.signal-card.buy .signal-direction {
-  background: rgba(13, 125, 59, 0.2);
-  color: #0d7d3b;
-}
-
-.signal-card.hold .signal-direction {
-  background: rgba(255, 193, 7, 0.2);
-  color: #997404;
-}
-
-.signal-card.avoid .signal-direction {
-  background: rgba(220, 53, 69, 0.2);
-  color: #c33;
-}
+.signal-card.buy   .signal-direction-badge { background: #22c55e; }
+.signal-card.hold  .signal-direction-badge { background: #5568d3; }
+.signal-card.avoid .signal-direction-badge { background: #ef4444; }
 
 /* Confidence */
-.signal-confidence {
+.confidence-section {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.confidence-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
 }
 
 .confidence-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   color: var(--text-secondary);
-  min-width: 65px;
+}
+
+.confidence-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .confidence-bars {
   display: flex;
   gap: 2px;
-  flex: 1;
 }
 
 .bar {
-  height: 4px;
   flex: 1;
+  height: 3px;
   background: var(--border-color);
   border-radius: 2px;
   transition: background 0.2s;
 }
 
-.bar.filled {
-  background: var(--primary-color);
-}
+.signal-card.buy   .bar.filled { background: #22c55e; }
+.signal-card.hold  .bar.filled { background: #5568d3; }
+.signal-card.avoid .bar.filled { background: #ef4444; }
 
-.confidence-value {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--primary-color);
-  min-width: 35px;
-  text-align: right;
-}
-
-/* Portfolio Weight */
+/* Portfolio weight */
 .portfolio-weight {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 6px;
+  padding: 7px 10px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 5px;
   font-size: 12px;
 }
 
-.weight-label {
+.weight-label { color: var(--text-secondary); font-weight: 500; }
+.weight-value { color: var(--text-primary); font-weight: 700; }
+
+/* Cue badges (P/E, dividend) */
+.signal-cues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cue-badge {
+  font-size: 0.75rem;
   font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   color: var(--text-secondary);
 }
 
-.weight-value {
-  font-weight: 700;
-  color: var(--text-primary);
+.cue-badge.positive {
+  color: #16a34a;
+  border-color: rgba(34, 197, 94, 0.4);
 }
 
 /* Rationale */
-.signal-rationale {
+.rationale-section {
   flex: 1;
 }
 
-.signal-rationale p {
+.rationale-text {
   font-size: 13px;
   line-height: 1.5;
   margin: 0;
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
-/* Portfolio Context */
+/* Portfolio context */
 .portfolio-context {
-  padding: 12px;
-  background: rgba(85, 104, 211, 0.08);
+  padding: 10px 12px;
+  background: rgba(85, 104, 211, 0.07);
   border: 1px solid rgba(85, 104, 211, 0.2);
-  border-radius: 6px;
+  border-radius: 5px;
 }
 
 .portfolio-context p {
@@ -171,79 +178,8 @@
   color: var(--text-primary);
 }
 
-/* Recommendation Type */
-.recommendation-type {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 6px;
-  font-size: 12px;
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.rec-label {
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  font-size: 10px;
-  letter-spacing: 0.5px;
-}
-
-.rec-value {
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
-/* Responsive */
+/* Mobile */
 @media (max-width: 768px) {
-  .signal-card {
-    padding: 16px;
-  }
-
-  .ticker-symbol {
-    font-size: 14px;
-  }
-
-  .signal-direction {
-    font-size: 10px;
-    padding: 3px 6px;
-  }
-
-  .confidence-label {
-    min-width: unset;
-  }
-
-  .confidence-value {
-    min-width: unset;
-  }
-
-  .signal-rationale p {
-    font-size: 12px;
-  }
-}
-
-/* Long-term fundamentals badges (P/E, dividend) */
-.fundamentals-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.fundamental-badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 12px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.fundamental-badge.dividend {
-  color: #16a34a;
-  border-color: rgba(34, 197, 94, 0.4);
+  .signal-card { padding: 14px; }
+  .ticker-symbol { font-size: 15px; }
 }

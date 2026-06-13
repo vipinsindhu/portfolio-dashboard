@@ -7,7 +7,7 @@ function ShortTerm() {
       endpoint="/api/signals/short-term"
       timeframe="short_term"
       defaultMinConfidence={6}
-      title="💡 Hot Picks This Week"
+      title="Hot Picks This Week"
       subtitle="AI-picked stocks based on current market conditions"
     >
       <TrackRecord />
