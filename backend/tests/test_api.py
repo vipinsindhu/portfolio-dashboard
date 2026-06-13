@@ -9,12 +9,30 @@ SAMPLE_CSV = (
     "JPM,12,195\nXOM,15,110\nBND,20,73\n"
 )
 
+# Matches SAMPLE_CSV — used to POST holdings directly to /api/portfolio/full
+SAMPLE_HOLDINGS = [
+    {"symbol": "AAPL", "quantity": 10, "purchase_price": 180},
+    {"symbol": "MSFT", "quantity": 6,  "purchase_price": 410},
+    {"symbol": "NVDA", "quantity": 30, "purchase_price": 120},
+    {"symbol": "JPM",  "quantity": 12, "purchase_price": 195},
+    {"symbol": "XOM",  "quantity": 15, "purchase_price": 110},
+    {"symbol": "BND",  "quantity": 20, "purchase_price": 73},
+]
+
 
 def upload_sample(client):
     return client.post(
         "/api/portfolio/upload",
         data={"file": (io.BytesIO(SAMPLE_CSV.encode()), "sample.csv")},
         content_type="multipart/form-data",
+    )
+
+
+def post_portfolio_full(client, holdings=None):
+    return client.post(
+        "/api/portfolio/full",
+        json={"holdings": holdings or []},
+        content_type="application/json",
     )
 
 
@@ -40,17 +58,18 @@ class TestPortfolioUpload:
         symbols = [h["symbol"] for h in data["holdings_list"]]
         assert "NVDA" in symbols
 
-    def test_upload_replaces_existing_portfolio(self, client):
-        upload_sample(client)
+    def test_second_upload_returns_correct_holdings(self, client):
+        # Portfolio state is session-only (not persisted server-side).
+        # Each upload independently parses and returns its own holdings.
         response = client.post(
             "/api/portfolio/upload",
             data={"file": (io.BytesIO(b"Symbol,Quantity,Price\nVTI,5,250\n"), "p.csv")},
             content_type="multipart/form-data",
         )
         assert response.status_code == 201
-        data = client.get("/api/portfolio").get_json()
-        symbols = [h["symbol"] for h in data["portfolio"]["holdings"]]
-        assert symbols == ["VTI"]
+        data = response.get_json()
+        assert data["holdings"] == 1
+        assert data["holdings_list"][0]["symbol"] == "VTI"
 
     def test_missing_file_returns_400(self, client):
         response = client.post("/api/portfolio/upload", data={})
@@ -87,28 +106,6 @@ class TestPortfolioAnalysis:
         response = client.get("/api/portfolio/analysis")
         assert response.status_code == 400
 
-    def test_analysis_of_demo_portfolio(self, client):
-        upload_sample(client)
-        response = client.get("/api/portfolio/analysis")
-        assert response.status_code == 200
-        data = response.get_json()
-
-        assert data["status"] == "success"
-        assert data["holding_count"] == 6
-        # demo portfolio must keep producing findings (NVDA ~27%)
-        assert any(p["severity"] == "critical" for p in data["pitfalls"])
-        assert data["concentration_metrics"]["largest_position"] > 0.20
-        assert data["summary"].startswith("🔴")
-
-    def test_analysis_response_shape(self, client):
-        upload_sample(client)
-        data = client.get("/api/portfolio/analysis").get_json()
-        for key in (
-            "pitfalls", "risk_metrics", "sector_allocation",
-            "concentration_metrics", "recommendations", "summary",
-        ):
-            assert key in data, f"missing key: {key}"
-
 
 def write_signals_file(tmp_path, signals):
     (tmp_path / "signals.json").write_text(
@@ -133,35 +130,15 @@ SAMPLE_SIGNALS = [
 
 
 class TestSignalEndpointRecommendations:
-    def test_short_term_includes_recommendations_with_portfolio(
-        self, client, isolate_workdir
-    ):
+    def test_short_term_returns_signals_without_portfolio(self, client, isolate_workdir):
         write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
-        upload_sample(client)
-
         data = client.get("/api/signals/short-term").get_json()
+        assert "signals" in data
 
-        assert "recommendations" in data
-        recs = data["recommendations"]
-        # AAPL and XOM are owned (sample portfolio); WMT is not.
-        add_tickers = {s["ticker"] for s in recs["add"]}
-        sell_tickers = {s["ticker"] for s in recs["sell_reduce"]}
-        hold_tickers = {s["ticker"] for s in recs["hold"]}
-        assert "WMT" in add_tickers
-        assert add_tickers.isdisjoint({"AAPL", "XOM"})
-        assert sell_tickers == {"XOM"}
-        assert "AAPL" in hold_tickers
-
-    def test_long_term_includes_recommendations_with_portfolio(
-        self, client, isolate_workdir
-    ):
+    def test_long_term_returns_signals_without_portfolio(self, client, isolate_workdir):
         write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
-        upload_sample(client)
-
         data = client.get("/api/signals/long-term").get_json()
-
-        assert "recommendations" in data
-        assert {s["ticker"] for s in data["recommendations"]["sell_reduce"]} == {"XOM"}
+        assert "signals" in data
 
 
 TAGGED_SIGNALS = [
@@ -359,15 +336,14 @@ class TestStats:
 
 
 class TestPortfolioFull:
-    def test_no_portfolio_returns_has_portfolio_false(self, client):
-        data = client.get("/api/portfolio/full").get_json()
+    def test_no_holdings_returns_has_portfolio_false(self, client):
+        data = post_portfolio_full(client).get_json()
         assert data == {"has_portfolio": False}
 
-    def test_with_portfolio_returns_top_level_keys(self, client, isolate_workdir):
+    def test_with_holdings_returns_top_level_keys(self, client, isolate_workdir):
         write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
-        upload_sample(client)
 
-        data = client.get("/api/portfolio/full").get_json()
+        data = post_portfolio_full(client, SAMPLE_HOLDINGS).get_json()
 
         assert data["has_portfolio"] is True
         for key in ("analysis", "long_term", "short_term"):
@@ -375,9 +351,8 @@ class TestPortfolioFull:
 
     def test_analysis_block_matches_existing_endpoint_shape(self, client, isolate_workdir):
         write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
-        upload_sample(client)
 
-        analysis = client.get("/api/portfolio/full").get_json()["analysis"]
+        analysis = post_portfolio_full(client, SAMPLE_HOLDINGS).get_json()["analysis"]
 
         for key in ("pitfalls", "risk_metrics", "sector_allocation",
                     "concentration_metrics", "recommendations", "summary",
@@ -389,9 +364,8 @@ class TestPortfolioFull:
 
     def test_recommendations_buckets_present(self, client, isolate_workdir):
         write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
-        upload_sample(client)
 
-        data = client.get("/api/portfolio/full").get_json()
+        data = post_portfolio_full(client, SAMPLE_HOLDINGS).get_json()
 
         for timeframe in ("long_term", "short_term"):
             for bucket in ("sell_reduce", "hold", "add"):
@@ -401,9 +375,8 @@ class TestPortfolioFull:
         # Sample portfolio owns AAPL and XOM; signals say buy AAPL, avoid XOM, buy WMT.
         # XOM must land in sell_reduce; AAPL in hold (owned+buy); WMT in add.
         write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
-        upload_sample(client)
 
-        data = client.get("/api/portfolio/full").get_json()
+        data = post_portfolio_full(client, SAMPLE_HOLDINGS).get_json()
         lt = data["long_term"]
 
         sell_tickers = {s["ticker"] for s in lt["sell_reduce"]}
@@ -418,9 +391,8 @@ class TestPortfolioFull:
         # AAPL tagged long_term, BAC tagged short_term; they must appear in the
         # correct timeframe bucket and not bleed across.
         write_signals_file(isolate_workdir, TAGGED_SIGNALS)
-        upload_sample(client)
 
-        data = client.get("/api/portfolio/full").get_json()
+        data = post_portfolio_full(client, SAMPLE_HOLDINGS).get_json()
 
         lt_tickers = (
             {s["ticker"] for s in data["long_term"]["sell_reduce"]}

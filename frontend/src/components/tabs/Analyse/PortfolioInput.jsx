@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { usePortfolio } from '../../../context/PortfolioContext'
 import './PortfolioInput.css'
 
 // Deliberately tech-heavy (~60%) so the demo analysis surfaces concentration warnings
@@ -11,7 +12,8 @@ const SAMPLE_PORTFOLIO = [
   { symbol: 'BND', quantity: 20, purchase_price: 73 }
 ]
 
-function PortfolioInput({ onPortfolioLoaded, onAnalyze, autoLoadSample, onAutoLoadHandled }) {
+function PortfolioInput({ autoLoadSample, onAutoLoadHandled }) {
+  const { updateHoldings } = usePortfolio()
   const [holdings, setHoldings] = useState([])
   const [manualInput, setManualInput] = useState({
     symbol: '',
@@ -62,7 +64,6 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze, autoLoadSample, onAutoLo
 
       // Add CSV holdings to preview table
       if (data.holdings_list && data.holdings_list.length > 0) {
-        console.log('Adding holdings to preview table:', data.holdings_list)
         const newHoldings = [
           ...holdings,
           ...data.holdings_list.map(h => ({
@@ -74,8 +75,8 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze, autoLoadSample, onAutoLo
           }))
         ]
         const stats = calculatePortfolioStats(newHoldings)
-        console.log('Updated holdings state:', stats.holdings)
         setHoldings(stats.holdings)
+        updateHoldings(stats.holdings)
       } else {
         console.warn('No holdings_list in response or empty:', data.holdings_list)
       }
@@ -84,11 +85,6 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze, autoLoadSample, onAutoLo
 
       // Reset file input
       event.target.value = ''
-
-      // Trigger portfolio loaded callback
-      if (onPortfolioLoaded) {
-        onPortfolioLoaded()
-      }
     } catch (err) {
       console.error('CSV Upload Error:', err)
       setError(err.message)
@@ -139,14 +135,8 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze, autoLoadSample, onAutoLo
       const stats = calculatePortfolioStats(newHoldings)
       setHoldings(stats.holdings)
       setSuccess(`✅ Added ${manualInput.symbol}`)
-
-      // Reset form
       setManualInput({ symbol: '', quantity: '', purchase_price: '' })
-
-      // Trigger portfolio loaded callback
-      if (onPortfolioLoaded) {
-        onPortfolioLoaded()
-      }
+      updateHoldings(stats.holdings)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -183,13 +173,7 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze, autoLoadSample, onAutoLo
       )
       setHoldings(stats.holdings)
       setSuccess(`✨ Loaded sample portfolio (${data.holdings} holdings) — analyzing...`)
-
-      if (onPortfolioLoaded) {
-        onPortfolioLoaded()
-      }
-      if (onAnalyze) {
-        onAnalyze()
-      }
+      updateHoldings(stats.holdings)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -214,6 +198,7 @@ function PortfolioInput({ onPortfolioLoaded, onAnalyze, autoLoadSample, onAutoLo
     const stats = calculatePortfolioStats(newHoldings)
     setHoldings(stats.holdings)
     setSuccess(null)
+    updateHoldings(stats.holdings)
   }
 
   const downloadCSVTemplate = () => {

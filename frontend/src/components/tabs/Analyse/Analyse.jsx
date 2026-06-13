@@ -55,8 +55,6 @@ function Analyse({ demoRequested, onDemoHandled }) {
       </div>
 
       <PortfolioInput
-        onPortfolioLoaded={reload}
-        onAnalyze={reload}
         autoLoadSample={demoRequested}
         onAutoLoadHandled={onDemoHandled}
       />

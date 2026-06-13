@@ -772,9 +772,6 @@ def create_app():
                     "errors": validation["errors"]
                 }), 400
 
-            # Save
-            save_portfolio(portfolio)
-
             # Convert holdings to dict format for response
             holdings_list = [
                 {
@@ -806,23 +803,12 @@ def create_app():
             if not all(k in data for k in ["symbol", "quantity", "purchase_price"]):
                 return jsonify({"error": "Missing required fields"}), 400
 
-            # Load or create portfolio
-            portfolio = load_portfolio()
-            if not portfolio:
-                portfolio = create_portfolio([])
-
-            # Add holding
             holding = Holding(
                 symbol=data["symbol"].upper(),
                 quantity=float(data["quantity"]),
                 purchase_price=float(data["purchase_price"]),
                 current_price=float(data.get("current_price", data["purchase_price"]))
             )
-
-            portfolio.add_holding(holding)
-
-            # Save
-            save_portfolio(portfolio)
 
             return jsonify({
                 "status": "success",
@@ -947,13 +933,30 @@ def create_app():
             app.logger.error(f"Error getting recommendations: {e}")
             return jsonify({"error": str(e)}), 500
 
-    @app.route("/api/portfolio/full", methods=["GET"])
+    @app.route("/api/portfolio/full", methods=["POST"])
     def get_portfolio_full():
-        """Single call: analysis + LT and ST recommendations for the loaded portfolio.
-        Used by PortfolioContext so all three tabs share one fetch."""
+        """Single call: analysis + LT and ST recommendations for the submitted portfolio.
+        Accepts {holdings: [{symbol, quantity, purchase_price}, ...]} in the POST body.
+        Portfolio is not persisted — session state lives in the browser."""
         try:
-            portfolio = load_portfolio()
-            if not portfolio or portfolio.holding_count == 0:
+            body = request.get_json(silent=True) or {}
+            raw_holdings = body.get("holdings") or []
+            if not raw_holdings:
+                return jsonify({"has_portfolio": False}), 200
+            holdings = [
+                Holding(
+                    symbol=h["symbol"].upper(),
+                    quantity=float(h["quantity"]),
+                    purchase_price=float(h["purchase_price"]),
+                    current_price=float(h.get("current_price", h["purchase_price"])),
+                )
+                for h in raw_holdings
+                if h.get("symbol") and h.get("quantity") and h.get("purchase_price")
+            ]
+            if not holdings:
+                return jsonify({"has_portfolio": False}), 200
+            portfolio = create_portfolio(holdings)
+            if portfolio.holding_count == 0:
                 return jsonify({"has_portfolio": False}), 200
 
             signals_data = load_signals()

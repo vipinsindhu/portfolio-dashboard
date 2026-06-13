@@ -1,18 +1,30 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback } from 'react'
 
 const PortfolioContext = createContext(null)
 
 export function PortfolioProvider({ children }) {
+  const [holdings, setHoldings] = useState([])
   const [hasPortfolio, setHasPortfolio] = useState(false)
   const [analysis, setAnalysis] = useState(null)
   const [ltRecommendations, setLtRecommendations] = useState(null)
   const [stRecommendations, setStRecommendations] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
-  const reload = useCallback(async () => {
+  const fetchPortfolioFull = useCallback(async (holdingsList) => {
+    if (!holdingsList || holdingsList.length === 0) {
+      setHasPortfolio(false)
+      setAnalysis(null)
+      setLtRecommendations(null)
+      setStRecommendations(null)
+      return
+    }
     setLoading(true)
     try {
-      const res = await fetch('/api/portfolio/full')
+      const res = await fetch('/api/portfolio/full', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ holdings: holdingsList }),
+      })
       if (!res.ok) return
       const data = await res.json()
       setHasPortfolio(data.has_portfolio || false)
@@ -20,13 +32,20 @@ export function PortfolioProvider({ children }) {
       setLtRecommendations(data.long_term || null)
       setStRecommendations(data.short_term || null)
     } catch {
-      // no portfolio is a valid state — stay with defaults
+      // portfolio is optional — stay with current state
     } finally {
       setLoading(false)
     }
   }, [])
 
-  useEffect(() => { reload() }, [reload])
+  // reload() re-runs analysis against the holdings already in state
+  const reload = useCallback(() => fetchPortfolioFull(holdings), [holdings, fetchPortfolioFull])
+
+  // updateHoldings() is called by PortfolioInput whenever the list changes
+  const updateHoldings = useCallback((newHoldings) => {
+    setHoldings(newHoldings)
+    fetchPortfolioFull(newHoldings)
+  }, [fetchPortfolioFull])
 
   return (
     <PortfolioContext.Provider value={{
@@ -36,6 +55,7 @@ export function PortfolioProvider({ children }) {
       stRecommendations,
       loading,
       reload,
+      updateHoldings,
     }}>
       {children}
     </PortfolioContext.Provider>
