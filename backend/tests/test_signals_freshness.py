@@ -120,11 +120,12 @@ class TestAutoGenerateSaves:
     def _run(self, monkeypatch, generated, existing):
         saved = {}
         monkeypatch.setattr(signals_module, "fetch_signal_candidates", lambda: [{"ticker": "AAPL"}])
+        monkeypatch.setattr(signals_module, "fetch_macro_context", lambda: {})
         monkeypatch.setattr(
-            signals_module, "generate_signals", lambda count=10, candidates=None: generated
+            signals_module, "generate_signals", lambda count=10, candidates=None, macro_data=None: generated
         )
         monkeypatch.setattr(
-            signals_module, "generate_short_term_signals", lambda count=10, candidates=None: []
+            signals_module, "generate_short_term_signals", lambda count=10, candidates=None, macro_data=None: []
         )
         monkeypatch.setattr(signals_module, "load_signals", lambda: existing)
         monkeypatch.setattr(signals_module, "save_signals", lambda data: saved.update(data))
@@ -167,11 +168,12 @@ class TestAutoGenerateSaves:
 
         saved = {}
         monkeypatch.setattr(signals_module, "fetch_signal_candidates", lambda: [{"ticker": "AAPL"}])
+        monkeypatch.setattr(signals_module, "fetch_macro_context", lambda: {})
         monkeypatch.setattr(
-            signals_module, "generate_signals", lambda count=10, candidates=None: new_long
+            signals_module, "generate_signals", lambda count=10, candidates=None, macro_data=None: new_long
         )
         monkeypatch.setattr(
-            signals_module, "generate_short_term_signals", lambda count=10, candidates=None: mock_short
+            signals_module, "generate_short_term_signals", lambda count=10, candidates=None, macro_data=None: mock_short
         )
         monkeypatch.setattr(signals_module, "load_signals", lambda: existing)
         monkeypatch.setattr(signals_module, "save_signals", lambda data: saved.update(data))

@@ -398,13 +398,10 @@ def discover_stocks():
         selected_stocks = _format_stocks(stocks)
         print(f"✅ Using fallback stocks (pre-selected for quality)")
     else:
-        # For Finnhub, apply quality filtering
-        print("Filtering for quality stocks...")
-        quality_stocks = filter_quality_stocks(stocks)
-
-        # Select top per sector
-        print("Selecting top stocks per sector...")
-        selected_stocks = select_top_per_sector(quality_stocks, top_n=5)
+        # Finnhub /stock/list returns no market_cap/price/volume, so
+        # filter_quality_stocks() would reject everything. Format as-is and
+        # rely on fetch_signal_candidates()'s $1B market cap filter instead.
+        selected_stocks = _format_stocks(stocks)
 
     # Add popular ETFs
     selected_stocks.extend([

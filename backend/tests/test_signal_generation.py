@@ -352,15 +352,16 @@ class TestTimeframeTagging:
         monkeypatch.setattr(
             signals_module, "fetch_signal_candidates", lambda: make_candidates(10)
         )
+        monkeypatch.setattr(signals_module, "fetch_macro_context", lambda: {})
         monkeypatch.setattr(
             signals_module, "generate_signals",
-            lambda count, candidates=None: [
+            lambda count, candidates=None, macro_data=None: [
                 {"ticker": "AAPL", "direction": "buy", "timeframe": "long_term"}
             ],
         )
         monkeypatch.setattr(
             signals_module, "generate_short_term_signals",
-            lambda count, candidates=None: [
+            lambda count, candidates=None, macro_data=None: [
                 {"ticker": "BAC", "direction": "buy", "timeframe": "short_term"}
             ],
         )

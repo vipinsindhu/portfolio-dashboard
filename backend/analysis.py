@@ -374,8 +374,8 @@ def detect_all_pitfalls(portfolio: Portfolio) -> List[Pitfall]:
     """Detect all pitfalls in portfolio"""
     pitfalls = []
 
-    # Get sector allocation using hybrid lookup
-    sector_allocation = get_hybrid_sector_weights(portfolio, SECTOR_MAP)
+    # Compute sector weights + holdings once; reuse in detect_sector_clustering
+    sector_allocation, sector_holdings = get_sector_weights_with_holdings(portfolio, SECTOR_MAP)
 
     # Check each pitfall lesson
     for lesson in LESSONS:
@@ -385,7 +385,7 @@ def detect_all_pitfalls(portfolio: Portfolio) -> List[Pitfall]:
             pitfalls.extend(detect_overconcentration(portfolio, lesson))
 
         elif metric == "sector_concentration":
-            pitfalls.extend(detect_sector_clustering(portfolio, lesson, sector_allocation))
+            pitfalls.extend(detect_sector_clustering(portfolio, lesson, sector_allocation, sector_holdings))
 
         elif metric == "top3_concentration":
             pitfalls.extend(detect_top_concentration(portfolio, lesson))
@@ -426,7 +426,8 @@ def detect_overconcentration(portfolio: Portfolio, lesson: Dict) -> List[Pitfall
 def detect_sector_clustering(
     portfolio: Portfolio,
     lesson: Dict,
-    sector_allocation: Dict[str, float]
+    sector_allocation: Dict[str, float],
+    sector_holdings: Dict = None,
 ) -> List[Pitfall]:
     """Check for sector overconcentration"""
     pitfalls = []
@@ -436,11 +437,13 @@ def detect_sector_clustering(
         if weight > threshold:
             severity = "critical" if weight > 0.50 else "warning"
 
-            # Find holdings in this sector using hybrid lookup
-            affected = [
-                h.symbol for h in portfolio.holdings
-                if get_sector_for_stock(h.symbol, SECTOR_MAP) == sector
-            ]
+            if sector_holdings is not None:
+                affected = [h["symbol"] for h in sector_holdings.get(sector, [])]
+            else:
+                affected = [
+                    h.symbol for h in portfolio.holdings
+                    if get_sector_for_stock(h.symbol, SECTOR_MAP) == sector
+                ]
 
             pitfalls.append(Pitfall(
                 lesson_id=lesson["id"],

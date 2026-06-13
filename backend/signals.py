@@ -295,6 +295,7 @@ def extract_days_until_earnings(payload, today):
 # tickers within one generation cycle; caching the payload briefly halves
 # the spend against Finnhub's free-tier rate limit.
 _METRIC_PAYLOAD_CACHE = {}  # ticker -> (fetched_at, payload)
+_EARNINGS_CACHE = {}  # ticker -> (fetched_at, days_until_earnings_or_None)
 METRIC_CACHE_MAX_AGE = timedelta(hours=1)
 
 _PROFILE_CACHE: dict = {}  # ticker -> {sector, market_cap, company_name}; per-process lifetime
@@ -390,24 +391,31 @@ def fetch_short_term_metrics(ticker):
     out = {}
     out.update(extract_price_metrics(fetch_metric_payload(ticker)))
 
-    try:
-        today = datetime.utcnow().date()
-        response = requests.get(
-            f"{FINNHUB_BASE}/calendar/earnings",
-            params={
-                "symbol": ticker,
-                "from": today.isoformat(),
-                "to": (today + timedelta(days=45)).isoformat(),
-                "token": FINNHUB_API_KEY,
-            },
-            timeout=5,
-        )
-        if response.status_code == 200:
-            days = extract_days_until_earnings(response.json(), today)
-            if days is not None:
-                out["days_until_earnings"] = days
-    except requests.exceptions.RequestException:
-        pass
+    cached_earnings = _EARNINGS_CACHE.get(ticker)
+    if cached_earnings and datetime.utcnow() - cached_earnings[0] < METRIC_CACHE_MAX_AGE:
+        days = cached_earnings[1]
+    else:
+        days = None
+        try:
+            today = datetime.utcnow().date()
+            response = requests.get(
+                f"{FINNHUB_BASE}/calendar/earnings",
+                params={
+                    "symbol": ticker,
+                    "from": today.isoformat(),
+                    "to": (today + timedelta(days=45)).isoformat(),
+                    "token": FINNHUB_API_KEY,
+                },
+                timeout=5,
+            )
+            if response.status_code == 200:
+                days = extract_days_until_earnings(response.json(), today)
+        except requests.exceptions.RequestException:
+            pass
+        _EARNINGS_CACHE[ticker] = (datetime.utcnow(), days)
+
+    if days is not None:
+        out["days_until_earnings"] = days
 
     return out
 
@@ -580,10 +588,11 @@ def auto_generate_signals(timeframes=("long_term", "short_term")):
     """Regenerate the requested timeframe passes (scheduled hourly stale-check)"""
     print(f"[{datetime.now().isoformat()}] Starting auto-signal generation for: {', '.join(timeframes)}")
     try:
-        # Fetch candidates once, then run the requested passes on them
+        # Fetch candidates and macro context once, shared across both passes
         candidates = fetch_signal_candidates()
-        long_term = generate_signals(count=10, candidates=candidates) if "long_term" in timeframes else []
-        short_term = generate_short_term_signals(count=10, candidates=candidates) if "short_term" in timeframes else []
+        macro_data = fetch_macro_context()
+        long_term = generate_signals(count=10, candidates=candidates, macro_data=macro_data) if "long_term" in timeframes else []
+        short_term = generate_short_term_signals(count=10, candidates=candidates, macro_data=macro_data) if "short_term" in timeframes else []
 
         # Never silently replace real LLM signals with mock fallback data —
         # stale-but-real beats fresh-but-fake (see docs/PRD.md, trust pillar).
@@ -951,7 +960,7 @@ def candidate_prompt_fields(candidate):
     return {k: v for k, v in candidate.items() if k not in INTERNAL_CANDIDATE_FIELDS}
 
 
-def generate_signals(count=10, candidates=None):
+def generate_signals(count=10, candidates=None, macro_data=None):
     """
     Generate long-term (5+ year) stock/ETF signals using Groq cloud LLM
 
@@ -969,9 +978,9 @@ def generate_signals(count=10, candidates=None):
         print("No candidates with price data found")
         return []
 
-    # Fetch macro context
+    # Fetch macro context (or reuse if provided by auto_generate_signals)
     print("Fetching macro context...")
-    macro_data = fetch_macro_context()
+    macro_data = macro_data or fetch_macro_context()
     macro_sentiment = get_macro_sentiment(macro_data)
 
     # Prepare data for Groq LLM - mix strong and weak candidates so the
@@ -1127,7 +1136,7 @@ RULES:
     return enhanced_signals
 
 
-def generate_short_term_signals(count=10, candidates=None):
+def generate_short_term_signals(count=10, candidates=None, macro_data=None):
     """
     Generate short-term (1-3 month) signals with their own LLM pass.
 
@@ -1145,7 +1154,7 @@ def generate_short_term_signals(count=10, candidates=None):
         print("No candidates with price data found")
         return []
 
-    macro_data = fetch_macro_context()
+    macro_data = macro_data or fetch_macro_context()
     macro_sentiment = get_macro_sentiment(macro_data)
 
     # Attach momentum/catalyst cues (13-week return, beta, earnings date) to
