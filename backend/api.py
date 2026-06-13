@@ -10,7 +10,7 @@ import threading
 from dataclasses import asdict
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # Add parent directory to path for imports
@@ -132,7 +132,7 @@ def create_app():
                 # Replace signals completely (don't append) to avoid duplicates
                 data = {
                     "signals": signals,
-                    "generated_at": datetime.utcnow().isoformat()
+                    "generated_at": datetime.now(timezone.utc).isoformat()
                 }
                 save_signals(data)
                 return True
@@ -162,7 +162,7 @@ def create_app():
 
         return jsonify({
             "status": "ok",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "environment": app.config.get("FLASK_ENV"),
             "storage": "database" if signal_store.use_database else "file",
             "frontend_dist": app.frontend_dist,
@@ -622,7 +622,9 @@ def create_app():
                 if signal.get("result") is None:
                     # Check if 30 days have passed
                     created_at = datetime.fromisoformat(signal["created_at"])
-                    if datetime.utcnow() - created_at > timedelta(days=30):
+                    if created_at.tzinfo is None:
+                        created_at = created_at.replace(tzinfo=timezone.utc)
+                    if datetime.now(timezone.utc) - created_at > timedelta(days=30):
                         # For now, just mark as processing
                         # In production, fetch real price data
                         signal_store.update_signal_accuracy(

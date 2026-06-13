@@ -6,7 +6,7 @@ Generates stock/ETF signals using Groq (Mixtral/Llama) + Finnhub data + FRED mac
 import json
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 from groq import Groq
@@ -335,7 +335,7 @@ def _fetch_finnhub_profile(ticker: str) -> dict:
 def fetch_metric_payload(ticker):
     """Finnhub /stock/metric payload for a ticker, or None on failure."""
     cached = _METRIC_PAYLOAD_CACHE.get(ticker)
-    if cached and datetime.utcnow() - cached[0] < METRIC_CACHE_MAX_AGE:
+    if cached and datetime.now(timezone.utc) - cached[0] < METRIC_CACHE_MAX_AGE:
         return cached[1]
     try:
         response = requests.get(
@@ -347,7 +347,7 @@ def fetch_metric_payload(ticker):
             payload = response.json()
             if len(_METRIC_PAYLOAD_CACHE) > 500:
                 _METRIC_PAYLOAD_CACHE.clear()
-            _METRIC_PAYLOAD_CACHE[ticker] = (datetime.utcnow(), payload)
+            _METRIC_PAYLOAD_CACHE[ticker] = (datetime.now(timezone.utc), payload)
             return payload
     except requests.exceptions.RequestException:
         pass
@@ -378,12 +378,12 @@ def fetch_short_term_metrics(ticker):
     out.update(extract_price_metrics(fetch_metric_payload(ticker)))
 
     cached_earnings = _EARNINGS_CACHE.get(ticker)
-    if cached_earnings and datetime.utcnow() - cached_earnings[0] < METRIC_CACHE_MAX_AGE:
+    if cached_earnings and datetime.now(timezone.utc) - cached_earnings[0] < METRIC_CACHE_MAX_AGE:
         days = cached_earnings[1]
     else:
         days = None
         try:
-            today = datetime.utcnow().date()
+            today = datetime.now(timezone.utc).date()
             response = requests.get(
                 f"{FINNHUB_BASE}/calendar/earnings",
                 params={
@@ -396,7 +396,7 @@ def fetch_short_term_metrics(ticker):
             )
             if response.status_code == 200:
                 days = extract_days_until_earnings(response.json(), today)
-                _EARNINGS_CACHE[ticker] = (datetime.utcnow(), days)
+                _EARNINGS_CACHE[ticker] = (datetime.now(timezone.utc), days)
         except requests.exceptions.RequestException:
             pass
 
@@ -529,7 +529,9 @@ def stale_timeframes(data=None, now=None):
     """
     if data is None:
         data = load_signals()
-    now = now or datetime.utcnow()
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
     signals = data.get("signals", [])
 
     stale = []
@@ -542,6 +544,8 @@ def stale_timeframes(data=None, now=None):
                 continue
             try:
                 created = datetime.fromisoformat(s["created_at"])
+                if created.tzinfo is None:
+                    created = created.replace(tzinfo=timezone.utc)
             except (KeyError, ValueError, TypeError):
                 continue
             if newest is None or created > newest:
@@ -598,7 +602,7 @@ def auto_generate_signals(timeframes=("long_term", "short_term")):
             print("⚠️ LLM unavailable and no stored signals; saving mock fallback so the app isn't empty")
             save_signals({
                 "signals": mocks,
-                "generated_at": datetime.utcnow().isoformat(),
+                "generated_at": datetime.now(timezone.utc).isoformat(),
             })
             return True
 
@@ -617,7 +621,7 @@ def auto_generate_signals(timeframes=("long_term", "short_term")):
 
         save_signals({
             "signals": signals,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
         })
         print(f"✅ Auto-generated and saved {len(signals)} signals with fresh market data")
         return True

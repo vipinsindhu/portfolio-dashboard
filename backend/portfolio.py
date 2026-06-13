@@ -7,7 +7,7 @@ import json
 import os
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import csv
 from io import StringIO
 
@@ -111,14 +111,14 @@ class Portfolio:
         else:
             # Add new
             self.holdings.append(holding)
-        self.updated_at = datetime.utcnow().isoformat()
+        self.updated_at = datetime.now(timezone.utc).isoformat()
 
     def remove_holding(self, symbol: str) -> bool:
         """Remove holding by symbol"""
         holding = self.get_holding(symbol)
         if holding:
             self.holdings.remove(holding)
-            self.updated_at = datetime.utcnow().isoformat()
+            self.updated_at = datetime.now(timezone.utc).isoformat()
             return True
         return False
 
@@ -216,7 +216,7 @@ def parse_csv(csv_content: str) -> List[Holding]:
 
 def create_portfolio(holdings: List[Holding], user_id: Optional[str] = None) -> Portfolio:
     """Create new portfolio"""
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     return Portfolio(
         holdings=holdings,
         created_at=now,

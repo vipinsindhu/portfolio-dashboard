@@ -1,6 +1,6 @@
 """Unit tests for signal accuracy tracking (pure logic, no network)."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -13,7 +13,7 @@ from accuracy import (
     merge_signals_into_history,
 )
 
-NOW = datetime(2026, 6, 11, 12, 0, 0)
+NOW = datetime(2026, 6, 11, 12, 0, 0, tzinfo=timezone.utc)
 
 
 def make_signal(sid="NVDA_1", ticker="NVDA", direction="buy", **extra):

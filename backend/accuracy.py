@@ -24,7 +24,7 @@ serves compute_accuracy_stats(); it never fetches prices itself.
 import argparse
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 HISTORY_FILE = "signal_history.json"
 DEFAULT_BASE_URL = "https://portfolio-builder.up.railway.app"
@@ -53,7 +53,7 @@ def load_history(path=HISTORY_FILE):
 
 
 def save_history(history, path=HISTORY_FILE):
-    history["updated_at"] = datetime.utcnow().isoformat()
+    history["updated_at"] = datetime.now(timezone.utc).isoformat()
     with open(path, "w") as f:
         json.dump(history, f, indent=1)
 
@@ -62,7 +62,7 @@ def save_history(history, path=HISTORY_FILE):
 
 def merge_signals_into_history(history, signals, captured_at=None):
     """Append signals not seen before (by id). Returns number added."""
-    captured_at = captured_at or datetime.utcnow().isoformat()
+    captured_at = captured_at or datetime.now(timezone.utc).isoformat()
     known = {entry["id"] for entry in history["signals"]}
     added = 0
 
@@ -119,7 +119,9 @@ def evaluate_pending(history, price_fetcher, now=None):
     price_fetcher(ticker, start_date, end_date) -> (entry_price, exit_price)
     or None when prices are unavailable. Returns number evaluated.
     """
-    now = now or datetime.utcnow()
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
     evaluated = 0
     benchmark_cache = {}
 
@@ -129,6 +131,8 @@ def evaluate_pending(history, price_fetcher, now=None):
 
         try:
             created = datetime.fromisoformat(entry["created_at"])
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
         except (ValueError, TypeError):
             entry["result"] = "invalid"
             continue
@@ -180,7 +184,9 @@ def evaluate_pending(history, price_fetcher, now=None):
 
 def compute_accuracy_stats(history, now=None, window_weeks=4):
     """Rolling and overall win rates over evaluated entries."""
-    now = now or datetime.utcnow()
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
     cutoff = now - timedelta(weeks=window_weeks)
 
     def summarize(entries):
@@ -192,10 +198,14 @@ def compute_accuracy_stats(history, now=None, window_weeks=4):
             "win_rate": round(wins / len(scored) * 100, 1) if scored else None,
         }
 
+    def _parse_dt(s):
+        dt = datetime.fromisoformat(s)
+        return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+
     entries = history.get("signals", [])
     recent = [
         e for e in entries
-        if e.get("evaluated_at") and datetime.fromisoformat(e["evaluated_at"]) >= cutoff
+        if e.get("evaluated_at") and _parse_dt(e["evaluated_at"]) >= cutoff
     ]
 
     by_direction = {}

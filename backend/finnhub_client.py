@@ -7,7 +7,7 @@ ticker within the same process.
 """
 import os
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict
 
 from sector_config import normalize_sector
@@ -26,7 +26,7 @@ def fetch_profile(ticker: str) -> dict:
     failure so callers can always do result.get("sector") safely.
     """
     cached = _PROFILE_CACHE.get(ticker)
-    if cached and datetime.utcnow() - cached[0] < _PROFILE_CACHE_TTL:
+    if cached and datetime.now(timezone.utc) - cached[0] < _PROFILE_CACHE_TTL:
         return cached[1]
 
     result: dict = {"sector": "", "market_cap": 0, "company_name": ""}
@@ -47,7 +47,7 @@ def fetch_profile(ticker: str) -> dict:
                 if mc:
                     result["market_cap"] = int(mc * 1_000_000)
                 result["company_name"] = data.get("name") or ""
-                _PROFILE_CACHE[ticker] = (datetime.utcnow(), result)
+                _PROFILE_CACHE[ticker] = (datetime.now(timezone.utc), result)
         except Exception as e:
             print(f"[Finnhub] Error fetching profile for {ticker}: {e}")
 

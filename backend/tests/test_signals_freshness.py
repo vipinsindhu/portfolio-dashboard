@@ -1,6 +1,6 @@
 """Tests for per-timeframe signal-staleness refresh logic."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import signals as signals_module
 from signals import generate_signals_if_stale, stale_timeframes
@@ -8,7 +8,7 @@ from signals import generate_signals_if_stale, stale_timeframes
 
 def make_stored(short_age_minutes=None, long_age_minutes=None):
     """Stored signals with one signal per timeframe at the given ages."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     signals = []
     if short_age_minutes is not None:
         signals.append({
@@ -45,7 +45,7 @@ class TestStaleTimeframes:
         assert sorted(stale_timeframes({"signals": []})) == ["long_term", "short_term"]
 
     def test_untagged_legacy_signals_count_as_long_term(self):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = {"signals": [{
             "id": "x", "ticker": "AAPL", "direction": "buy",
             "created_at": now.isoformat(),
@@ -53,7 +53,7 @@ class TestStaleTimeframes:
         assert stale_timeframes(data) == ["short_term"]
 
     def test_mock_signals_do_not_count_as_fresh(self):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = {"signals": [{
             "id": "m", "ticker": "AAPL", "direction": "buy", "timeframe": "short_term",
             "source": "mock", "created_at": now.isoformat(),
