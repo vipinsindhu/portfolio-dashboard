@@ -24,8 +24,9 @@ async function main() {
   const tabCount = await page.locator('.tab-button').count()
   check(`all 5 tabs render (found ${tabCount})`, tabCount === 5)
 
-  // Scenario 2: demo flow — sample portfolio loads and analysis renders
-  await page.getByRole('button', { name: /Try a Demo/i }).first().click()
+  // Scenario 2: demo flow — navigate to Analyse tab, load sample portfolio, analysis renders
+  await page.getByRole('button', { name: /Analyse My Portfolio/i }).first().click()
+  await page.getByRole('button', { name: /Try a sample portfolio/i }).first().click()
   await page.waitForSelector('.portfolio-table-container', { timeout: 30000 })
   check('sample portfolio table renders', true)
   const health = page.getByText(/portfolio health/i).first()
