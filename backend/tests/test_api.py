@@ -265,3 +265,54 @@ class TestTimeframeSeparation:
         data = client.get("/api/signals/short-term").get_json()
 
         assert {s["ticker"] for s in data["signals"]} == {"AAPL", "WMT", "XOM"}
+
+
+class TestSignalDetail:
+    def test_returns_signal_by_id(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
+
+        response = client.get("/api/signals/AAPL_1")
+
+        assert response.status_code == 200
+        assert response.get_json()["ticker"] == "AAPL"
+
+    def test_id_with_timestamp_colons_resolves(self, client, isolate_workdir):
+        # Real ids look like "AAPL_2026-06-12T10:00:00.123456"
+        signal = dict(SAMPLE_SIGNALS[0], id="AAPL_2026-06-12T10:00:00.123456")
+        write_signals_file(isolate_workdir, [signal])
+
+        response = client.get("/api/signals/AAPL_2026-06-12T10:00:00.123456")
+
+        assert response.status_code == 200
+        assert response.get_json()["ticker"] == "AAPL"
+
+    def test_unknown_id_and_reserved_names_return_404(self, client, isolate_workdir):
+        write_signals_file(isolate_workdir, SAMPLE_SIGNALS)
+
+        assert client.get("/api/signals/NOPE_1").status_code == 404
+        assert client.get("/api/signals/generate").status_code == 404
+
+
+class TestTimeframeSchemaFields:
+    def test_new_display_fields_pass_through_endpoints(self, client, isolate_workdir):
+        # Vocabulary labels and timeframe-specific fields must reach the UI
+        write_signals_file(isolate_workdir, [
+            dict(TAGGED_SIGNALS[0], label="Accumulate",
+                 moat="Brand", what_to_watch="Revenue growth",
+                 revenue_growth_5y_pct=9.5, net_margin_pct=18.2),
+            dict(TAGGED_SIGNALS[1], label="Dip Buy",
+                 catalyst="Down 12% in 3 months", expected_window="1-3 months",
+                 invalidation="If it keeps falling."),
+        ])
+
+        long_signal = client.get("/api/signals/long-term").get_json()["signals"][0]
+        assert long_signal["label"] == "Accumulate"
+        assert long_signal["moat"] == "Brand"
+        assert long_signal["what_to_watch"] == "Revenue growth"
+        assert long_signal["revenue_growth_5y_pct"] == 9.5
+
+        short_signal = client.get("/api/signals/short-term").get_json()["signals"][0]
+        assert short_signal["label"] == "Dip Buy"
+        assert short_signal["catalyst"] == "Down 12% in 3 months"
+        assert short_signal["expected_window"] == "1-3 months"
+        assert short_signal["invalidation"] == "If it keeps falling."

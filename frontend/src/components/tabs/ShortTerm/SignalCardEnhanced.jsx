@@ -81,7 +81,7 @@ function SignalCardEnhanced({ signal, type = 'general' }) {
           </div>
         </div>
         <div className="signal-direction-badge">
-          {getDirectionLabel()}
+          {signal.label || getDirectionLabel()}
         </div>
       </div>
 
@@ -103,8 +103,9 @@ function SignalCardEnhanced({ signal, type = 'general' }) {
         </div>
       </div>
 
-      {/* Short-term cues: momentum, catalysts, range position */}
-      {(signal.return_13w_pct != null || signal.days_until_earnings != null || signal.pct_of_52_week_range != null) && (
+      {/* Data cues: momentum/catalysts for short-term, fundamentals for long-term */}
+      {(signal.return_13w_pct != null || signal.days_until_earnings != null || signal.pct_of_52_week_range != null ||
+        signal.revenue_growth_5y_pct != null || signal.net_margin_pct != null) && (
         <div className="signal-cues">
           {signal.return_13w_pct != null && (
             <span className={`cue-badge ${signal.return_13w_pct >= 0 ? 'positive' : 'negative'}`}>
@@ -119,6 +120,16 @@ function SignalCardEnhanced({ signal, type = 'general' }) {
           {signal.pct_of_52_week_range != null && (
             <span className="cue-badge range">
               🎯 {signal.pct_of_52_week_range}% of yearly range
+            </span>
+          )}
+          {signal.revenue_growth_5y_pct != null && (
+            <span className={`cue-badge ${signal.revenue_growth_5y_pct >= 0 ? 'positive' : 'negative'}`}>
+              📊 Sales {signal.revenue_growth_5y_pct > 0 ? '+' : ''}{signal.revenue_growth_5y_pct}%/yr (5y)
+            </span>
+          )}
+          {signal.net_margin_pct != null && (
+            <span className="cue-badge">
+              💰 {signal.net_margin_pct}% profit margin
             </span>
           )}
         </div>
@@ -138,6 +149,43 @@ function SignalCardEnhanced({ signal, type = 'general' }) {
           </button>
         )}
       </div>
+
+      {/* Timeframe-specific insights: catalyst/window/invalidation (short-term),
+          moat/what-to-watch (long-term) */}
+      {(signal.catalyst || signal.expected_window || signal.invalidation || signal.moat || signal.what_to_watch) && (
+        <div className="insight-rows">
+          {signal.catalyst && (
+            <div className="insight-row">
+              <span className="insight-label">⚡ Catalyst</span>
+              <span className="insight-value">{signal.catalyst}</span>
+            </div>
+          )}
+          {signal.expected_window && (
+            <div className="insight-row">
+              <span className="insight-label">⏳ Window</span>
+              <span className="insight-value">{signal.expected_window}</span>
+            </div>
+          )}
+          {signal.moat && (
+            <div className="insight-row">
+              <span className="insight-label">🏰 Edge</span>
+              <span className="insight-value">{signal.moat}</span>
+            </div>
+          )}
+          {signal.what_to_watch && (
+            <div className="insight-row">
+              <span className="insight-label">👀 Check yearly</span>
+              <span className="insight-value">{signal.what_to_watch}</span>
+            </div>
+          )}
+          {signal.invalidation && (
+            <div className="insight-row invalidation">
+              <span className="insight-label">🚧 Wrong if</span>
+              <span className="insight-value">{signal.invalidation}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Meta Info */}
       <div className="meta-info">

@@ -260,6 +260,25 @@ def extract_price_metrics(payload):
     return out
 
 
+def extract_fundamental_metrics(payload):
+    """Pull long-term fundamental cues out of a Finnhub /stock/metric response."""
+    metric = (payload or {}).get("metric") or {}
+    out = {}
+    mapping = {
+        "revenueGrowth5Y": "revenue_growth_5y_pct",
+        "epsGrowth5Y": "eps_growth_5y_pct",
+        "netProfitMarginTTM": "net_margin_pct",
+        "roeTTM": "roe_pct",
+        "totalDebt/totalEquityQuarterly": "debt_to_equity",
+        "dividendGrowthRate5Y": "dividend_growth_5y_pct",
+    }
+    for source, dest in mapping.items():
+        value = metric.get(source)
+        if isinstance(value, (int, float)):
+            out[dest] = round(value, 2 if dest == "debt_to_equity" else 1)
+    return out
+
+
 def extract_days_until_earnings(payload, today):
     """Days until the next earnings report from a Finnhub earnings calendar response."""
     upcoming = []
@@ -275,6 +294,46 @@ def extract_days_until_earnings(payload, today):
     return (min(upcoming) - today).days
 
 
+# The long-term and short-term passes both read /stock/metric for the same
+# tickers within one generation cycle; caching the payload briefly halves
+# the spend against Finnhub's free-tier rate limit.
+_METRIC_PAYLOAD_CACHE = {}  # ticker -> (fetched_at, payload)
+METRIC_CACHE_MAX_AGE = timedelta(hours=1)
+
+
+def fetch_metric_payload(ticker):
+    """Finnhub /stock/metric payload for a ticker, or None on failure."""
+    cached = _METRIC_PAYLOAD_CACHE.get(ticker)
+    if cached and datetime.utcnow() - cached[0] < METRIC_CACHE_MAX_AGE:
+        return cached[1]
+    try:
+        response = requests.get(
+            f"{FINNHUB_BASE}/stock/metric",
+            params={"symbol": ticker, "metric": "all", "token": FINNHUB_API_KEY},
+            timeout=5,
+        )
+        if response.status_code == 200:
+            payload = response.json()
+            if len(_METRIC_PAYLOAD_CACHE) > 500:
+                _METRIC_PAYLOAD_CACHE.clear()
+            _METRIC_PAYLOAD_CACHE[ticker] = (datetime.utcnow(), payload)
+            return payload
+    except requests.exceptions.RequestException:
+        pass
+    return None
+
+
+def fetch_long_term_metrics(ticker):
+    """Fetch fundamental cues for the long-term pass (Finnhub free tier).
+
+    Returns {} on any failure — the long-term pass degrades gracefully to
+    valuation + dividend reasoning when these cues are unavailable.
+    """
+    if not FINNHUB_API_KEY:
+        return {}
+    return extract_fundamental_metrics(fetch_metric_payload(ticker))
+
+
 def fetch_short_term_metrics(ticker):
     """Fetch momentum/catalyst cues for the short-term pass (Finnhub free tier).
 
@@ -285,16 +344,7 @@ def fetch_short_term_metrics(ticker):
         return {}
 
     out = {}
-    try:
-        response = requests.get(
-            f"{FINNHUB_BASE}/stock/metric",
-            params={"symbol": ticker, "metric": "all", "token": FINNHUB_API_KEY},
-            timeout=5,
-        )
-        if response.status_code == 200:
-            out.update(extract_price_metrics(response.json()))
-    except requests.exceptions.RequestException:
-        pass
+    out.update(extract_price_metrics(fetch_metric_payload(ticker)))
 
     try:
         today = datetime.utcnow().date()
@@ -620,6 +670,7 @@ def generate_realistic_mock_signals(candidates, count=5, timeframe="long_term"):
             "id": f"{candidate['ticker']}_{datetime.now().isoformat()}",
             "ticker": candidate["ticker"],
             "direction": direction,
+            "label": resolve_label(None, direction, timeframe),
             "confidence": confidence,
             "source": "mock",
             "rationale": rationale,
@@ -714,6 +765,51 @@ def build_short_term_slate(candidates, max_size=25):
             seen.add(ticker)
             slate.append(candidate)
     return slate[:max_size]
+
+
+# Per-timeframe display vocabulary. `direction` (buy/hold/avoid) stays the
+# machine contract — filters, accuracy scoring, and history all key off it —
+# while `label` is presentation only. First entry per direction is the
+# fallback when the LLM omits or invents a label.
+TIMEFRAME_LABELS = {
+    "short_term": {
+        "buy": ("Momentum Buy", "Dip Buy"),
+        "hold": ("Wait",),
+        "avoid": ("Avoid", "Avoid Pre-Earnings"),
+    },
+    "long_term": {
+        "buy": ("Accumulate",),
+        "hold": ("Core Holding", "Hold"),
+        "avoid": ("Avoid", "Trim"),
+    },
+}
+
+
+def resolve_label(label, direction, timeframe):
+    """Validate an LLM-chosen label against the timeframe vocabulary.
+
+    Returns the canonical spelling on a (case-insensitive) match, the
+    timeframe's fallback label for that direction otherwise, or None when
+    the direction itself is unknown.
+    """
+    allowed = TIMEFRAME_LABELS.get(timeframe, {}).get(direction)
+    if not allowed:
+        return None
+    if isinstance(label, str):
+        normalized = label.strip().lower()
+        for candidate in allowed:
+            if normalized == candidate.lower():
+                return candidate
+    return allowed[0]
+
+
+def clean_signal_text(value, max_len=220):
+    """Whitespace-normalize and cap an LLM free-text field; None if empty."""
+    if isinstance(value, str):
+        text = " ".join(value.split())
+        if text:
+            return text[:max_len]
+    return None
 
 
 def parse_llm_signals(response_text):
@@ -825,6 +921,23 @@ def generate_signals(count=10, candidates=None):
     # Prepare data for Groq LLM - mix strong and weak candidates so the
     # LLM has genuine hold/avoid material, not just pre-vetted winners
     slate = build_candidate_slate(candidates)
+
+    # Attach fundamental cues (revenue growth, margins, ROE, leverage) so the
+    # long-term pass reasons over business quality, not just price and PE —
+    # the short-term pass sees momentum data, this pass sees fundamentals.
+    # 3 workers to stay friendly to Finnhub's free-tier rate limit.
+    print(f"Fetching long-term fundamentals for {len(slate)} candidates...")
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        future_to_candidate = {
+            executor.submit(fetch_long_term_metrics, c["ticker"]): c
+            for c in slate
+        }
+        for future in as_completed(future_to_candidate):
+            try:
+                future_to_candidate[future].update(future.result())
+            except Exception:
+                pass
+
     candidates_str = json.dumps([candidate_prompt_fields(c) for c in slate], indent=2)
     print(f"📤 Sending {len(slate)} candidates (top + bottom of quality ranking) to Groq for signal generation")
 
@@ -837,6 +950,15 @@ THE LIST BELOW MIXES STRONG AND WEAK COMPANIES (ranked by fundamental quality, b
 - hold = good business but the price is stretched or growth is slowing — fine to keep, don't rush to add
 - avoid = real problems in the data: very high PE, no dividend with weak growth, shrinking business
 
+USE ONLY THE DATA PROVIDED. Key long-term cues (may be missing for some stocks — skip what isn't there):
+- revenue_growth_5y_pct: how fast sales grew per year over 5 years. Above 8 = healthy grower; negative = shrinking business
+- eps_growth_5y_pct: profit-per-share growth over 5 years — the engine of long-term returns
+- net_margin_pct: how much of each sales dollar becomes profit. Above 15 = strong business; below 5 = thin cushion
+- roe_pct: how well the company turns shareholder money into profit. Above 15 = quality; below 8 = mediocre
+- debt_to_equity: above 2 = heavy debt load (risky if times get hard); below 0.5 = conservative
+- dividend_growth_5y_pct: a dividend that GROWS every year is a sign of a durable business
+- Very high PE (above 50) = paying a premium for hope; needs the growth numbers to back it up
+
 MARKET CONDITIONS RIGHT NOW:
 {macro_sentiment}
 
@@ -846,14 +968,19 @@ STOCKS TO RATE:
 For each stock, give:
 1. Stock symbol
 2. What to do (buy, hold, or avoid)
-3. Confidence (1-10: 1=not sure, 10=very sure)
-4. WHY in SIMPLE WORDS (1-2 sentences):
-   - Easy reason a 10th grader would understand
-   - Why this matters for long-term holding
-   - For an AVOID: name the specific number or fact that worries you
+3. A label that says it more precisely:
+   - "Accumulate" (for buy): worth adding to steadily over time
+   - "Core Holding" (for hold): great business, keep it — but the price is stretched, don't add now
+   - "Hold" (for hold): fine business, nothing special at this price
+   - "Trim" (for avoid): own less of it — numbers are deteriorating or the price ran way ahead
+   - "Avoid" (for avoid): don't own it — real problems in the data
+4. Confidence (1-10: 1=not sure, 10=very sure)
+5. WHY in SIMPLE WORDS (1-2 sentences) citing a specific number from the data
+6. moat: ONE short phrase saying what protects this business from competitors (or what fails to)
+7. what_to_watch: ONE specific number from the data to check once a year to know the story is intact
 
 LONG-TERM INVESTING TIPS TO USE:
-- Strong dividends = good for staying invested
+- Strong and growing dividends = good for staying invested
 - Low PE ratio = reasonable price; PE above 50 = paying a lot for hope
 - Big market cap = stable/established company
 - Market conditions matter, but matter LESS for long-term holds
@@ -864,17 +991,20 @@ WRITE LIKE YOU'RE TALKING TO A TEENAGER:
 - Be clear on what to do
 
 Examples of GOOD honest ratings:
-- buy: "Walmart is a store everyone uses. It pays dividends (free money) every quarter. The price is reasonable. This is the kind of company to buy and hold for years."
-- hold: "Costco is a great business, but the price is high right now (PE of 50). If you own it, keep it. If you don't, wait for a better price."
-- avoid: "This company trades at a PE of 80 and pays no dividend. You're paying a premium price for an unproven story. Skip it until the numbers improve."
+- Accumulate: "Walmart is a store everyone uses. Sales grew 5% a year for 5 years and the dividend keeps rising. The price is reasonable. This is the kind of company to buy and hold for years."
+- Core Holding: "Costco is a great business with 12% yearly sales growth, but the price is high right now (PE of 50). If you own it, keep it. If you don't, wait for a better price."
+- Avoid: "This company trades at a PE of 80 with profit margins of just 3%. You're paying a premium price for a thin-cushion business. Skip it until the numbers improve."
 
 Return ONLY a JSON array with no other text:
 [
   {{
     "ticker": "WMT",
     "direction": "buy",
+    "label": "Accumulate",
     "confidence": 8,
-    "rationale": "Walmart is the grocery store everyone uses. It pays dividends (money returned to shareholders). The price is fair right now. This is a hold-forever company that grows slowly but steadily."
+    "rationale": "Walmart is the grocery store everyone uses. Sales grew 5% a year for 5 years and it pays a rising dividend. The price is fair right now. This is a hold-forever company that grows slowly but steadily.",
+    "moat": "Biggest store network in America — rivals can't match its prices",
+    "what_to_watch": "Revenue growth staying above 4% a year"
   }}
 ]
 
@@ -882,6 +1012,7 @@ RULES:
 - Exactly {count} signals
 - Rate HONESTLY: aim for a mix — if the data shows weak companies, say avoid; do NOT call everything a buy
 - An avoid rationale must cite the specific risk from the data
+- label must be one of: Accumulate, Core Holding, Hold, Trim, Avoid — and must match the direction
 - Confidence 5-10 (vary them)
 - SIMPLE rationale - no fancy words
 - LONG-TERM rationale (5+ year perspective)
@@ -914,16 +1045,22 @@ RULES:
         ticker = signal.get("ticker")
         candidate = next((c for c in candidates if c["ticker"] == ticker), {})
 
+        direction = signal.get("direction", "hold")
         signal_obj = {
             "id": f"{ticker}_{datetime.now().isoformat()}",
             "ticker": ticker,
-            "direction": signal.get("direction", "hold"),
+            "direction": direction,
+            "label": resolve_label(signal.get("label"), direction, "long_term"),
             "confidence": signal.get("confidence", 5),
             "rationale": signal.get("rationale", ""),
+            "moat": clean_signal_text(signal.get("moat"), max_len=120),
+            "what_to_watch": clean_signal_text(signal.get("what_to_watch"), max_len=120),
             "sector": candidate.get("sector", "Unknown"),
             "market_cap": candidate.get("market_cap", None),
             "pe_ratio": candidate.get("pe_ratio"),
             "dividend_yield": candidate.get("dividend_yield"),
+            "revenue_growth_5y_pct": candidate.get("revenue_growth_5y_pct"),
+            "net_margin_pct": candidate.get("net_margin_pct"),
             "timeframe": "long_term",
             "created_at": datetime.now().isoformat(),
             "result": None,
@@ -1010,23 +1147,36 @@ STOCKS TO RATE:
 For each stock, give:
 1. Stock symbol
 2. What to do over the next 1-3 months (buy, hold, or avoid)
-3. Confidence (1-10: 1=not sure, 10=very sure)
-4. WHY in SIMPLE WORDS (1-2 sentences) citing a specific number from the data
+3. A label that says it more precisely:
+   - "Momentum Buy" (for buy): riding strength — positive recent returns with room left
+   - "Dip Buy" (for buy): solid company at a beaten-down price — recovery setup
+   - "Wait" (for hold): fine company, but nothing suggests the price moves soon
+   - "Avoid Pre-Earnings" (for avoid): expensive stock with earnings coming up — too risky right now
+   - "Avoid" (for avoid): stretched price or weak numbers
+4. Confidence (1-10: 1=not sure, 10=very sure)
+5. WHY in SIMPLE WORDS (1-2 sentences) citing a specific number from the data
+6. catalyst: ONE short phrase naming what could move the price soon, taken from the data (an earnings date, a big recent drop, strong momentum)
+7. expected_window: how soon this call should play out, like "2-6 weeks" or "1-3 months"
+8. invalidation: ONE simple sentence saying what would prove this call wrong (e.g. "If earnings disappoint this month" or "If it keeps falling past its yearly low")
 
 WRITE LIKE YOU'RE TALKING TO A TEENAGER: simple words, no jargon, be clear on what to do.
 
 Examples of GOOD honest short-term ratings:
-- buy: "Bank of America is down 12% over the last 3 months but still earns well (PE of 11). Beaten-down solid bank - good setup for a recovery in the next few months."
-- hold: "Microsoft is a great company, but it's up 18% in 3 months and sits at 95% of its yearly range. It already ran up - wait for a dip before adding."
-- avoid: "This stock trades at a PE of 70 with earnings in 12 days. Priced for perfection - one disappointing report and it drops hard. Skip it until after earnings."
+- Dip Buy: "Bank of America is down 12% over the last 3 months but still earns well (PE of 11). Beaten-down solid bank - good setup for a recovery in the next few months."
+- Wait: "Microsoft is a great company, but it's up 18% in 3 months and sits at 95% of its yearly range. It already ran up - wait for a dip before adding."
+- Avoid Pre-Earnings: "This stock trades at a PE of 70 with earnings in 12 days. Priced for perfection - one disappointing report and it drops hard. Skip it until after earnings."
 
 Return ONLY a JSON array with no other text:
 [
   {{
     "ticker": "BAC",
     "direction": "buy",
+    "label": "Dip Buy",
     "confidence": 7,
-    "rationale": "Bank of America sits at just 30% of its yearly price range with a low PE of 11. Solid bank at a beaten-down price."
+    "rationale": "Bank of America sits at just 30% of its yearly price range with a low PE of 11. Solid bank at a beaten-down price.",
+    "catalyst": "Down 12% in 3 months while profits held up",
+    "expected_window": "1-3 months",
+    "invalidation": "If the price keeps sliding below its yearly low, the recovery idea is wrong."
   }}
 ]
 
@@ -1034,6 +1184,8 @@ RULES:
 - Exactly {count} signals
 - Rate HONESTLY: aim for a mix - do NOT call everything a buy
 - Every rationale must cite a specific number from the data
+- label must be one of: Momentum Buy, Dip Buy, Wait, Avoid Pre-Earnings, Avoid — and must match the direction
+- catalyst and invalidation must come from the data provided, not invented news
 - Confidence 5-10 (vary them)
 - SHORT-TERM rationale (1-3 month perspective, not "hold forever")
 - Pick from DIFFERENT industries"""
@@ -1066,12 +1218,17 @@ RULES:
         pct_of_range = None
         if price and high and low and high > low:
             pct_of_range = round((price - low) / (high - low) * 100)
+        direction = signal.get("direction", "hold")
         enhanced_signals.append({
             "id": f"{ticker}_{datetime.now().isoformat()}",
             "ticker": ticker,
-            "direction": signal.get("direction", "hold"),
+            "direction": direction,
+            "label": resolve_label(signal.get("label"), direction, "short_term"),
             "confidence": signal.get("confidence", 5),
             "rationale": signal.get("rationale", ""),
+            "catalyst": clean_signal_text(signal.get("catalyst"), max_len=120),
+            "expected_window": clean_signal_text(signal.get("expected_window"), max_len=40),
+            "invalidation": clean_signal_text(signal.get("invalidation")),
             "sector": candidate.get("sector", "Unknown"),
             "market_cap": candidate.get("market_cap", None),
             "return_13w_pct": candidate.get("return_13w_pct"),

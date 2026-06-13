@@ -391,3 +391,38 @@
   color: #b45309;
   border-color: rgba(245, 158, 11, 0.4);
 }
+
+/* Timeframe-specific insight rows (catalyst, window, moat, what-to-watch, invalidation) */
+.insight-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.insight-row {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.insight-label {
+  flex-shrink: 0;
+  min-width: 96px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.insight-value {
+  color: var(--text-primary);
+}
+
+.insight-row.invalidation .insight-value {
+  color: var(--text-secondary);
+  font-style: italic;
+}
