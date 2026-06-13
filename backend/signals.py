@@ -267,11 +267,15 @@ def extract_fundamental_metrics(payload):
         "roeTTM": "roe_pct",
         "totalDebt/totalEquityQuarterly": "debt_to_equity",
         "dividendGrowthRate5Y": "dividend_growth_5y_pct",
+        "currentDividendYieldTTM": "dividend_yield_pct",  # % e.g. 2.1 → stored as 0.021
     }
     for source, dest in mapping.items():
         value = metric.get(source)
         if isinstance(value, (int, float)):
             out[dest] = round(value, 2 if dest == "debt_to_equity" else 1)
+    # Normalise dividend yield from percent to decimal to match COMPANY_DIVIDEND_YIELDS
+    if "dividend_yield_pct" in out:
+        out["dividend_yield"] = round(out.pop("dividend_yield_pct") / 100, 4)
     return out
 
 
@@ -986,7 +990,12 @@ def generate_signals(count=10, candidates=None, macro_data=None):
         }
         for future in as_completed(future_to_candidate):
             try:
-                future_to_candidate[future].update(future.result())
+                metrics = future.result()
+                candidate = future_to_candidate[future]
+                # Keep curated dividend_yield over the metric value when already set
+                if candidate.get("dividend_yield") and "dividend_yield" in metrics:
+                    metrics.pop("dividend_yield")
+                candidate.update(metrics)
             except Exception:
                 pass
 
@@ -1182,13 +1191,18 @@ THE LIST BELOW MIXES STRONG AND WEAK COMPANIES. Not everything is a buy:
 - avoid = stretched price or weak numbers that could fall in the next few months
 
 USE ONLY THE DATA PROVIDED. Key short-term cues:
-- return_13w_pct: price change over the last 3 months. Big negative = beaten down (bargain only if the business is solid); big positive = strong momentum (but check it isn't overextended)
+- return_13w_pct: price change over the last 3 months. Big negative = beaten down; big positive = strong momentum (check it isn't overextended)
 - return_5d_pct: what the stock did this week — recent direction
 - days_until_earnings: earnings report coming up = expect a price swing soon; risky for expensive stocks, an opportunity for cheap solid ones
 - beta: above 1 = moves more than the market; in a shaky market, high-beta stocks fall harder
-- pct_of_52_week_range: near 100 = at its yearly high (already ran up, less room); near 0 = at its yearly low (beaten down — bargain only if the business is solid)
+- pct_of_52_week_range: 0-30 = near yearly LOW (cheap entry — rate as Dip Buy if business is solid); 70-100 = near yearly HIGH (less upside, check momentum before buying)
 - Very high PE = priced for perfection; bad news hits these hardest
 - Market conditions below affect the next few months MORE than they affect long-term holds
+
+CRITICAL RULES FOR pct_of_52_week_range:
+- A stock at 0-30% of its yearly range is CHEAP, not broken — that is a BUY signal if the company is financially sound (large market cap, reasonable PE, earnings not imminent)
+- Do NOT rate "avoid" just because a stock is near its yearly low. Low price = opportunity for solid companies.
+- A stock at 80-100% of its yearly range has already run up — be more cautious about rating it "buy" unless momentum is very strong
 
 MARKET CONDITIONS RIGHT NOW:
 {macro_sentiment}
@@ -1271,11 +1285,15 @@ RULES:
         if price and high and low and high > low:
             pct_of_range = max(0, min(100, round((price - low) / (high - low) * 100)))
         direction = signal.get("direction", "hold")
+        label = resolve_label(signal.get("label"), direction, "short_term")
+        # "Avoid Pre-Earnings" requires an actual earnings date; fall back otherwise
+        if label == "Avoid Pre-Earnings" and not candidate.get("days_until_earnings"):
+            label = "Avoid"
         enhanced_signals.append({
             "id": f"{ticker}_{datetime.now().isoformat()}",
             "ticker": ticker,
             "direction": direction,
-            "label": resolve_label(signal.get("label"), direction, "short_term"),
+            "label": label,
             "confidence": signal.get("confidence", 5),
             "rationale": signal.get("rationale", ""),
             "catalyst": clean_signal_text(signal.get("catalyst"), max_len=120),

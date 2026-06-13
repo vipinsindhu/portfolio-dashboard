@@ -491,6 +491,12 @@ class TestTimeframeSchemas:
             + [{"direction": "avoid", "label": "Avoid Pre-Earnings"}] * 4
         )
         TestGenerateSignalsRetry().setup_pipeline(monkeypatch, [response])
+        # Override after setup_pipeline (which stubs metrics to {}); inject earnings
+        # dates so "Avoid Pre-Earnings" is not downgraded to plain "Avoid"
+        monkeypatch.setattr(
+            signals_module, "fetch_short_term_metrics",
+            lambda t: {"days_until_earnings": 14},
+        )
 
         result = generate_short_term_signals(count=10)
 
@@ -502,6 +508,18 @@ class TestTimeframeSchemas:
         assert all(s["invalidation"] == "If it falls past its yearly low." for s in buys)
         assert all(s["label"] == "Avoid Pre-Earnings" for s in avoids)
         assert all(s["catalyst"] is None for s in avoids)
+
+    def test_avoid_pre_earnings_downgraded_when_no_earnings_date(self, monkeypatch):
+        # "Avoid Pre-Earnings" must fall back to plain "Avoid" when the
+        # candidate has no known earnings date
+        response = llm_response_with_extras(
+            [{"direction": "avoid", "label": "Avoid Pre-Earnings"}] * 10
+        )
+        TestGenerateSignalsRetry().setup_pipeline(monkeypatch, [response])  # metrics return {}
+
+        result = generate_short_term_signals(count=10)
+
+        assert all(s["label"] == "Avoid" for s in result)
 
     def test_prompts_define_their_own_vocabulary(self, monkeypatch):
         mixed = llm_response(["buy"] * 7 + ["avoid"] * 3)
