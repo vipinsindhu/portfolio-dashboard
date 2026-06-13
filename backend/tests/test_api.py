@@ -437,6 +437,20 @@ class TestPortfolioFull:
         assert st_tickers.isdisjoint({"AAPL"})
 
 
+class TestMacroSignals:
+    def test_returns_200_without_database(self, client):
+        # macro_store is None in file-only mode; endpoint must not 500
+        response = client.get("/api/macro-signals")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert "signals" in data
+        assert "last_updated" in data
+
+    def test_macro_endpoint_also_returns_200(self, client):
+        response = client.get("/api/macro")
+        assert response.status_code == 200
+
+
 class TestGenerateEndpoint:
     def test_returns_202_and_runs_generation_in_background(self, client, monkeypatch):
         # Generation takes minutes; the endpoint must not run it in-request

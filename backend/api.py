@@ -233,7 +233,7 @@ def create_app():
     @app.route("/api/macro-signals", methods=["GET"])
     def get_macro_signals():
         """Return macro signals"""
-        config = macro_store.get_config()
+        config = macro_store.get_config() if macro_store else {"macro_signals": {}, "last_updated": None}
         return jsonify({
             "signals": config.get("macro_signals", {}),
             "last_updated": config.get("last_updated")
