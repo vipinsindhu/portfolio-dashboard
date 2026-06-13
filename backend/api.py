@@ -401,24 +401,7 @@ def create_app():
                 avg_confidence = 0
                 buy_count = hold_count = avoid_count = 0
 
-            # Include portfolio recommendations if available
-            recommendations = None
-            try:
-                portfolio = load_portfolio()
-                if portfolio and portfolio.holding_count > 0:
-                    # Get recommendations for this timeframe
-                    recs = filter_signals_with_portfolio(all_signals, portfolio, TimeHorizon.SHORT_TERM, {})
-                    recommendations = {
-                        "sell_reduce": [asdict(s) for s in recs.get("sell_reduce", [])],
-                        "hold": [asdict(s) for s in recs.get("hold", [])],
-                        "add": [asdict(s) for s in recs.get("add", [])],
-                        "portfolio_value": recs.get("portfolio_value", 0),
-                        "portfolio_holdings": recs.get("portfolio_holdings", 0)
-                    }
-            except Exception as e:
-                app.logger.warning(f"Could not build portfolio recommendations: {e}")
-
-            response_data = {
+            return jsonify({
                 "signals": top_signals,
                 "total": len(top_signals),
                 "generated_at": generated_at,
@@ -438,13 +421,7 @@ def create_app():
                     "direction": direction or "all",
                     "sector": sector or "all"
                 }
-            }
-
-            # Add recommendations if available
-            if recommendations:
-                response_data["recommendations"] = recommendations
-
-            return jsonify(response_data), 200
+            }), 200
 
         except Exception as e:
             app.logger.error(f"Error getting short-term signals: {e}")
@@ -518,24 +495,7 @@ def create_app():
                 avg_confidence = 0
                 buy_count = hold_count = avoid_count = 0
 
-            # Include portfolio recommendations if available
-            recommendations = None
-            try:
-                portfolio = load_portfolio()
-                if portfolio and portfolio.holding_count > 0:
-                    # Get recommendations for this timeframe
-                    recs = filter_signals_with_portfolio(all_signals, portfolio, TimeHorizon.LONG_TERM, {})
-                    recommendations = {
-                        "sell_reduce": [asdict(s) for s in recs.get("sell_reduce", [])],
-                        "hold": [asdict(s) for s in recs.get("hold", [])],
-                        "add": [asdict(s) for s in recs.get("add", [])],
-                        "portfolio_value": recs.get("portfolio_value", 0),
-                        "portfolio_holdings": recs.get("portfolio_holdings", 0)
-                    }
-            except Exception as e:
-                app.logger.warning(f"Could not build portfolio recommendations: {e}")
-
-            response_data = {
+            return jsonify({
                 "signals": top_signals,
                 "total": len(top_signals),
                 "generated_at": generated_at,
@@ -555,13 +515,7 @@ def create_app():
                     "direction": direction or "all",
                     "sector": sector or "all"
                 }
-            }
-
-            # Add recommendations if available
-            if recommendations:
-                response_data["recommendations"] = recommendations
-
-            return jsonify(response_data), 200
+            }), 200
 
         except Exception as e:
             app.logger.error(f"Error getting long-term signals: {e}")
