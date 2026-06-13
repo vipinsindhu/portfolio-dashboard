@@ -433,7 +433,7 @@ def fetch_macro_context(use_cache=True):
         # VIX via FRED
         vix_response = requests.get(
             fred_url,
-            params={"series_id": "VIXCLS", "api_key": FRED_API_KEY, "limit": 1},
+            params={"series_id": "VIXCLS", "api_key": FRED_API_KEY, "limit": 1, "file_type": "json"},
             timeout=5
         )
         if vix_response.status_code == 200:
@@ -444,7 +444,7 @@ def fetch_macro_context(use_cache=True):
         # Treasury 10Y via FRED
         tnx_response = requests.get(
             fred_url,
-            params={"series_id": "DGS10", "api_key": FRED_API_KEY, "limit": 1},
+            params={"series_id": "DGS10", "api_key": FRED_API_KEY, "limit": 1, "file_type": "json"},
             timeout=5
         )
         if tnx_response.status_code == 200:
@@ -452,11 +452,11 @@ def fetch_macro_context(use_cache=True):
             if obs:
                 macro_data["treasury_10y"] = float(obs[-1].get("value", 4.2))
 
-        # Cache the freshly fetched data
-        save_macro_cache(macro_data)
-
     except Exception as e:
         print(f"Error fetching macro from FRED (using cache/defaults): {e}")
+
+    # Cache whatever we have (live data or defaults) so the next call uses cache
+    save_macro_cache(macro_data)
 
     return macro_data
 
