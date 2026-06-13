@@ -85,8 +85,8 @@ COMPANY_SECTORS = {
     "BA": "Industrials", "GE": "Industrials", "LMT": "Industrials", "CAT": "Industrials",
     "XOM": "Energy", "CVX": "Energy", "MPC": "Energy",
     "AMT": "Real Estate", "EQIX": "Real Estate",
-    "VTI": "Technology", "VOO": "Technology", "SPY": "Technology",
-    "QQQ": "Technology", "AGG": "Utilities", "BND": "Utilities"
+    "VTI": "Index", "VOO": "Index", "SPY": "Index",
+    "QQQ": "Technology", "AGG": "Index", "BND": "Index"
 }
 
 COMPANY_MARKET_CAPS = {
@@ -211,16 +211,19 @@ def fetch_fundamentals(ticker):
                 quote = quote_response.json()
 
                 if quote.get("c"):  # Current price exists
-                    # Get sector from COMPANY_SECTORS or fallback to TICKER_SECTOR_MAP
                     sector = COMPANY_SECTORS.get(ticker)
                     if not sector:
                         sector = get_sector_for_stock(ticker, TICKER_SECTOR_MAP)
 
+                    profile = _fetch_finnhub_profile(ticker)
+                    market_cap = profile.get("market_cap") or COMPANY_MARKET_CAPS.get(ticker, 0)
+                    company_name = profile.get("company_name") or COMPANY_NAMES.get(ticker, ticker)
+
                     return {
                         "ticker": ticker,
-                        "company_name": COMPANY_NAMES.get(ticker, ticker),
+                        "company_name": company_name,
                         "sector": sector,
-                        "market_cap": COMPANY_MARKET_CAPS.get(ticker, 0),
+                        "market_cap": market_cap,
                         "pe_ratio": quote.get("pe"),
                         "dividend_yield": COMPANY_DIVIDEND_YIELDS.get(ticker, 0),
                         "52_week_high": quote.get("h52", None),
@@ -300,6 +303,37 @@ def extract_days_until_earnings(payload, today):
 # the spend against Finnhub's free-tier rate limit.
 _METRIC_PAYLOAD_CACHE = {}  # ticker -> (fetched_at, payload)
 METRIC_CACHE_MAX_AGE = timedelta(hours=1)
+
+_PROFILE_CACHE: dict = {}  # ticker -> {market_cap, company_name}; reset each process lifetime
+
+
+def _fetch_finnhub_profile(ticker: str) -> dict:
+    """Fetch market cap and company name from Finnhub /stock/profile2.
+
+    Cached in-process so parallel fundamentals fetches don't duplicate calls.
+    Finnhub returns marketCapitalization in millions; we convert to dollars.
+    """
+    if ticker in _PROFILE_CACHE:
+        return _PROFILE_CACHE[ticker]
+    result: dict = {}
+    if FINNHUB_API_KEY:
+        try:
+            r = requests.get(
+                f"{FINNHUB_BASE}/stock/profile2",
+                params={"symbol": ticker, "token": FINNHUB_API_KEY},
+                timeout=5,
+            )
+            if r.status_code == 200:
+                data = r.json()
+                mc = data.get("marketCapitalization")
+                result = {
+                    "market_cap": int(mc * 1_000_000) if mc else 0,
+                    "company_name": data.get("name") or "",
+                }
+        except Exception:
+            pass
+    _PROFILE_CACHE[ticker] = result
+    return result
 
 
 def fetch_metric_payload(ticker):
@@ -885,6 +919,12 @@ def fetch_signal_candidates():
         if len(real) >= 10:
             if len(real) < len(candidates):
                 print(f"Excluding {len(candidates) - len(real)} candidates with placeholder fundamentals")
+            # Filter out microcaps and tickers with no market cap data
+            MIN_MARKET_CAP = 1_000_000_000  # $1B floor
+            qualified = [c for c in real if c.get("market_cap", 0) >= MIN_MARKET_CAP]
+            if len(qualified) >= 10:
+                print(f"Market cap filter (>$1B): {len(real) - len(qualified)} removed, {len(qualified)} remain")
+                real = qualified
             candidates = real
 
         candidates.sort(key=lambda x: x.get("quality_score", 0), reverse=True)
