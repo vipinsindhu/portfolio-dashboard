@@ -1,6 +1,6 @@
 # PRD: Smart Stock Ideas — Beginner Investing Education & Signals
 
-**Status:** Active — supersedes [FEATURE_ALIGNMENT.md](FEATURE_ALIGNMENT.md) (kept for history)
+**Status:** Superseded by [smart-stock-ideas-prd.md](smart-stock-ideas-prd.md) (2026-06-13) — kept for history
 **Last updated:** 2026-06-11
 **Owner:** Vipin
 **Live:** https://portfolio-builder.up.railway.app/
