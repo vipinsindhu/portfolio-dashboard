@@ -1,8 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './Welcome.css'
 
 function Welcome({ onTabChange, onFeedback, onTryDemo }) {
   const [hoveredFeature, setHoveredFeature] = useState(null)
+  const [stats, setStats] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/stats')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setStats(data) })
+      .catch(() => {})
+  }, [])
 
   return (
     <div className="welcome-container">
@@ -136,13 +144,13 @@ function Welcome({ onTabChange, onFeedback, onTryDemo }) {
       {/* Key Stats Section */}
       <section className="stats-section">
         <div className="stat">
-          <div className="stat-number">41</div>
+          <div className="stat-number">{stats ? stats.ticker_count : '—'}</div>
           <div className="stat-label">Stocks & ETFs</div>
-          <div className="stat-detail">Across 8+ sectors</div>
+          <div className="stat-detail">{stats ? `Across ${stats.sector_count}+ sectors` : 'Loading…'}</div>
         </div>
 
         <div className="stat">
-          <div className="stat-number">8+</div>
+          <div className="stat-number">{stats ? `${stats.sector_count}+` : '—'}</div>
           <div className="stat-label">Sectors</div>
           <div className="stat-detail">Diversified coverage</div>
         </div>

@@ -248,6 +248,20 @@ def create_app():
         signals_data = signal_store.get_latest_signals(limit)
         return jsonify(signals_data), 200
 
+    @app.route("/api/stats", methods=["GET"])
+    def get_stats():
+        """Aggregate counts for the Welcome page stats section."""
+        try:
+            all_signals = signal_store.get_latest_signals(200).get("data", [])
+            tickers = {s["ticker"] for s in all_signals if s.get("ticker")}
+            sectors = {s["sector"] for s in all_signals if s.get("sector") and s["sector"] != "Other"}
+            return jsonify({
+                "ticker_count": len(tickers),
+                "sector_count": len(sectors),
+            }), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
     @app.route("/api/signals/accuracy", methods=["GET"])
     def get_signals_accuracy():
         """Rolling win-rate stats from the committed signal history"""
