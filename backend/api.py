@@ -947,6 +947,51 @@ def create_app():
             app.logger.error(f"Error getting recommendations: {e}")
             return jsonify({"error": str(e)}), 500
 
+    @app.route("/api/portfolio/full", methods=["GET"])
+    def get_portfolio_full():
+        """Single call: analysis + LT and ST recommendations for the loaded portfolio.
+        Used by PortfolioContext so all three tabs share one fetch."""
+        try:
+            portfolio = load_portfolio()
+            if not portfolio or portfolio.holding_count == 0:
+                return jsonify({"has_portfolio": False}), 200
+
+            signals_data = load_signals()
+            all_signals = signals_data.get("signals", [])
+
+            result_analysis = analyze_portfolio(portfolio)
+
+            def _recs(horizon):
+                recs = filter_signals_with_portfolio(all_signals, portfolio, horizon, {})
+                return {
+                    "sell_reduce": [asdict(s) for s in recs.get("sell_reduce", [])],
+                    "hold":        [asdict(s) for s in recs.get("hold", [])],
+                    "add":         [asdict(s) for s in recs.get("add", [])],
+                    "portfolio_value":    recs.get("portfolio_value", 0),
+                    "portfolio_holdings": recs.get("portfolio_holdings", 0),
+                }
+
+            return jsonify({
+                "has_portfolio": True,
+                "analysis": {
+                    "diversification_score": result_analysis.diversification_score,
+                    "sector_breakdown":      result_analysis.sector_breakdown,
+                    "pitfalls":              [asdict(p) for p in result_analysis.pitfalls],
+                    "strengths":             result_analysis.strengths,
+                    "recommendations":       result_analysis.recommendations,
+                    "summary":               result_analysis.summary,
+                    "risk_metrics":          getattr(result_analysis, "risk_metrics", {}),
+                    "sector_allocation":     getattr(result_analysis, "sector_allocation", {}),
+                    "holding_count":         portfolio.holding_count,
+                    "portfolio_value":       portfolio.total_current_value,
+                },
+                "long_term":  _recs(TimeHorizon.LONG_TERM),
+                "short_term": _recs(TimeHorizon.SHORT_TERM),
+            }), 200
+        except Exception as e:
+            app.logger.error(f"Error in portfolio/full: {e}")
+            return jsonify({"error": str(e)}), 500
+
     # ============= ERROR HANDLERS =============
 
     @app.errorhandler(404)

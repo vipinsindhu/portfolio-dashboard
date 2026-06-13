@@ -1,66 +1,51 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import PortfolioInput from './PortfolioInput'
 import PitfallDetector from './PitfallDetector'
+import SignalCard from '../../shared/SignalCard'
+import { usePortfolio } from '../../../context/PortfolioContext'
 import './Analyse.css'
 
 function Analyse({ demoRequested, onDemoHandled }) {
-  const [analysis, setAnalysis] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [portfolioLoaded, setPortfolioLoaded] = useState(false)
+  const { hasPortfolio, analysis, ltRecommendations, stRecommendations, loading, reload } = usePortfolio()
+
   const analyzeButtonRef = useRef(null)
   const analysisResultsRef = useRef(null)
 
-  const handleAnalyze = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/portfolio/analysis')
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || errorData.message || 'Analysis failed')
-      }
-
-      const data = await response.json()
-      setAnalysis(data)
-      setPortfolioLoaded(true)
-    } catch (err) {
-      setError(err.message)
-      console.error('Error analyzing portfolio:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  const handlePortfolioLoaded = () => {
-    setPortfolioLoaded(true)
-    // Analysis will be triggered after upload completes
-  }
-
+  // Scroll to button when portfolio first loads
   useEffect(() => {
-    if (portfolioLoaded && analyzeButtonRef.current) {
-      // Scroll to button with smooth behavior
+    if (hasPortfolio && analyzeButtonRef.current) {
       analyzeButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      // Add highlight animation class
       analyzeButtonRef.current.classList.add('highlight-pulse')
-      // Remove highlight after 3 seconds
-      const timeout = setTimeout(() => {
-        analyzeButtonRef.current?.classList.remove('highlight-pulse')
-      }, 3000)
-      return () => clearTimeout(timeout)
+      const t = setTimeout(() => analyzeButtonRef.current?.classList.remove('highlight-pulse'), 3000)
+      return () => clearTimeout(t)
     }
-  }, [portfolioLoaded])
+  }, [hasPortfolio])
 
+  // Scroll to results when analysis appears
   useEffect(() => {
     if (analysis && analysisResultsRef.current) {
-      // Scroll to analysis results with smooth behavior
-      setTimeout(() => {
-        analysisResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 300)
+      setTimeout(() => analysisResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300)
     }
   }, [analysis])
+
+  // Merge LT and ST recommendations for the signals summary, deduplicating by ticker.
+  // LT recs take precedence over ST for the same ticker.
+  const signalsSummary = (() => {
+    if (!ltRecommendations && !stRecommendations) return null
+    const seen = new Set()
+    const pick = (bucket) => {
+      const items = []
+      for (const s of bucket || []) {
+        if (!seen.has(s.ticker)) { seen.add(s.ticker); items.push(s) }
+      }
+      return items
+    }
+    const avoid = pick([...(ltRecommendations?.sell_reduce || []), ...(stRecommendations?.sell_reduce || [])])
+    const hold  = pick([...(ltRecommendations?.hold || []),        ...(stRecommendations?.hold || [])])
+    const add   = pick([...(ltRecommendations?.add || []),         ...(stRecommendations?.add || [])])
+    if (!avoid.length && !hold.length && !add.length) return null
+    return { avoid, hold, add }
+  })()
 
   return (
     <div className="analyse-container">
@@ -69,23 +54,19 @@ function Analyse({ demoRequested, onDemoHandled }) {
         <p>Upload your stocks to see if you're diversified enough</p>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
-
-      {/* Portfolio Input */}
       <PortfolioInput
-        onPortfolioLoaded={handlePortfolioLoaded}
-        onAnalyze={handleAnalyze}
+        onPortfolioLoaded={reload}
+        onAnalyze={reload}
         autoLoadSample={demoRequested}
         onAutoLoadHandled={onDemoHandled}
       />
 
-      {/* Manual Analyze Button */}
-      {portfolioLoaded && (
+      {hasPortfolio && (
         <div className="manual-analyze-section">
           <button
             ref={analyzeButtonRef}
             className="btn-primary btn-large"
-            onClick={handleAnalyze}
+            onClick={reload}
             disabled={loading}
           >
             {loading ? '⏳ Checking...' : '🔍 Check My Portfolio'}
@@ -93,22 +74,62 @@ function Analyse({ demoRequested, onDemoHandled }) {
         </div>
       )}
 
-      {/* Loading State */}
       {loading && (
         <div className="loading-message">
           <p>Checking your portfolio...</p>
         </div>
       )}
 
-      {/* Analysis Results */}
       {analysis && (
         <div ref={analysisResultsRef}>
           <PitfallDetector analysis={analysis} />
         </div>
       )}
 
-      {/* Empty State */}
-      {!portfolioLoaded && !analysis && (
+      {/* Signals matched to portfolio holdings */}
+      {signalsSummary && (
+        <div className="portfolio-signals-section">
+          <h3>📡 What the Signals Say About Your Stocks</h3>
+          <p className="portfolio-signals-intro">
+            Based on current AI signals, here's what to do with the stocks you own.
+          </p>
+
+          {signalsSummary.avoid.length > 0 && (
+            <div className="portfolio-signals-group">
+              <h4 className="signals-group-title signals-group-avoid">🔴 Consider Selling</h4>
+              <div className="portfolio-signals-grid">
+                {signalsSummary.avoid.map((s, i) => (
+                  <SignalCard key={i} signal={s} type="sell-reduce" weight={s.weight_in_portfolio} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {signalsSummary.hold.length > 0 && (
+            <div className="portfolio-signals-group">
+              <h4 className="signals-group-title signals-group-hold">⏸️ Hold for Now</h4>
+              <div className="portfolio-signals-grid">
+                {signalsSummary.hold.map((s, i) => (
+                  <SignalCard key={i} signal={s} type="hold" weight={s.weight_in_portfolio} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {signalsSummary.add.length > 0 && (
+            <div className="portfolio-signals-group">
+              <h4 className="signals-group-title signals-group-add">🟢 Good to Add More</h4>
+              <div className="portfolio-signals-grid">
+                {signalsSummary.add.map((s, i) => (
+                  <SignalCard key={i} signal={s} type="add" />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!hasPortfolio && !analysis && (
         <div className="empty-state">
           <div className="empty-state-content">
             <div className="empty-icon">📁</div>

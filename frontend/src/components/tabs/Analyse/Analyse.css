@@ -124,6 +124,52 @@
   max-width: 400px;
 }
 
+/* Portfolio signals section */
+.portfolio-signals-section {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border-color);
+}
+
+.portfolio-signals-section h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.portfolio-signals-intro {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 24px 0;
+}
+
+.portfolio-signals-group {
+  margin-bottom: 24px;
+}
+
+.signals-group-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  padding: 6px 0;
+  border-bottom: 2px solid;
+}
+
+.signals-group-avoid { color: #ef4444; border-color: #ef4444; }
+.signals-group-hold  { color: #5568d3; border-color: #5568d3; }
+.signals-group-add   { color: #22c55e; border-color: #22c55e; }
+
+.portfolio-signals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .portfolio-signals-grid { grid-template-columns: 1fr; }
+}
+
 /* Desktop XL */
 @media (min-width: 1400px) {
   .analyse-container {

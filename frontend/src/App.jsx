@@ -7,6 +7,7 @@ import Analyse from './components/tabs/Analyse/Analyse'
 import ShortTerm from './components/tabs/ShortTerm/ShortTerm'
 import LongTerm from './components/tabs/LongTerm/LongTerm'
 import FeedbackForm from './components/FeedbackForm'
+import { PortfolioProvider } from './context/PortfolioContext'
 import './App.css'
 
 function App() {
@@ -20,7 +21,7 @@ function App() {
   }
 
   return (
-    <>
+    <PortfolioProvider>
       <Header />
 
       <div className="app-container">
@@ -87,7 +88,7 @@ function App() {
       {showFeedback && (
         <FeedbackForm onClose={() => setShowFeedback(false)} />
       )}
-    </>
+    </PortfolioProvider>
   )
 }
 
