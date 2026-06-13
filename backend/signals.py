@@ -12,6 +12,7 @@ import requests
 from groq import Groq
 import yfinance as yf
 from stock_discovery import discover_stocks, TICKER_SECTOR_MAP
+from analysis import get_sector_for_stock
 
 # Environment configuration
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
@@ -176,7 +177,7 @@ def fetch_fundamentals_from_yfinance(ticker):
         info = stock.info
 
         if info and info.get('currentPrice'):
-            sector = TICKER_SECTOR_MAP.get(ticker, info.get('sector', 'Unknown'))
+            sector = get_sector_for_stock(ticker, TICKER_SECTOR_MAP)
             return {
                 "ticker": ticker,
                 "company_name": info.get('longName', ticker),
@@ -213,7 +214,7 @@ def fetch_fundamentals(ticker):
                     # Get sector from COMPANY_SECTORS or fallback to TICKER_SECTOR_MAP
                     sector = COMPANY_SECTORS.get(ticker)
                     if not sector:
-                        sector = TICKER_SECTOR_MAP.get(ticker, "Unknown")
+                        sector = get_sector_for_stock(ticker, TICKER_SECTOR_MAP)
 
                     return {
                         "ticker": ticker,
@@ -394,7 +395,7 @@ def get_mock_fundamentals(ticker):
     return {
         "ticker": ticker,
         "company_name": COMPANY_NAMES.get(ticker, ticker),
-        "sector": TICKER_SECTOR_MAP.get(ticker, "Unknown"),
+        "sector": get_sector_for_stock(ticker, TICKER_SECTOR_MAP),
         "current_price": 100,
         "fundamentals_source": "mock",
     }
@@ -680,7 +681,7 @@ def generate_realistic_mock_signals(candidates, count=5, timeframe="long_term"):
             "confidence": confidence,
             "source": "mock",
             "rationale": rationale,
-            "sector": candidate.get("sector", "Unknown"),
+            "sector": candidate.get("sector", "Other"),
             "market_cap": candidate.get("market_cap"),
             "timeframe": timeframe,
             "created_at": datetime.now().isoformat(),
@@ -1061,7 +1062,7 @@ RULES:
             "rationale": signal.get("rationale", ""),
             "moat": clean_signal_text(signal.get("moat"), max_len=120),
             "what_to_watch": clean_signal_text(signal.get("what_to_watch"), max_len=120),
-            "sector": candidate.get("sector", "Unknown"),
+            "sector": candidate.get("sector", "Other"),
             "market_cap": candidate.get("market_cap", None),
             "pe_ratio": candidate.get("pe_ratio"),
             "dividend_yield": candidate.get("dividend_yield"),
@@ -1235,7 +1236,7 @@ RULES:
             "catalyst": clean_signal_text(signal.get("catalyst"), max_len=120),
             "expected_window": clean_signal_text(signal.get("expected_window"), max_len=40),
             "invalidation": clean_signal_text(signal.get("invalidation")),
-            "sector": candidate.get("sector", "Unknown"),
+            "sector": candidate.get("sector", "Other"),
             "market_cap": candidate.get("market_cap", None),
             "return_13w_pct": candidate.get("return_13w_pct"),
             "days_until_earnings": candidate.get("days_until_earnings"),
