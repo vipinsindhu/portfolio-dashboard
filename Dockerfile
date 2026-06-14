@@ -11,4 +11,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD gunicorn --workers 2 --timeout 300 --bind 0.0.0.0:${PORT:-8080} app:app
+CMD gunicorn --workers 1 --timeout 300 --preload --bind 0.0.0.0:${PORT:-8080} app:app
